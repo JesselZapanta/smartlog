@@ -21,8 +21,8 @@ storage/pail-workspace
 public/vendor
 
 # React / Node
-/node_modules
-/dist
+node_modules/
+dist/
 /build
 
 # Vite
@@ -39,3 +39,11 @@ Thumbs.db
 
 # OS / editor
 *~
+# Ignore workflow folder
+.workflow/
+
+# Ignore audit folder
+audit/
+
+# Ignore mockup folder
+mockup/
