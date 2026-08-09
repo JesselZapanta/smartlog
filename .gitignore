@@ -1,0 +1,41 @@
+# Laravel
+/vendor
+.env
+.env.backup
+.env.production
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+auth.json
+npm-debug.log
+yarn-error.log
+storage/*.key
+storage/pail
+storage/private
+storage/pail-workspace
+
+# Compiled assets (Laravel + Vite)
+/public/build
+/public/hot
+/public/storage
+public/vendor
+
+# React / Node
+/node_modules
+/dist
+/build
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Logs & caches
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# OS / editor
+*~
