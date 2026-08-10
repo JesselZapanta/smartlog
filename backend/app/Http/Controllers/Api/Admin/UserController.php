@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class UserController extends Controller
@@ -35,9 +36,20 @@ class UserController extends Controller
             $query->where('role', $role);
         }
 
+        $sort = $request->string('sort', 'id')->trim()->toString();
+        $order = $request->string('order', 'desc')->trim()->toString();
+
+        if (! in_array($sort, ['id', 'firstname', 'lastname', 'email', 'role', 'created_at'], true)) {
+            $sort = 'id';
+        }
+
+        if (! in_array($order, ['asc', 'desc'], true)) {
+            $order = 'desc';
+        }
+
         $perPage = min(max($request->integer('per_page', 10), 1), 100);
 
-        $users = $query->orderByDesc('created_at')->paginate($perPage)->withQueryString();
+        $users = $query->orderBy($sort, $order)->paginate($perPage)->withQueryString();
 
         return response()->json([
             'data' => UserResource::collection($users),
@@ -54,8 +66,14 @@ class UserController extends Controller
 
     public function store(StoreUserRequest $request): JsonResponse
     {
+        $data = $request->validated();
+
+        if ($request->hasFile('profile_picture')) {
+            $data['profile_picture'] = $request->file('profile_picture')->store('avatars', 'public');
+        }
+
         $user = User::create([
-            ...$request->validated(),
+            ...$data,
             'uuid' => (string) Str::uuid(),
             'email_verified_at' => now(),
         ]);
@@ -76,6 +94,15 @@ class UserController extends Controller
     {
         $data = $request->validated();
 
+        if ($request->hasFile('profile_picture')) {
+            if ($user->profile_picture) {
+                Storage::disk('public')->delete($user->profile_picture);
+            }
+            $data['profile_picture'] = $request->file('profile_picture')->store('avatars', 'public');
+        } else {
+            unset($data['profile_picture']);
+        }
+
         if (blank($data['password'] ?? null)) {
             unset($data['password']);
         }
@@ -93,6 +120,10 @@ class UserController extends Controller
             return response()->json([
                 'message' => 'You cannot delete your own account.',
             ], 403);
+        }
+
+        if ($user->profile_picture) {
+            Storage::disk('public')->delete($user->profile_picture);
         }
 
         $user->delete();

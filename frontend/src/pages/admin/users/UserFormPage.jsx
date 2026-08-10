@@ -11,17 +11,23 @@ import {
   Mail,
   Phone,
   Lock,
+  User,
   UserRound,
+  UserCog,
+  UserPlus,
   KeyRound,
   MapPin,
   Check,
   ChevronLeft,
   ChevronRight,
+  ImagePlus,
+  X,
 } from "lucide-react";
 import AdminLayout from "@/layouts/AdminLayout.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import {
+  getInitials,
   roleOptions,
   roleStepConfig,
   roleStepAllFields,
@@ -41,6 +47,7 @@ import HteDetailsStep from "@/pages/admin/users/HteDetailsStep.jsx";
 import CoordinatorDetailsStep from "@/pages/admin/users/CoordinatorDetailsStep.jsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Card,
   CardContent,
@@ -70,6 +77,7 @@ const accountFields = {
   extension: z.string(),
   contact_number: z.string(),
   role: z.string().min(1, "Role is required"),
+  profile_picture: z.union([z.string(), z.instanceof(File)]).optional(),
 };
 
 const locationFields = {
@@ -117,6 +125,10 @@ const roleFieldMessages = {
   date_of_birth: "Date of birth is required",
   name: "HTE / company name is required",
 };
+
+const MAX_AVATAR_SIZE = 2 * 1024 * 1024;
+
+const avatarMimeTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
 function applyRoleRequired(data, ctx) {
   const required = roleRequiredFields[data.role];
@@ -178,6 +190,7 @@ const formFieldNames = [
   "extension",
   "contact_number",
   "role",
+  "profile_picture",
   "region",
   "province",
   "city_municipality",
@@ -188,7 +201,7 @@ const formFieldNames = [
   "password_confirmation",
 ];
 
-const accountStepFields = ["firstname", "middlename", "lastname", "extension", "contact_number", "role"];
+const accountStepFields = ["firstname", "middlename", "lastname", "extension", "contact_number", "role", "profile_picture"];
 const locationStepFields = ["region", "province", "city_municipality", "barangay"];
 const credentialsStepFields = ["email", "password", "password_confirmation"];
 
@@ -252,6 +265,8 @@ export default function UserFormPage() {
   const [loadingInstitutes, setLoadingInstitutes] = useState(true);
   const [loadingPrograms, setLoadingPrograms] = useState(true);
   const [existingMoaUrl, setExistingMoaUrl] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [existingAvatarUrl, setExistingAvatarUrl] = useState(null);
 
   const form = useForm({
     resolver: zodResolver(isEdit ? editSchema : createSchema),
@@ -262,6 +277,7 @@ export default function UserFormPage() {
       extension: "",
       contact_number: "",
       role: "",
+      profile_picture: "",
       region: "",
       province: "",
       city_municipality: "",
@@ -291,6 +307,9 @@ export default function UserFormPage() {
 
   const role = form.watch("role");
   const previousRole = useRef(role);
+  const originalRole = useRef(null);
+  const loadedRoleValues = useRef(null);
+  const loadedLocation = useRef(null);
   const roleStep = roleStepConfig[role] || null;
   const lastStep = roleStep ? 4 : 3;
 
@@ -314,6 +333,7 @@ export default function UserFormPage() {
       if (step > 2) setStep(1);
       roleStepAllFields.forEach((field) => form.setValue(field, ""));
       setExistingMoaUrl(null);
+      loadedRoleValues.current = null;
       previousRole.current = role;
     }
   }, [role, loading, form, step]);
@@ -419,6 +439,12 @@ export default function UserFormPage() {
       const barangayCode = codeOf(barangaysData, location.barangay);
       setCodes((c) => ({ ...c, barangay: barangayCode }));
       form.setValue("barangay", location.barangay || "");
+      loadedLocation.current = {
+        region: location.region || "",
+        province: location.province || "",
+        city_municipality: location.city_municipality || "",
+        barangay: location.barangay || "",
+      };
     } catch (err) {
       toast.error("Failed to load saved location", { description: err.message });
     } finally {
@@ -447,7 +473,7 @@ export default function UserFormPage() {
       form.setValue("name", record.name || "");
       form.setValue("institute_id", record.institute_id ? String(record.institute_id) : "");
       form.setValue("program_id", record.program_id ? String(record.program_id) : "");
-      form.setValue("moa", record.moa || "");
+      form.setValue("moa", record.moa_url ? record.moa || "" : "");
       setExistingMoaUrl(record.moa_url || null);
       form.setValue("start_at", record.start_at ? String(record.start_at).slice(0, 10) : "");
       form.setValue("end_at", record.end_at ? String(record.end_at).slice(0, 10) : "");
@@ -455,6 +481,12 @@ export default function UserFormPage() {
       form.setValue("institute_id", record.institute_id ? String(record.institute_id) : "");
       form.setValue("program_id", record.program_id ? String(record.program_id) : "");
     }
+
+    const currentValues = form.getValues();
+    loadedRoleValues.current = {
+      type,
+      values: Object.fromEntries(roleStepAllFields.map((name) => [name, currentValues[name]])),
+    };
   }
 
   useEffect(() => {
@@ -466,6 +498,7 @@ export default function UserFormPage() {
         if (!active) return;
         const user = res.data.data;
         previousRole.current = user.role;
+        originalRole.current = user.role;
         form.reset({
           firstname: user.firstname || "",
           middlename: user.middlename || "",
@@ -473,6 +506,7 @@ export default function UserFormPage() {
           extension: user.extension || "",
           contact_number: user.contact_number || "",
           role: user.role || "",
+          profile_picture: user.profile_picture || "",
           region: "",
           province: "",
           city_municipality: "",
@@ -510,6 +544,7 @@ export default function UserFormPage() {
               // No role record yet — leave step empty.
             });
         }
+        setExistingAvatarUrl(user.profile_picture || null);
       })
       .catch((err) => {
         if (active) {
@@ -604,6 +639,31 @@ export default function UserFormPage() {
     form.setValue("barangay", nameOf(barangays, code));
   }
 
+  function handleAvatarChange(event) {
+    const file = event.target.files?.[0] || null;
+    event.target.value = "";
+    if (!file) return;
+    if (!avatarMimeTypes.includes(file.type)) {
+      toast.error("Invalid file", { description: "Only JPG, PNG, GIF or WebP images are allowed." });
+      return;
+    }
+    if (file.size > MAX_AVATAR_SIZE) {
+      toast.error("File too large", { description: "Profile photo must be 2 MB or smaller." });
+      return;
+    }
+    if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    setAvatarPreview(URL.createObjectURL(file));
+    setExistingAvatarUrl(null);
+    form.setValue("profile_picture", file);
+  }
+
+  function removeAvatar() {
+    if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    setAvatarPreview(null);
+    setExistingAvatarUrl(null);
+    form.setValue("profile_picture", "");
+  }
+
   async function handleSave() {
     const valid = await form.trigger(stepFields[lastStep]);
     if (!valid) return;
@@ -625,48 +685,105 @@ export default function UserFormPage() {
       };
 
       let userId = id;
-      if (isEdit) {
-        if (values.password) {
-          userPayload.password = values.password;
-          userPayload.password_confirmation = values.password_confirmation;
-        }
-        await api.put(`/users/${id}`, userPayload);
-      } else {
-        userPayload.password = values.password;
-        userPayload.password_confirmation = values.password_confirmation;
-        const created = await api.post("/users", userPayload);
-        userId = created.data.data.uuid;
+      const avatarIsFile = values.profile_picture instanceof File;
+
+      const body = avatarIsFile ? new FormData() : userPayload;
+      if (avatarIsFile) {
+        Object.entries(userPayload).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) body.append(key, value);
+        });
+        body.append("profile_picture", values.profile_picture);
       }
 
       const nextType = recordTypeFor(values.role);
-      const prevType = isEdit ? recordTypeFor(previousRole.current) : null;
+      const prevType = isEdit ? recordTypeFor(originalRole.current) : null;
 
-      if (isEdit && prevType && prevType !== nextType) {
-        await api.delete(`/users/${id}/${prevType}`).catch(() => {
-          // No previous record — nothing to clean up.
-        });
-      }
-
-      if (nextType) {
+      const buildRoleSave = (targetId) => {
         const rolePayload = buildRolePayload(nextType, values);
         if (nextType === "hte" && rolePayload.moa instanceof File) {
           const formData = new FormData();
           Object.entries(rolePayload).forEach(([key, value]) => {
             if (value !== undefined && value !== null) formData.append(key, value);
           });
-          await api.put(`/users/${userId}/hte`, formData);
-        } else {
-          await api.put(`/users/${userId}/${nextType}`, rolePayload);
+          formData.append("_method", "PUT");
+          return api.post(`/users/${targetId}/hte`, formData);
         }
-      }
+        return api.put(`/users/${targetId}/${nextType}`, rolePayload);
+      };
 
-      await api.put(`/users/${userId}/location`, {
-        region: values.region,
-        province: values.province,
-        city_municipality: values.city_municipality,
-        barangay: values.barangay,
-        status: "active",
-      });
+      const buildLocationSave = (targetId) =>
+        api.put(`/users/${targetId}/location`, {
+          region: values.region,
+          province: values.province,
+          city_municipality: values.city_municipality,
+          barangay: values.barangay,
+          status: "active",
+        });
+
+      if (isEdit) {
+        if (values.password) {
+          if (avatarIsFile) {
+            body.append("password", values.password);
+            body.append("password_confirmation", values.password_confirmation);
+          } else {
+            body.password = values.password;
+            body.password_confirmation = values.password_confirmation;
+          }
+        }
+
+        const requests = [];
+        if (avatarIsFile) {
+          body.append("_method", "PUT");
+          requests.push(api.post(`/users/${id}`, body));
+        } else {
+          requests.push(api.put(`/users/${id}`, body));
+        }
+
+        if (prevType && prevType !== nextType) {
+          requests.push(
+            api.delete(`/users/${id}/${prevType}`).catch(() => {
+              // No previous record — nothing to clean up.
+            })
+          );
+        }
+
+        const roleStepFields = roleStep ? roleStep.fields : [];
+        const roleChanged =
+          !loadedRoleValues.current ||
+          loadedRoleValues.current.type !== nextType ||
+          roleStepFields.some((name) => values[name] !== loadedRoleValues.current.values[name]);
+        if (nextType && roleChanged) {
+          requests.push(buildRoleSave(id));
+        }
+
+        const locationChanged =
+          !loadedLocation.current ||
+          values.region !== loadedLocation.current.region ||
+          values.province !== loadedLocation.current.province ||
+          values.city_municipality !== loadedLocation.current.city_municipality ||
+          values.barangay !== loadedLocation.current.barangay;
+        const hasLocationValues = Boolean(values.region) && Boolean(values.province) && Boolean(values.city_municipality) && Boolean(values.barangay);
+        if (hasLocationValues && locationChanged) {
+          requests.push(buildLocationSave(id));
+        }
+
+        await Promise.all(requests);
+      } else {
+        if (avatarIsFile) {
+          body.append("password", values.password);
+          body.append("password_confirmation", values.password_confirmation);
+        } else {
+          body.password = values.password;
+          body.password_confirmation = values.password_confirmation;
+        }
+        const created = await api.post("/users", body);
+        userId = created.data.data.uuid;
+
+        const requests = [];
+        if (nextType) requests.push(buildRoleSave(userId));
+        requests.push(buildLocationSave(userId));
+        await Promise.all(requests);
+      }
 
       toast.success(isEdit ? "User updated" : "User created", {
         description: `${values.firstname} ${values.lastname} was ${isEdit ? "updated" : "added"}.`,
@@ -702,24 +819,27 @@ export default function UserFormPage() {
   return (
     <AdminLayout>
       <div className="mx-auto w-full max-w-3xl">
-        <div className="flex items-center gap-3">
-          <Button asChild variant="ghost" size="icon" className="h-11 w-11 rounded-xl text-gray-500">
-            <Link to="/admin/users">
-              <ArrowLeft size={18} />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="font-heading text-xl font-bold text-green-950 sm:text-2xl">
-              {isEdit ? "Edit User" : "Add New User"}
-            </h1>
-            <p className="text-sm text-gray-500">
-              {isEdit ? "Update account details and role." : "Create a new system account."}
-            </p>
+          <div className="flex items-center gap-3">
+            <Button asChild variant="ghost" size="icon" className="h-11 w-11 rounded-xl text-gray-500">
+              <Link to="/admin/users">
+                <ArrowLeft size={18} />
+              </Link>
+            </Button>
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-green-700 to-green-500 text-white shadow-md shadow-green-600/25">
+              {isEdit ? <UserCog size={22} /> : <UserPlus size={22} />}
+            </div>
+            <div>
+              <h1 className="font-heading text-xl font-bold text-green-950 sm:text-2xl">
+                {isEdit ? "Edit User" : "Add New User"}
+              </h1>
+              <p className="text-sm text-gray-500">
+                {isEdit ? "Update account details and role." : "Create a new system account."}
+              </p>
+            </div>
           </div>
-        </div>
 
         {loading ? (
-          <Card className="mt-4 sm:mt-5">
+          <Card className="mt-4 rounded-2xl border border-gray-100 bg-white shadow-sm ring-gray-100 sm:mt-5">
             <CardContent className="space-y-4 p-5 sm:p-6">
               <div className="grid gap-4 sm:grid-cols-2">
                 {Array.from({ length: 6 }).map((_, index) => (
@@ -729,7 +849,7 @@ export default function UserFormPage() {
             </CardContent>
           </Card>
         ) : (
-          <Card className="mt-4 sm:mt-5">
+          <Card className="mt-4 rounded-2xl border border-gray-100 bg-white shadow-sm ring-gray-100 sm:mt-5">
             <div className="border-b border-gray-100 px-5 py-4 sm:px-6">
               <div className="flex items-center gap-2 sm:gap-3">
                 {steps.map((s, index) => (
@@ -763,6 +883,50 @@ export default function UserFormPage() {
                 <CardContent className="p-5 sm:p-6">
                   {step === 1 && (
                     <div className="space-y-4">
+                      <div className="flex flex-col gap-4 rounded-2xl border border-gray-100 bg-gray-50/60 p-4 ring-1 ring-gray-100 sm:flex-row sm:items-center">
+                        <Avatar className="h-20 w-20 shrink-0">
+                          {(avatarPreview || existingAvatarUrl) && (
+                            <AvatarImage
+                              src={avatarPreview || existingAvatarUrl}
+                              alt="Profile preview"
+                              className="object-cover"
+                            />
+                          )}
+                          <AvatarFallback className="bg-gradient-to-br from-green-700 to-green-500 text-xl font-bold text-white">
+                            {getInitials(`${form.watch("firstname") || ""} ${form.watch("lastname") || ""}`)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                          <label
+                            htmlFor="profile-picture-input"
+                            className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-green-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-green-700"
+                          >
+                            <ImagePlus size={16} />
+                            {avatarPreview || existingAvatarUrl ? "Change photo" : "Upload photo"}
+                          </label>
+                          {(avatarPreview || existingAvatarUrl) && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              className="h-11 rounded-xl text-red-600 hover:bg-red-50"
+                              onClick={removeAvatar}
+                            >
+                              <X size={16} /> Remove
+                            </Button>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-400 sm:ml-auto sm:max-w-[9.5rem]">
+                          JPG, PNG, GIF or WebP. Max 2 MB.
+                        </p>
+                      </div>
+                      <input
+                        id="profile-picture-input"
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        className="hidden"
+                        onChange={handleAvatarChange}
+                      />
+
                       <div className="flex items-center gap-2">
                         <UserRound size={14} className="text-green-600" />
                         <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
@@ -780,7 +944,10 @@ export default function UserFormPage() {
                                 First name *
                               </FormLabel>
                               <FormControl>
-                                <Input placeholder="Juan" className="h-11 rounded-xl" {...field} />
+                                <div className="relative">
+                                  <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                  <Input placeholder="Juan" className="h-11 rounded-xl pl-10" {...field} />
+                                </div>
                               </FormControl>
                               <div className="min-h-[1.25rem]"><FormMessage /></div>
                             </FormItem>
@@ -796,7 +963,10 @@ export default function UserFormPage() {
                                 Last name *
                               </FormLabel>
                               <FormControl>
-                                <Input placeholder="Dela Cruz" className="h-11 rounded-xl" {...field} />
+                                <div className="relative">
+                                  <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                  <Input placeholder="Dela Cruz" className="h-11 rounded-xl pl-10" {...field} />
+                                </div>
                               </FormControl>
                               <div className="min-h-[1.25rem]"><FormMessage /></div>
                             </FormItem>
@@ -812,7 +982,10 @@ export default function UserFormPage() {
                                 Middle name
                               </FormLabel>
                               <FormControl>
-                                <Input placeholder="Santos" className="h-11 rounded-xl" {...field} />
+                                <div className="relative">
+                                  <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                  <Input placeholder="Santos" className="h-11 rounded-xl pl-10" {...field} />
+                                </div>
                               </FormControl>
                               <div className="min-h-[1.25rem]"><FormMessage /></div>
                             </FormItem>
@@ -828,7 +1001,10 @@ export default function UserFormPage() {
                                 Extension
                               </FormLabel>
                               <FormControl>
-                                <Input placeholder="Jr., Sr., III" className="h-11 rounded-xl" {...field} />
+                                <div className="relative">
+                                  <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                  <Input placeholder="Jr., Sr., III" className="h-11 rounded-xl pl-10" {...field} />
+                                </div>
                               </FormControl>
                               <div className="min-h-[1.25rem]"><FormMessage /></div>
                             </FormItem>
@@ -1120,7 +1296,10 @@ export default function UserFormPage() {
                                 {isEdit ? "Confirm new password" : "Confirm password *"}
                               </FormLabel>
                               <FormControl>
-                                <Input type="password" placeholder="Repeat password" className="h-11 rounded-xl" {...field} />
+                                <div className="relative">
+                                  <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                  <Input type="password" placeholder="Repeat password" className="h-11 rounded-xl pl-10" {...field} />
+                                </div>
                               </FormControl>
                               <div className="min-h-[1.25rem]"><FormMessage /></div>
                             </FormItem>

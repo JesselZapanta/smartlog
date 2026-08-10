@@ -1,4 +1,4 @@
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, MapPin, Users } from "lucide-react";
 import {
   FormControl,
   FormField,
@@ -96,7 +96,10 @@ export default function InternDetailsStep({
             <FormItem>
               <FormLabel className={labelClass}>Place of birth</FormLabel>
               <FormControl>
-                <Input placeholder="City / province of birth" className="h-11 rounded-xl" {...field} />
+                <div className="relative">
+                  <MapPin className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <Input placeholder="City / province of birth" className="h-11 rounded-xl pl-10" {...field} />
+                </div>
               </FormControl>
               <div className="min-h-[1.25rem]"><FormMessage /></div>
             </FormItem>
@@ -104,6 +107,7 @@ export default function InternDetailsStep({
         />
 
         <div className="flex items-center gap-2 sm:col-span-2">
+          <Users size={14} className="text-green-600" />
           <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Parents / Guardian</p>
         </div>
 
