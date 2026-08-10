@@ -22,7 +22,9 @@ class HteResource extends JsonResource
             'institute_id' => $this->institute_id,
             'program_id' => $this->program_id,
             'moa' => $this->moa,
-            'moa_url' => $this->moa ? Storage::disk('public')->url($this->moa) : null,
+            'moa_url' => $this->moa && Storage::disk('public')->exists($this->moa)
+                ? Storage::disk('public')->url($this->moa)
+                : null,
             'start_at' => $this->start_at?->format('Y-m-d'),
             'end_at' => $this->end_at?->format('Y-m-d'),
             'status' => $this->status,

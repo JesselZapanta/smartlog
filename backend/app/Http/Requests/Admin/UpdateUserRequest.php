@@ -24,6 +24,7 @@ class UpdateUserRequest extends FormRequest
             'lastname' => ['required', 'string', 'max:255'],
             'extension' => ['nullable', 'string', 'max:10'],
             'contact_number' => ['nullable', 'string', 'max:20'],
+            'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
             'role' => ['required', Rule::in(['admin', 'intern', 'ojt_instructor', 'ojt_coordinator', 'hte'])],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($this->route('user'))],
             'password' => ['nullable', 'confirmed', Password::min(8)],

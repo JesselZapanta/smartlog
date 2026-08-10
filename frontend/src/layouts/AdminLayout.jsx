@@ -18,7 +18,7 @@ import {
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import NotificationBell from "@/components/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { LogoMark } from "@/components/Logo.jsx";
@@ -161,6 +161,7 @@ export default function AdminLayout({ children }) {
         <header className="sticky top-0 z-30 hidden h-14 items-center justify-end gap-3 border-b border-gray-100 bg-white px-4 shadow-sm lg:flex lg:px-8">
           <NotificationBell />
           <Avatar className="h-9 w-9 border border-green-500">
+            {user?.profile_picture && <AvatarImage src={user.profile_picture} alt={initials} />}
             <AvatarFallback className="bg-gradient-to-br from-green-700 to-green-500 text-white">{initials}</AvatarFallback>
           </Avatar>
         </header>
@@ -184,6 +185,7 @@ export default function AdminLayout({ children }) {
               <LogOut size={18} />
             </button>
             <Avatar className="h-9 w-9 border border-green-500">
+              {user?.profile_picture && <AvatarImage src={user.profile_picture} alt={initials} />}
               <AvatarFallback className="bg-gradient-to-br from-green-700 to-green-500 text-white">{initials}</AvatarFallback>
             </Avatar>
           </div>

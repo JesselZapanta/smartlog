@@ -60,7 +60,10 @@ export default function HteDetailsStep({
             <FormItem className="sm:col-span-2">
               <FormLabel className={labelClass}>HTE / company name *</FormLabel>
               <FormControl>
-                <Input placeholder="e.g. Tangub City Hall" className="h-11 rounded-xl" {...field} />
+                <div className="relative">
+                  <Building2 className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <Input placeholder="e.g. Tangub City Hall" className="h-11 rounded-xl pl-10" {...field} />
+                </div>
               </FormControl>
               <div className="min-h-[1.25rem]"><FormMessage /></div>
             </FormItem>
