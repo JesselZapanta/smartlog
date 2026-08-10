@@ -3,23 +3,21 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { format } from "date-fns";
 import {
   CalendarDays,
   CalendarPlus,
   CalendarCog,
-  CalendarIcon,
   Hash,
   Tag,
-  X,
   Loader2,
   Save,
 } from "lucide-react";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
-import { fromYMD, statusOptions, toYMD } from "@/pages/admin/academic-terms/constants.js";
+import { statusOptions } from "@/pages/admin/academic-terms/constants.js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
   DialogContent,
@@ -28,12 +26,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Form,
   FormControl,
@@ -72,63 +64,6 @@ const emptyValues = {
   start_at: "",
   end_at: "",
 };
-
-function TermDatePicker({ value, onChange, placeholder = "Pick a date" }) {
-  const [open, setOpen] = useState(false);
-  const date = fromYMD(value);
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11 w-full justify-start rounded-xl border-gray-200 bg-white px-3.5 font-normal text-gray-900 shadow-none hover:bg-gray-50 hover:text-gray-900"
-        >
-          <CalendarIcon size={16} className="mr-2 shrink-0 text-gray-400" />
-          {date ? (
-            <span>{format(date, "MMM d, yyyy")}</span>
-          ) : (
-            <span className="text-gray-400">{placeholder}</span>
-          )}
-          {date && (
-            <span
-              role="button"
-              tabIndex={0}
-              aria-label="Clear date"
-              onClick={(event) => {
-                event.stopPropagation();
-                onChange("");
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.stopPropagation();
-                  onChange("");
-                }
-              }}
-              className="ml-auto flex h-6 w-6 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-            >
-              <X size={14} />
-            </span>
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
-        <Calendar
-          mode="single"
-          selected={date}
-          onSelect={(selected) => {
-            if (selected) {
-              onChange(toYMD(selected));
-              setOpen(false);
-            }
-          }}
-          initialFocus
-        />
-      </PopoverContent>
-    </Popover>
-  );
-}
 
 export default function AcademicTermFormDialog({ open, onOpenChange, term, onSaved }) {
   const [submitting, setSubmitting] = useState(false);
@@ -276,7 +211,7 @@ export default function AcademicTermFormDialog({ open, onOpenChange, term, onSav
 
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <CalendarIcon size={14} className="text-green-600" />
+                <CalendarDays size={14} className="text-green-600" />
                 <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Dates</p>
               </div>
 
@@ -290,7 +225,7 @@ export default function AcademicTermFormDialog({ open, onOpenChange, term, onSav
                         Start date *
                       </FormLabel>
                       <FormControl>
-                        <TermDatePicker value={field.value} onChange={field.onChange} placeholder="Pick start date" />
+                        <DatePicker value={field.value} onChange={field.onChange} placeholder="Pick start date" />
                       </FormControl>
                       <div className="min-h-[1.25rem]"><FormMessage /></div>
                     </FormItem>
@@ -306,7 +241,7 @@ export default function AcademicTermFormDialog({ open, onOpenChange, term, onSav
                         End date *
                       </FormLabel>
                       <FormControl>
-                        <TermDatePicker value={field.value} onChange={field.onChange} placeholder="Pick end date" />
+                        <DatePicker value={field.value} onChange={field.onChange} placeholder="Pick end date" />
                       </FormControl>
                       <div className="min-h-[1.25rem]"><FormMessage /></div>
                     </FormItem>

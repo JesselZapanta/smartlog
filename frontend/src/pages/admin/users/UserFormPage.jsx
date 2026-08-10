@@ -112,7 +112,21 @@ const credentialsFields = {
 };
 
 const roleRequiredFields = {
-  intern: ["academic_year_id", "institute_id", "program_id", "date_of_birth"],
+  intern: [
+    "academic_year_id",
+    "institute_id",
+    "program_id",
+    "date_of_birth",
+    "place_of_birth",
+    "fathers_name",
+    "fathers_occupation",
+    "fathers_contact",
+    "mothers_name",
+    "mothers_occupation",
+    "mothers_contact",
+    "parents_guardian_address",
+    "practicum_instructor",
+  ],
   hte: ["name", "institute_id", "program_id"],
   ojt_coordinator: ["institute_id", "program_id"],
   ojt_instructor: ["institute_id", "program_id"],
@@ -123,6 +137,15 @@ const roleFieldMessages = {
   institute_id: "Select an institute",
   program_id: "Select a program",
   date_of_birth: "Date of birth is required",
+  place_of_birth: "Place of birth is required",
+  fathers_name: "Father's name is required",
+  fathers_occupation: "Father's occupation is required",
+  fathers_contact: "Father's contact is required",
+  mothers_name: "Mother's name is required",
+  mothers_occupation: "Mother's occupation is required",
+  mothers_contact: "Mother's contact is required",
+  parents_guardian_address: "Parents / guardian address is required",
+  practicum_instructor: "Practicum instructor is required",
   name: "HTE / company name is required",
 };
 
@@ -359,7 +382,7 @@ export default function UserFormPage() {
   useEffect(() => {
     let active = true;
     api
-      .get("/academic-terms?per_page=100&status=active")
+      .get("/academic-terms/options")
       .then((res) => {
         if (active) setTerms(res.data.data);
       })
@@ -851,31 +874,23 @@ export default function UserFormPage() {
         ) : (
           <Card className="mt-4 rounded-2xl border border-gray-100 bg-white shadow-sm ring-gray-100 sm:mt-5">
             <div className="border-b border-gray-100 px-5 py-4 sm:px-6">
-              <div className="flex items-center gap-2 sm:gap-3">
-                {steps.map((s, index) => (
-                  <Fragment key={s.id}>
-                    {index > 0 && (
-                      <div className={`h-0.5 flex-1 rounded-full ${step > index ? "bg-green-600" : "bg-gray-200"}`} />
-                    )}
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors ${
-                          step >= s.id ? "bg-green-600 text-white shadow-sm shadow-green-600/30" : "bg-gray-100 text-gray-400"
-                        }`}
-                      >
-                        {step > s.id ? <Check size={14} /> : s.id}
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        {steps.map((s, index) => (
+                          <Fragment key={s.id}>
+                            {index > 0 && (
+                              <div className={`h-0.5 flex-1 rounded-full ${step > index ? "bg-green-600" : "bg-gray-200"}`} />
+                            )}
+                            <div
+                              aria-label={s.label}
+                              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors ${
+                                step >= s.id ? "bg-green-600 text-white shadow-sm shadow-green-600/30" : "bg-gray-100 text-gray-400"
+                              }`}
+                            >
+                              {step > s.id ? <Check size={14} /> : s.id}
+                            </div>
+                          </Fragment>
+                        ))}
                       </div>
-                      <span
-                        className={`hidden text-xs font-semibold sm:block ${
-                          step >= s.id ? "text-gray-900" : "text-gray-400"
-                        }`}
-                      >
-                        {s.label}
-                      </span>
-                    </div>
-                  </Fragment>
-                ))}
-              </div>
             </div>
 
             <Form {...form}>

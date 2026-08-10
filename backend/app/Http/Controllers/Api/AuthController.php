@@ -3,15 +3,104 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\RegisterRequest;
 use App\Http\Resources\UserResource;
+use App\Models\AcademicTerm;
+use App\Models\Institute;
+use App\Models\Program;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    public function referenceData(): JsonResponse
+    {
+        return response()->json([
+            'data' => [
+                'academic_terms' => AcademicTerm::where('status', 'active')
+                    ->orderByDesc('start_at')
+                    ->get(['id', 'code']),
+                'institutes' => Institute::where('is_active', true)
+                    ->orderBy('name')
+                    ->get(['id', 'name']),
+                'programs' => Program::where('is_active', true)
+                    ->orderBy('name')
+                    ->get(['id', 'institute_id', 'name']),
+            ],
+        ]);
+    }
+
+    public function register(RegisterRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+
+        $academicYear = AcademicTerm::where('status', 'active')->latest('start_at')->first()
+            ?? AcademicTerm::latest('start_at')->first();
+
+        if (! $academicYear) {
+            throw ValidationException::withMessages([
+                'academic_year_id' => ['No academic year is available. Please try again later.'],
+            ]);
+        }
+
+        if ($request->hasFile('profile_picture')) {
+            $data['profile_picture'] = $request->file('profile_picture')->store('avatars', 'public');
+        }
+
+        $user = User::create([
+            'uuid' => (string) Str::uuid(),
+            'firstname' => $data['firstname'],
+            'middlename' => $data['middlename'] ?? null,
+            'lastname' => $data['lastname'],
+            'extension' => $data['extension'] ?? null,
+            'contact_number' => $data['contact_number'] ?? null,
+            'profile_picture' => $data['profile_picture'] ?? null,
+            'role' => 'intern',
+            'email' => $data['email'],
+            'password' => $data['password'],
+            'email_verified_at' => now(),
+        ]);
+
+        $user->intern()->create([
+            'academic_year_id' => $academicYear->id,
+            'institute_id' => $data['institute_id'],
+            'program_id' => $data['program_id'],
+            'date_of_birth' => $data['date_of_birth'],
+            'place_of_birth' => $data['place_of_birth'],
+            'fathers_name' => $data['fathers_name'],
+            'fathers_occupation' => $data['fathers_occupation'],
+            'fathers_contact' => $data['fathers_contact'],
+            'mothers_name' => $data['mothers_name'],
+            'mothers_occupation' => $data['mothers_occupation'],
+            'mothers_contact' => $data['mothers_contact'],
+            'parents_guardian_address' => $data['parents_guardian_address'],
+            'practicum_instructor' => $data['practicum_instructor'],
+        ]);
+
+        $user->location()->create([
+            'region' => $data['region'],
+            'province' => $data['province'],
+            'city_municipality' => $data['city_municipality'],
+            'barangay' => $data['barangay'],
+            'status' => 'active',
+        ]);
+
+        $token = Auth::guard('api')->login($user);
+
+        return response()->json([
+            'data' => [
+                'access_token' => $token,
+                'token_type' => 'bearer',
+                'expires_in' => Auth::guard('api')->factory()->getTTL() * 60,
+                'user' => new UserResource($user),
+            ],
+        ], 201);
+    }
+
     public function login(Request $request): JsonResponse
     {
         $credentials = $request->validate([

@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\AuthController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/register/reference-data', [AuthController::class, 'referenceData'])->name('api.register.reference-data');
+Route::post('/register', [AuthController::class, 'register'])->name('api.register');
 Route::post('/login', [AuthController::class, 'login'])->name('api.login');
 
 Route::middleware('auth:api')->group(function (): void {
@@ -35,6 +37,8 @@ Route::middleware('auth:api')->group(function (): void {
     Route::get('users/{user:uuid}/coordinator', [CoordinatorController::class, 'show'])->name('api.users.coordinator');
     Route::put('users/{user:uuid}/coordinator', [CoordinatorController::class, 'update'])->name('api.users.coordinator.update');
     Route::delete('users/{user:uuid}/coordinator', [CoordinatorController::class, 'destroy'])->name('api.users.coordinator.destroy');
+
+    Route::get('academic-terms/options', [AcademicTermController::class, 'options'])->name('api.academic-terms.options');
 
     Route::apiResource('academic-terms', AcademicTermController::class)
         ->except(['create', 'edit']);
