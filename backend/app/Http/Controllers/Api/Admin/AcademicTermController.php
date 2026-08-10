@@ -13,6 +13,14 @@ use Illuminate\Http\Request;
 
 class AcademicTermController extends Controller
 {
+    public function options(): JsonResponse
+    {
+        return response()->json([
+            'data' => AcademicTerm::orderByDesc('start_at')
+                ->get(['id', 'code', 'description']),
+        ]);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $query = AcademicTerm::query();

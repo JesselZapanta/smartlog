@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import Landing from "@/pages/Landing.jsx";
 import Login from "@/pages/Login.jsx";
+import RegisterPage from "@/pages/RegisterPage.jsx";
 import AdminDashboard from "@/pages/admin/AdminDashboard.jsx";
 import UserListPage from "@/pages/admin/users/UserListPage.jsx";
 import UserFormPage from "@/pages/admin/users/UserFormPage.jsx";
@@ -14,6 +15,7 @@ function App() {
     <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<RegisterPage />} />
       <Route
         path="/admin"
         element={

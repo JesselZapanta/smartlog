@@ -7,6 +7,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -27,6 +28,7 @@ export default function InternDetailsStep({
   loadingTerms,
   loadingInstitutes,
   loadingPrograms,
+  hideAcademicYear = false,
 }) {
   return (
     <div className="space-y-4">
@@ -36,36 +38,38 @@ export default function InternDetailsStep({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormField
-          control={form.control}
-          name="academic_year_id"
-          render={() => (
-            <FormItem>
-              <FormLabel className={labelClass}>Academic year *</FormLabel>
-              <Select
-                disabled={loadingTerms}
-                onValueChange={(value) => form.setValue("academic_year_id", value)}
-                value={form.watch("academic_year_id") || undefined}
-              >
-                <FormControl>
-                  <SelectTrigger className={selectClass}>
-                    <SelectValue
-                      placeholder={loadingTerms ? "Loading academic years…" : "Select academic year"}
-                    />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {terms.map((term) => (
-                    <SelectItem key={term.id} value={String(term.id)}>
-                      {term.code}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="min-h-[1.25rem]"><FormMessage /></div>
-            </FormItem>
-          )}
-        />
+        {!hideAcademicYear && (
+          <FormField
+            control={form.control}
+            name="academic_year_id"
+            render={() => (
+              <FormItem>
+                <FormLabel className={labelClass}>Academic year *</FormLabel>
+                <Select
+                  disabled={loadingTerms}
+                  onValueChange={(value) => form.setValue("academic_year_id", value)}
+                  value={form.watch("academic_year_id") || undefined}
+                >
+                  <FormControl>
+                    <SelectTrigger className={selectClass}>
+                      <SelectValue
+                        placeholder={loadingTerms ? "Loading academic years…" : "Select academic year"}
+                      />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {terms.map((term) => (
+                      <SelectItem key={term.id} value={String(term.id)}>
+                        {term.description || term.code}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="min-h-[1.25rem]"><FormMessage /></div>
+              </FormItem>
+            )}
+          />
+        )}
 
         <InstituteProgramFields
           form={form}
@@ -82,7 +86,12 @@ export default function InternDetailsStep({
             <FormItem>
               <FormLabel className={labelClass}>Date of birth *</FormLabel>
               <FormControl>
-                <Input type="date" className="h-11 rounded-xl" {...field} />
+                <DatePicker
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="Pick date of birth"
+                  maxDate={new Date()}
+                />
               </FormControl>
               <div className="min-h-[1.25rem]"><FormMessage /></div>
             </FormItem>
@@ -94,7 +103,7 @@ export default function InternDetailsStep({
           name="place_of_birth"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className={labelClass}>Place of birth</FormLabel>
+              <FormLabel className={labelClass}>Place of birth *</FormLabel>
               <FormControl>
                 <div className="relative">
                   <MapPin className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -116,7 +125,7 @@ export default function InternDetailsStep({
           name="fathers_name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className={labelClass}>Father&apos;s name</FormLabel>
+              <FormLabel className={labelClass}>Father&apos;s name *</FormLabel>
               <FormControl>
                 <Input placeholder="Full name" className="h-11 rounded-xl" {...field} />
               </FormControl>
@@ -130,7 +139,7 @@ export default function InternDetailsStep({
           name="mothers_name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className={labelClass}>Mother&apos;s name</FormLabel>
+              <FormLabel className={labelClass}>Mother&apos;s name *</FormLabel>
               <FormControl>
                 <Input placeholder="Full name" className="h-11 rounded-xl" {...field} />
               </FormControl>
@@ -144,7 +153,7 @@ export default function InternDetailsStep({
           name="fathers_occupation"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className={labelClass}>Father&apos;s occupation</FormLabel>
+              <FormLabel className={labelClass}>Father&apos;s occupation *</FormLabel>
               <FormControl>
                 <Input placeholder="Occupation" className="h-11 rounded-xl" {...field} />
               </FormControl>
@@ -158,7 +167,7 @@ export default function InternDetailsStep({
           name="mothers_occupation"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className={labelClass}>Mother&apos;s occupation</FormLabel>
+              <FormLabel className={labelClass}>Mother&apos;s occupation *</FormLabel>
               <FormControl>
                 <Input placeholder="Occupation" className="h-11 rounded-xl" {...field} />
               </FormControl>
@@ -172,7 +181,7 @@ export default function InternDetailsStep({
           name="fathers_contact"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className={labelClass}>Father&apos;s contact</FormLabel>
+              <FormLabel className={labelClass}>Father&apos;s contact *</FormLabel>
               <FormControl>
                 <Input placeholder="09XX XXX XXXX" className="h-11 rounded-xl" {...field} />
               </FormControl>
@@ -186,7 +195,7 @@ export default function InternDetailsStep({
           name="mothers_contact"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className={labelClass}>Mother&apos;s contact</FormLabel>
+              <FormLabel className={labelClass}>Mother&apos;s contact *</FormLabel>
               <FormControl>
                 <Input placeholder="09XX XXX XXXX" className="h-11 rounded-xl" {...field} />
               </FormControl>
@@ -200,7 +209,7 @@ export default function InternDetailsStep({
           name="parents_guardian_address"
           render={({ field }) => (
             <FormItem className="sm:col-span-2">
-              <FormLabel className={labelClass}>Parents / guardian address</FormLabel>
+              <FormLabel className={labelClass}>Parents / guardian address *</FormLabel>
               <FormControl>
                 <Input placeholder="Complete address" className="h-11 rounded-xl" {...field} />
               </FormControl>
@@ -214,7 +223,7 @@ export default function InternDetailsStep({
           name="practicum_instructor"
           render={({ field }) => (
             <FormItem className="sm:col-span-2">
-              <FormLabel className={labelClass}>Practicum instructor</FormLabel>
+              <FormLabel className={labelClass}>Practicum instructor *</FormLabel>
               <FormControl>
                 <Input placeholder="Instructor name" className="h-11 rounded-xl" {...field} />
               </FormControl>
