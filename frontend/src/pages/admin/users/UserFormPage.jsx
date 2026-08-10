@@ -1,0 +1,1189 @@
+import { Fragment, useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
+import {
+  ArrowLeft,
+  Save,
+  Loader2,
+  Mail,
+  Phone,
+  Lock,
+  UserRound,
+  KeyRound,
+  MapPin,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import AdminLayout from "@/layouts/AdminLayout.jsx";
+import api from "@/lib/api";
+import { firstErrorMessage } from "@/lib/errors";
+import {
+  roleOptions,
+  roleStepConfig,
+  roleStepAllFields,
+  recordTypeFor,
+} from "@/pages/admin/users/constants.js";
+import {
+  getRegions,
+  getProvinces,
+  getCities,
+  getRegionCities,
+  getBarangays,
+  codeOf,
+  nameOf,
+} from "@/lib/psgc";
+import InternDetailsStep from "@/pages/admin/users/InternDetailsStep.jsx";
+import HteDetailsStep from "@/pages/admin/users/HteDetailsStep.jsx";
+import CoordinatorDetailsStep from "@/pages/admin/users/CoordinatorDetailsStep.jsx";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const accountFields = {
+  firstname: z.string().min(1, "First name is required"),
+  middlename: z.string(),
+  lastname: z.string().min(1, "Last name is required"),
+  extension: z.string(),
+  contact_number: z.string(),
+  role: z.string().min(1, "Role is required"),
+};
+
+const locationFields = {
+  region: z.string().min(1, "Select a region"),
+  province: z.string().min(1, "Select a province"),
+  city_municipality: z.string().min(1, "Select a city or municipality"),
+  barangay: z.string().min(1, "Select a barangay"),
+};
+
+const roleFields = {
+  academic_year_id: z.string(),
+  institute_id: z.string(),
+  program_id: z.string(),
+  date_of_birth: z.string(),
+  place_of_birth: z.string(),
+  fathers_name: z.string(),
+  fathers_occupation: z.string(),
+  fathers_contact: z.string(),
+  mothers_name: z.string(),
+  mothers_occupation: z.string(),
+  mothers_contact: z.string(),
+  parents_guardian_address: z.string(),
+  practicum_instructor: z.string(),
+  name: z.string(),
+  moa: z.union([z.string(), z.instanceof(File)]).optional(),
+  start_at: z.string(),
+  end_at: z.string(),
+};
+
+const credentialsFields = {
+  email: z.string().min(1, "Email is required").email("Enter a valid email address"),
+};
+
+const roleRequiredFields = {
+  intern: ["academic_year_id", "institute_id", "program_id", "date_of_birth"],
+  hte: ["name", "institute_id", "program_id"],
+  ojt_coordinator: ["institute_id", "program_id"],
+  ojt_instructor: ["institute_id", "program_id"],
+};
+
+const roleFieldMessages = {
+  academic_year_id: "Select an academic year",
+  institute_id: "Select an institute",
+  program_id: "Select a program",
+  date_of_birth: "Date of birth is required",
+  name: "HTE / company name is required",
+};
+
+function applyRoleRequired(data, ctx) {
+  const required = roleRequiredFields[data.role];
+  if (!required) return;
+  required.forEach((field) => {
+    if (!data[field]) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: roleFieldMessages[field] });
+    }
+  });
+}
+
+const createSchema = z
+  .object({
+    ...accountFields,
+    ...locationFields,
+    ...roleFields,
+    ...credentialsFields,
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    password_confirmation: z.string().min(1, "Confirm your password"),
+  })
+  .superRefine((data, ctx) => {
+    applyRoleRequired(data, ctx);
+    if (data.password !== data.password_confirmation) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["password_confirmation"],
+        message: "Passwords do not match",
+      });
+    }
+  });
+
+const editSchema = z
+  .object({
+    ...accountFields,
+    ...locationFields,
+    ...roleFields,
+    ...credentialsFields,
+    password: z
+      .string()
+      .optional()
+      .refine((value) => !value || value.length >= 8, { message: "Password must be at least 8 characters" }),
+    password_confirmation: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    applyRoleRequired(data, ctx);
+    if (data.password && data.password !== data.password_confirmation) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["password_confirmation"],
+        message: "Passwords do not match",
+      });
+    }
+  });
+
+const formFieldNames = [
+  "firstname",
+  "middlename",
+  "lastname",
+  "extension",
+  "contact_number",
+  "role",
+  "region",
+  "province",
+  "city_municipality",
+  "barangay",
+  ...roleStepAllFields,
+  "email",
+  "password",
+  "password_confirmation",
+];
+
+const accountStepFields = ["firstname", "middlename", "lastname", "extension", "contact_number", "role"];
+const locationStepFields = ["region", "province", "city_municipality", "barangay"];
+const credentialsStepFields = ["email", "password", "password_confirmation"];
+
+function buildRolePayload(type, values) {
+  if (type === "intern") {
+    return {
+      academic_year_id: Number(values.academic_year_id),
+      institute_id: Number(values.institute_id),
+      program_id: Number(values.program_id),
+      date_of_birth: values.date_of_birth,
+      place_of_birth: values.place_of_birth || null,
+      fathers_name: values.fathers_name || null,
+      fathers_occupation: values.fathers_occupation || null,
+      fathers_contact: values.fathers_contact || null,
+      mothers_name: values.mothers_name || null,
+      mothers_occupation: values.mothers_occupation || null,
+      mothers_contact: values.mothers_contact || null,
+      parents_guardian_address: values.parents_guardian_address || null,
+      practicum_instructor: values.practicum_instructor || null,
+    };
+  }
+  if (type === "hte") {
+    return {
+      name: values.name,
+      institute_id: Number(values.institute_id),
+      program_id: Number(values.program_id),
+      moa: values.moa instanceof File ? values.moa : undefined,
+      start_at: values.start_at || null,
+      end_at: values.end_at || null,
+      status: "active",
+    };
+  }
+  return {
+    institute_id: Number(values.institute_id),
+    program_id: Number(values.program_id),
+  };
+}
+
+export default function UserFormPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const isEdit = Boolean(id);
+  const [loading, setLoading] = useState(isEdit);
+  const [submitting, setSubmitting] = useState(false);
+  const [step, setStep] = useState(1);
+
+  const [regions, setRegions] = useState([]);
+  const [provinces, setProvinces] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [barangays, setBarangays] = useState([]);
+  const [loadingRegions, setLoadingRegions] = useState(false);
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [loadingCities, setLoadingCities] = useState(false);
+  const [loadingBarangays, setLoadingBarangays] = useState(false);
+  const [codes, setCodes] = useState({ region: "", province: "", city: "", barangay: "" });
+
+  const [terms, setTerms] = useState([]);
+  const [institutes, setInstitutes] = useState([]);
+  const [programs, setPrograms] = useState([]);
+  const [loadingTerms, setLoadingTerms] = useState(true);
+  const [loadingInstitutes, setLoadingInstitutes] = useState(true);
+  const [loadingPrograms, setLoadingPrograms] = useState(true);
+  const [existingMoaUrl, setExistingMoaUrl] = useState(null);
+
+  const form = useForm({
+    resolver: zodResolver(isEdit ? editSchema : createSchema),
+    defaultValues: {
+      firstname: "",
+      middlename: "",
+      lastname: "",
+      extension: "",
+      contact_number: "",
+      role: "",
+      region: "",
+      province: "",
+      city_municipality: "",
+      barangay: "",
+      academic_year_id: "",
+      institute_id: "",
+      program_id: "",
+      date_of_birth: "",
+      place_of_birth: "",
+      fathers_name: "",
+      fathers_occupation: "",
+      fathers_contact: "",
+      mothers_name: "",
+      mothers_occupation: "",
+      mothers_contact: "",
+      parents_guardian_address: "",
+      practicum_instructor: "",
+      name: "",
+      moa: "",
+      start_at: "",
+      end_at: "",
+      email: "",
+      password: "",
+      password_confirmation: "",
+    },
+  });
+
+  const role = form.watch("role");
+  const previousRole = useRef(role);
+  const roleStep = roleStepConfig[role] || null;
+  const lastStep = roleStep ? 4 : 3;
+
+  const steps = [
+    { id: 1, label: "Account Information", icon: UserRound },
+    { id: 2, label: "Location", icon: MapPin },
+    ...(roleStep ? [{ id: 3, label: roleStep.label, icon: roleStep.icon }] : []),
+    { id: lastStep, label: "Credentials", icon: KeyRound },
+  ];
+
+  const stepFields = {
+    1: accountStepFields,
+    2: locationStepFields,
+    3: roleStep ? roleStep.fields : credentialsStepFields,
+    4: credentialsStepFields,
+  };
+
+  useEffect(() => {
+    if (loading) return;
+    if (previousRole.current !== role) {
+      if (step > 2) setStep(1);
+      roleStepAllFields.forEach((field) => form.setValue(field, ""));
+      setExistingMoaUrl(null);
+      previousRole.current = role;
+    }
+  }, [role, loading, form, step]);
+
+  useEffect(() => {
+    let active = true;
+    setLoadingRegions(true);
+    getRegions()
+      .then((data) => {
+        if (active) setRegions(data);
+      })
+      .catch((err) => {
+        if (active) toast.error("Failed to load regions", { description: err.message });
+      })
+      .finally(() => {
+        if (active) setLoadingRegions(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    api
+      .get("/academic-terms?per_page=100&status=active")
+      .then((res) => {
+        if (active) setTerms(res.data.data);
+      })
+      .catch((err) => {
+        if (active) toast.error("Failed to load academic years", { description: firstErrorMessage(err) });
+      })
+      .finally(() => {
+        if (active) setLoadingTerms(false);
+      });
+    api
+      .get("/institutes?per_page=100")
+      .then((res) => {
+        if (active) setInstitutes(res.data.data);
+      })
+      .catch((err) => {
+        if (active) toast.error("Failed to load institutes", { description: firstErrorMessage(err) });
+      })
+      .finally(() => {
+        if (active) setLoadingInstitutes(false);
+      });
+    api
+      .get("/programs?per_page=100")
+      .then((res) => {
+        if (active) setPrograms(res.data.data);
+      })
+      .catch((err) => {
+        if (active) toast.error("Failed to load programs", { description: firstErrorMessage(err) });
+      })
+      .finally(() => {
+        if (active) setLoadingPrograms(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function resolveLocation(location) {
+    let regionsData = regions;
+    if (!regionsData.length) {
+      try {
+        regionsData = await getRegions();
+        setRegions(regionsData);
+      } catch {
+        return;
+      }
+    }
+    const regionCode = codeOf(regionsData, location.region);
+    setCodes((c) => ({ ...c, region: regionCode }));
+    form.setValue("region", location.region || "");
+    if (!regionCode) return;
+
+    setLoadingProvinces(true);
+    try {
+      const provincesData = await getProvinces(regionCode);
+      setProvinces(provincesData);
+      const provinceCode = codeOf(provincesData, location.province);
+      setCodes((c) => ({ ...c, province: provinceCode }));
+      form.setValue("province", location.province || "");
+      if (!provinceCode) return;
+
+      setLoadingCities(true);
+      let citiesData = [];
+      try {
+        citiesData = await getCities(provinceCode);
+      } catch {
+        citiesData = await getRegionCities(regionCode);
+      }
+      setCities(citiesData);
+      const cityCode = codeOf(citiesData, location.city_municipality);
+      setCodes((c) => ({ ...c, city: cityCode }));
+      form.setValue("city_municipality", location.city_municipality || "");
+      if (!cityCode) return;
+
+      setLoadingBarangays(true);
+      const barangaysData = await getBarangays(cityCode);
+      setBarangays(barangaysData);
+      const barangayCode = codeOf(barangaysData, location.barangay);
+      setCodes((c) => ({ ...c, barangay: barangayCode }));
+      form.setValue("barangay", location.barangay || "");
+    } catch (err) {
+      toast.error("Failed to load saved location", { description: err.message });
+    } finally {
+      setLoadingProvinces(false);
+      setLoadingCities(false);
+      setLoadingBarangays(false);
+    }
+  }
+
+  function prefillRoleStep(type, record) {
+    if (type === "intern") {
+      form.setValue("academic_year_id", record.academic_year_id ? String(record.academic_year_id) : "");
+      form.setValue("institute_id", record.institute_id ? String(record.institute_id) : "");
+      form.setValue("program_id", record.program_id ? String(record.program_id) : "");
+      form.setValue("date_of_birth", record.date_of_birth ? String(record.date_of_birth).slice(0, 10) : "");
+      form.setValue("place_of_birth", record.place_of_birth || "");
+      form.setValue("fathers_name", record.fathers_name || "");
+      form.setValue("fathers_occupation", record.fathers_occupation || "");
+      form.setValue("fathers_contact", record.fathers_contact || "");
+      form.setValue("mothers_name", record.mothers_name || "");
+      form.setValue("mothers_occupation", record.mothers_occupation || "");
+      form.setValue("mothers_contact", record.mothers_contact || "");
+      form.setValue("parents_guardian_address", record.parents_guardian_address || "");
+      form.setValue("practicum_instructor", record.practicum_instructor || "");
+    } else if (type === "hte") {
+      form.setValue("name", record.name || "");
+      form.setValue("institute_id", record.institute_id ? String(record.institute_id) : "");
+      form.setValue("program_id", record.program_id ? String(record.program_id) : "");
+      form.setValue("moa", record.moa || "");
+      setExistingMoaUrl(record.moa_url || null);
+      form.setValue("start_at", record.start_at ? String(record.start_at).slice(0, 10) : "");
+      form.setValue("end_at", record.end_at ? String(record.end_at).slice(0, 10) : "");
+    } else {
+      form.setValue("institute_id", record.institute_id ? String(record.institute_id) : "");
+      form.setValue("program_id", record.program_id ? String(record.program_id) : "");
+    }
+  }
+
+  useEffect(() => {
+    if (!isEdit) return;
+    let active = true;
+    api
+      .get(`/users/${id}`)
+      .then((res) => {
+        if (!active) return;
+        const user = res.data.data;
+        previousRole.current = user.role;
+        form.reset({
+          firstname: user.firstname || "",
+          middlename: user.middlename || "",
+          lastname: user.lastname || "",
+          extension: user.extension || "",
+          contact_number: user.contact_number || "",
+          role: user.role || "",
+          region: "",
+          province: "",
+          city_municipality: "",
+          barangay: "",
+          academic_year_id: "",
+          institute_id: "",
+          program_id: "",
+          date_of_birth: "",
+          place_of_birth: "",
+          fathers_name: "",
+          fathers_occupation: "",
+          fathers_contact: "",
+          mothers_name: "",
+          mothers_occupation: "",
+          mothers_contact: "",
+          parents_guardian_address: "",
+          practicum_instructor: "",
+          name: "",
+          moa: "",
+          start_at: "",
+          end_at: "",
+          email: user.email || "",
+          password: "",
+          password_confirmation: "",
+        });
+
+        const recordType = recordTypeFor(user.role);
+        if (recordType) {
+          api
+            .get(`/users/${id}/${recordType}`)
+            .then((res2) => {
+              if (active && res2.data.data) prefillRoleStep(recordType, res2.data.data);
+            })
+            .catch(() => {
+              // No role record yet — leave step empty.
+            });
+        }
+      })
+      .catch((err) => {
+        if (active) {
+          toast.error("Failed to load user", { description: firstErrorMessage(err) });
+          navigate("/admin/users");
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    api
+      .get(`/users/${id}/location`)
+      .then((res) => {
+        if (active && res.data.data) resolveLocation(res.data.data);
+      })
+      .catch(() => {
+        // No saved location yet — leave step empty.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [id, isEdit, form, navigate]);
+
+  async function handleNext() {
+    const valid = await form.trigger(stepFields[step]);
+    const stepHasErrors = stepFields[step].some((name) => Boolean(form.formState.errors[name]));
+    if (valid && !stepHasErrors) setStep((s) => s + 1);
+  }
+
+  function onRegionChange(code) {
+    setCodes((c) => ({ ...c, region: code, province: "", city: "", barangay: "" }));
+    form.setValue("region", nameOf(regions, code));
+    form.setValue("province", "");
+    form.setValue("city_municipality", "");
+    form.setValue("barangay", "");
+    setProvinces([]);
+    setCities([]);
+    setBarangays([]);
+    if (!code) return;
+    setLoadingProvinces(true);
+    getProvinces(code)
+      .then(setProvinces)
+      .catch((err) => toast.error("Failed to load provinces", { description: err.message }))
+      .finally(() => setLoadingProvinces(false));
+  }
+
+  function onProvinceChange(code) {
+    setCodes((c) => ({ ...c, province: code, city: "", barangay: "" }));
+    form.setValue("province", nameOf(provinces, code));
+    form.setValue("city_municipality", "");
+    form.setValue("barangay", "");
+    setCities([]);
+    setBarangays([]);
+    if (!code) return;
+    loadCities(code);
+  }
+
+  async function loadCities(provinceCode) {
+    setLoadingCities(true);
+    try {
+      let data = [];
+      try {
+        data = await getCities(provinceCode);
+      } catch {
+        data = await getRegionCities(codes.region);
+      }
+      setCities(data);
+    } catch (err) {
+      toast.error("Failed to load cities", { description: err.message });
+    } finally {
+      setLoadingCities(false);
+    }
+  }
+
+  function onCityChange(code) {
+    setCodes((c) => ({ ...c, city: code, barangay: "" }));
+    form.setValue("city_municipality", nameOf(cities, code));
+    form.setValue("barangay", "");
+    setBarangays([]);
+    if (!code) return;
+    setLoadingBarangays(true);
+    getBarangays(code)
+      .then(setBarangays)
+      .catch((err) => toast.error("Failed to load barangays", { description: err.message }))
+      .finally(() => setLoadingBarangays(false));
+  }
+
+  function onBarangayChange(code) {
+    setCodes((c) => ({ ...c, barangay: code }));
+    form.setValue("barangay", nameOf(barangays, code));
+  }
+
+  async function handleSave() {
+    const valid = await form.trigger(stepFields[lastStep]);
+    if (!valid) return;
+    form.clearErrors(formFieldNames.filter((name) => !stepFields[lastStep].includes(name)));
+    await onSubmit(form.getValues());
+  }
+
+  async function onSubmit(values) {
+    setSubmitting(true);
+    try {
+      const userPayload = {
+        firstname: values.firstname,
+        middlename: values.middlename,
+        lastname: values.lastname,
+        extension: values.extension,
+        contact_number: values.contact_number,
+        role: values.role,
+        email: values.email,
+      };
+
+      let userId = id;
+      if (isEdit) {
+        if (values.password) {
+          userPayload.password = values.password;
+          userPayload.password_confirmation = values.password_confirmation;
+        }
+        await api.put(`/users/${id}`, userPayload);
+      } else {
+        userPayload.password = values.password;
+        userPayload.password_confirmation = values.password_confirmation;
+        const created = await api.post("/users", userPayload);
+        userId = created.data.data.uuid;
+      }
+
+      const nextType = recordTypeFor(values.role);
+      const prevType = isEdit ? recordTypeFor(previousRole.current) : null;
+
+      if (isEdit && prevType && prevType !== nextType) {
+        await api.delete(`/users/${id}/${prevType}`).catch(() => {
+          // No previous record — nothing to clean up.
+        });
+      }
+
+      if (nextType) {
+        const rolePayload = buildRolePayload(nextType, values);
+        if (nextType === "hte" && rolePayload.moa instanceof File) {
+          const formData = new FormData();
+          Object.entries(rolePayload).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) formData.append(key, value);
+          });
+          await api.put(`/users/${userId}/hte`, formData);
+        } else {
+          await api.put(`/users/${userId}/${nextType}`, rolePayload);
+        }
+      }
+
+      await api.put(`/users/${userId}/location`, {
+        region: values.region,
+        province: values.province,
+        city_municipality: values.city_municipality,
+        barangay: values.barangay,
+        status: "active",
+      });
+
+      toast.success(isEdit ? "User updated" : "User created", {
+        description: `${values.firstname} ${values.lastname} was ${isEdit ? "updated" : "added"}.`,
+      });
+      navigate("/admin/users");
+    } catch (err) {
+      toast.error(isEdit ? "Update failed" : "Creation failed", { description: firstErrorMessage(err) });
+      const errors = err.response?.data?.errors;
+      if (errors && typeof errors === "object") {
+        const errorFields = Object.keys(errors);
+        const orderedSteps = [1, 2, 3, 4];
+        const targetStep = orderedSteps.find((s) =>
+          errorFields.some((name) => stepFields[s]?.includes(name))
+        );
+        if (targetStep) setStep(targetStep);
+        const visibleFields = targetStep ? stepFields[targetStep] : [];
+        Object.entries(errors).forEach(([name, messages]) => {
+          if (
+            visibleFields.includes(name) &&
+            formFieldNames.includes(name) &&
+            Array.isArray(messages) &&
+            messages.length > 0
+          ) {
+            form.setError(name, { message: messages[0] });
+          }
+        });
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <AdminLayout>
+      <div className="mx-auto w-full max-w-3xl">
+        <div className="flex items-center gap-3">
+          <Button asChild variant="ghost" size="icon" className="h-11 w-11 rounded-xl text-gray-500">
+            <Link to="/admin/users">
+              <ArrowLeft size={18} />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="font-heading text-xl font-bold text-green-950 sm:text-2xl">
+              {isEdit ? "Edit User" : "Add New User"}
+            </h1>
+            <p className="text-sm text-gray-500">
+              {isEdit ? "Update account details and role." : "Create a new system account."}
+            </p>
+          </div>
+        </div>
+
+        {loading ? (
+          <Card className="mt-4 sm:mt-5">
+            <CardContent className="space-y-4 p-5 sm:p-6">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <Skeleton key={index} className="h-11 w-full rounded-xl" />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="mt-4 sm:mt-5">
+            <div className="border-b border-gray-100 px-5 py-4 sm:px-6">
+              <div className="flex items-center gap-2 sm:gap-3">
+                {steps.map((s, index) => (
+                  <Fragment key={s.id}>
+                    {index > 0 && (
+                      <div className={`h-0.5 flex-1 rounded-full ${step > index ? "bg-green-600" : "bg-gray-200"}`} />
+                    )}
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors ${
+                          step >= s.id ? "bg-green-600 text-white shadow-sm shadow-green-600/30" : "bg-gray-100 text-gray-400"
+                        }`}
+                      >
+                        {step > s.id ? <Check size={14} /> : s.id}
+                      </div>
+                      <span
+                        className={`hidden text-xs font-semibold sm:block ${
+                          step >= s.id ? "text-gray-900" : "text-gray-400"
+                        }`}
+                      >
+                        {s.label}
+                      </span>
+                    </div>
+                  </Fragment>
+                ))}
+              </div>
+            </div>
+
+            <Form {...form}>
+              <form onSubmit={(event) => event.preventDefault()} noValidate>
+                <CardContent className="p-5 sm:p-6">
+                  {step === 1 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <UserRound size={14} className="text-green-600" />
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                          Account information
+                        </p>
+                      </div>
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <FormField
+                          control={form.control}
+                          name="firstname"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-wider text-gray-700">
+                                First name *
+                              </FormLabel>
+                              <FormControl>
+                                <Input placeholder="Juan" className="h-11 rounded-xl" {...field} />
+                              </FormControl>
+                              <div className="min-h-[1.25rem]"><FormMessage /></div>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="lastname"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-wider text-gray-700">
+                                Last name *
+                              </FormLabel>
+                              <FormControl>
+                                <Input placeholder="Dela Cruz" className="h-11 rounded-xl" {...field} />
+                              </FormControl>
+                              <div className="min-h-[1.25rem]"><FormMessage /></div>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="middlename"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-wider text-gray-700">
+                                Middle name
+                              </FormLabel>
+                              <FormControl>
+                                <Input placeholder="Santos" className="h-11 rounded-xl" {...field} />
+                              </FormControl>
+                              <div className="min-h-[1.25rem]"><FormMessage /></div>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="extension"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-wider text-gray-700">
+                                Extension
+                              </FormLabel>
+                              <FormControl>
+                                <Input placeholder="Jr., Sr., III" className="h-11 rounded-xl" {...field} />
+                              </FormControl>
+                              <div className="min-h-[1.25rem]"><FormMessage /></div>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="contact_number"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-wider text-gray-700">
+                                Contact number
+                              </FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                  <Input placeholder="09XX XXX XXXX" className="h-11 rounded-xl pl-10" {...field} />
+                                </div>
+                              </FormControl>
+                              <div className="min-h-[1.25rem]"><FormMessage /></div>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="role"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-wider text-gray-700">
+                                Role *
+                              </FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value || undefined}>
+                                <FormControl>
+                                  <SelectTrigger className="data-[size=default]:h-11 w-full rounded-xl">
+                                    <SelectValue placeholder="Select a role" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {roleOptions.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                      {option.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <div className="min-h-[1.25rem]"><FormMessage /></div>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {step === 2 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <MapPin size={14} className="text-green-600" />
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Location</p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Select the user&apos;s address from the Philippine Standard Geographic Code (PSGC).
+                      </p>
+
+                      <div className="grid gap-4">
+                        <FormField
+                          control={form.control}
+                          name="region"
+                          render={() => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-wider text-gray-700">
+                                Region *
+                              </FormLabel>
+                              <Select disabled={loadingRegions} onValueChange={onRegionChange} value={codes.region || undefined}>
+                                <FormControl>
+                                  <SelectTrigger className="data-[size=default]:h-11 w-full rounded-xl">
+                                    <SelectValue placeholder={loadingRegions ? "Loading regions…" : "Select region"} />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {regions.map((r) => (
+                                    <SelectItem key={r.code} value={r.code}>
+                                      {r.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <div className="min-h-[1.25rem]"><FormMessage /></div>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="province"
+                          render={() => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-wider text-gray-700">
+                                Province *
+                              </FormLabel>
+                              <Select
+                                disabled={!codes.region || loadingProvinces}
+                                onValueChange={onProvinceChange}
+                                value={codes.province || undefined}
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="data-[size=default]:h-11 w-full rounded-xl">
+                                    <SelectValue placeholder={loadingProvinces ? "Loading provinces…" : "Select province"} />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {provinces.map((p) => (
+                                    <SelectItem key={p.code} value={p.code}>
+                                      {p.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <div className="min-h-[1.25rem]"><FormMessage /></div>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="city_municipality"
+                          render={() => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-wider text-gray-700">
+                                City / Municipality *
+                              </FormLabel>
+                              <Select
+                                disabled={!codes.province || loadingCities}
+                                onValueChange={onCityChange}
+                                value={codes.city || undefined}
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="data-[size=default]:h-11 w-full rounded-xl">
+                                    <SelectValue placeholder={loadingCities ? "Loading cities…" : "Select city / municipality"} />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {cities.map((c) => (
+                                    <SelectItem key={c.code} value={c.code}>
+                                      {c.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <div className="min-h-[1.25rem]"><FormMessage /></div>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="barangay"
+                          render={() => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-wider text-gray-700">
+                                Barangay *
+                              </FormLabel>
+                              <Select
+                                disabled={!codes.city || loadingBarangays}
+                                onValueChange={onBarangayChange}
+                                value={codes.barangay || undefined}
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="data-[size=default]:h-11 w-full rounded-xl">
+                                    <SelectValue placeholder={loadingBarangays ? "Loading barangays…" : "Select barangay"} />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {barangays.map((b) => (
+                                    <SelectItem key={b.code} value={b.code}>
+                                      {b.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <div className="min-h-[1.25rem]"><FormMessage /></div>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {step === 3 && roleStep && (
+                    roleStep.type === "intern" ? (
+                      <InternDetailsStep
+                        form={form}
+                        terms={terms}
+                        institutes={institutes}
+                        programs={programs}
+                        loadingTerms={loadingTerms}
+                        loadingInstitutes={loadingInstitutes}
+                        loadingPrograms={loadingPrograms}
+                      />
+                    ) : roleStep.type === "hte" ? (
+                      <HteDetailsStep
+                        form={form}
+                        institutes={institutes}
+                        programs={programs}
+                        loadingInstitutes={loadingInstitutes}
+                        loadingPrograms={loadingPrograms}
+                        existingMoaUrl={existingMoaUrl}
+                      />
+                    ) : (
+                      <CoordinatorDetailsStep
+                        role={role}
+                        form={form}
+                        institutes={institutes}
+                        programs={programs}
+                        loadingInstitutes={loadingInstitutes}
+                        loadingPrograms={loadingPrograms}
+                      />
+                    )
+                  )}
+
+                  {step === lastStep && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <KeyRound size={14} className="text-green-600" />
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Credentials</p>
+                      </div>
+
+                      <div className="grid gap-4">
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-wider text-gray-700">
+                                Email *
+                              </FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                  <Input
+                                    type="email"
+                                    placeholder="name@tcgc.edu.ph"
+                                    className="h-11 rounded-xl pl-10"
+                                    {...field}
+                                  />
+                                </div>
+                              </FormControl>
+                              <div className="min-h-[1.25rem]"><FormMessage /></div>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-wider text-gray-700">
+                                {isEdit ? "New password" : "Password *"}
+                              </FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                                  <Input
+                                    type="password"
+                                    placeholder={isEdit ? "Leave blank to keep current" : "At least 8 characters"}
+                                    className="h-11 rounded-xl pl-10"
+                                    {...field}
+                                  />
+                                </div>
+                              </FormControl>
+                              {isEdit && (
+                                <FormDescription className="text-xs text-gray-400">
+                                  Leave blank to keep the current password.
+                                </FormDescription>
+                              )}
+                              <div className="min-h-[1.25rem]"><FormMessage /></div>
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="password_confirmation"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs font-bold uppercase tracking-wider text-gray-700">
+                                {isEdit ? "Confirm new password" : "Confirm password *"}
+                              </FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="Repeat password" className="h-11 rounded-xl" {...field} />
+                              </FormControl>
+                              <div className="min-h-[1.25rem]"><FormMessage /></div>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+
+                <div className="flex flex-col-reverse gap-2 border-t border-gray-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 rounded-xl"
+                    onClick={() => navigate("/admin/users")}
+                  >
+                    Cancel
+                  </Button>
+                  <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
+                    {step > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-11 rounded-xl"
+                        onClick={() => setStep((s) => s - 1)}
+                      >
+                        <ChevronLeft size={16} /> Back
+                      </Button>
+                    )}
+                    {step < lastStep ? (
+                      <Button
+                        type="button"
+                        onClick={handleNext}
+                        className="h-11 rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700"
+                      >
+                        Next <ChevronRight size={16} />
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        onClick={handleSave}
+                        disabled={submitting}
+                        className="h-11 rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700"
+                      >
+                        {submitting ? (
+                          <>
+                            <Loader2 size={16} className="animate-spin" /> Saving…
+                          </>
+                        ) : (
+                          <>
+                            <Save size={16} /> {isEdit ? "Update user" : "Create user"}
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </form>
+            </Form>
+          </Card>
+        )}
+      </div>
+    </AdminLayout>
+  );
+}
