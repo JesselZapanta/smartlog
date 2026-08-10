@@ -1,0 +1,104 @@
+<?php
+
+namespace App\Http\Controllers\Api\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreUserRequest;
+use App\Http\Requests\Admin\UpdateUserRequest;
+use App\Http\Resources\UserResource;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+
+class UserController extends Controller
+{
+    public function index(Request $request): JsonResponse
+    {
+        $query = User::query();
+
+        $search = $request->string('search')->trim()->toString();
+
+        if ($search !== '') {
+            $query->where(function (Builder $builder) use ($search): void {
+                $builder->where('firstname', 'like', "%{$search}%")
+                    ->orWhere('middlename', 'like', "%{$search}%")
+                    ->orWhere('lastname', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $role = $request->string('role')->trim()->toString();
+
+        if ($role !== '') {
+            $query->where('role', $role);
+        }
+
+        $perPage = min(max($request->integer('per_page', 10), 1), 100);
+
+        $users = $query->orderByDesc('created_at')->paginate($perPage)->withQueryString();
+
+        return response()->json([
+            'data' => UserResource::collection($users),
+            'meta' => [
+                'current_page' => $users->currentPage(),
+                'last_page' => $users->lastPage(),
+                'per_page' => $users->perPage(),
+                'total' => $users->total(),
+                'from' => $users->firstItem(),
+                'to' => $users->lastItem(),
+            ],
+        ]);
+    }
+
+    public function store(StoreUserRequest $request): JsonResponse
+    {
+        $user = User::create([
+            ...$request->validated(),
+            'uuid' => (string) Str::uuid(),
+            'email_verified_at' => now(),
+        ]);
+
+        return response()->json([
+            'data' => new UserResource($user),
+        ], 201);
+    }
+
+    public function show(User $user): JsonResponse
+    {
+        return response()->json([
+            'data' => new UserResource($user),
+        ]);
+    }
+
+    public function update(UpdateUserRequest $request, User $user): JsonResponse
+    {
+        $data = $request->validated();
+
+        if (blank($data['password'] ?? null)) {
+            unset($data['password']);
+        }
+
+        $user->update($data);
+
+        return response()->json([
+            'data' => new UserResource($user),
+        ]);
+    }
+
+    public function destroy(Request $request, User $user): JsonResponse
+    {
+        if ($user->is($request->user())) {
+            return response()->json([
+                'message' => 'You cannot delete your own account.',
+            ], 403);
+        }
+
+        $user->delete();
+
+        return response()->json([
+            'data' => ['message' => 'User deleted successfully.'],
+        ]);
+    }
+}

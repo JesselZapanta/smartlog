@@ -5,10 +5,12 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 
-class User extends Authenticatable
+class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -19,8 +21,16 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'uuid',
+        'firstname',
+        'middlename',
+        'lastname',
+        'extension',
+        'contact_number',
+        'profile_picture',
+        'role',
         'email',
+        'email_verified_at',
         'password',
     ];
 
@@ -44,6 +54,42 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+        ];
+    }
+
+    public function getJWTIdentifier(): mixed
+    {
+        return $this->getKey();
+    }
+
+    public function location(): HasOne
+    {
+        return $this->hasOne(Location::class);
+    }
+
+    public function intern(): HasOne
+    {
+        return $this->hasOne(Intern::class);
+    }
+
+    public function hte(): HasOne
+    {
+        return $this->hasOne(Hte::class);
+    }
+
+    public function coordinator(): HasOne
+    {
+        return $this->hasOne(Coordinator::class);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getJWTCustomClaims(): array
+    {
+        return [
+            'uuid' => $this->uuid,
+            'role' => $this->role,
         ];
     }
 }
