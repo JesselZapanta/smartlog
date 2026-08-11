@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\EmailVerificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,6 +16,8 @@ use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
+    public function __construct(private readonly EmailVerificationService $verification) {}
+
     public function index(Request $request): JsonResponse
     {
         $query = User::query();
@@ -75,8 +78,10 @@ class UserController extends Controller
         $user = User::create([
             ...$data,
             'uuid' => (string) Str::uuid(),
-            'email_verified_at' => now(),
+            'email_verified_at' => null,
         ]);
+
+        $this->verification->sendOtp($user);
 
         return response()->json([
             'data' => new UserResource($user),
@@ -107,7 +112,14 @@ class UserController extends Controller
             unset($data['password']);
         }
 
+        $emailChanged = isset($data['email']) && $data['email'] !== $user->email;
+
         $user->update($data);
+
+        if ($emailChanged) {
+            $user->forceFill(['email_verified_at' => null])->save();
+            $this->verification->sendOtp($user->refresh());
+        }
 
         return response()->json([
             'data' => new UserResource($user),

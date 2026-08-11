@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/form";
 import { useAuth } from "@/contexts/AuthContext";
 import { LogoMark } from "@/components/Logo.jsx";
+import { homeByRole } from "@/components/ProtectedRoute.jsx";
 
 const loginSchema = z.object({
   email: z.string().min(1, "Email is required").email("Enter a valid email address"),
@@ -46,14 +47,6 @@ const demoAccounts = [
   { role: "Intern", icon: GraduationCap, email: "intern@smartlog.test" },
   { role: "HTE", icon: Building2, email: "hte@smartlog.test" },
 ];
-
-const homeByRole = {
-  admin: "/admin",
-  intern: "/admin",
-  ojt_instructor: "/admin",
-  ojt_coordinator: "/admin",
-  hte: "/admin",
-};
 
 const featureChips = [
   { icon: Camera, text: "Photo-captured time-in" },
@@ -85,6 +78,13 @@ export default function Login() {
       toast.success("Login successful", { description: `Welcome back, ${user.full_name}` });
       navigate(homeByRole[user.role] || "/admin");
     } catch (err) {
+      if (err.response?.status === 403) {
+        toast.error("Email not verified", {
+          description: "Enter the one-time code sent to your email to activate your account.",
+        });
+        navigate(`/verify-email?email=${encodeURIComponent(values.email)}`);
+        return;
+      }
       const message =
         err.response?.data?.errors?.email?.[0] ||
         err.response?.data?.message ||

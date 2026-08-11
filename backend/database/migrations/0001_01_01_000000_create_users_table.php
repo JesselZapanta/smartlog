@@ -23,6 +23,8 @@ return new class extends Migration
             $table->enum('role', ['admin', 'intern', 'ojt_instructor', 'ojt_coordinator', 'hte'])->default('intern')->index();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable()->index();
+            $table->string('email_otp')->nullable();
+            $table->timestamp('email_otp_expires_at')->nullable();
             $table->string('password');
             $table->rememberToken();
             $table->timestamps();

@@ -27,6 +27,11 @@ return new class extends Migration
             $table->string('mothers_contact')->nullable();
             $table->string('parents_guardian_address')->nullable();
             $table->string('practicum_instructor')->nullable();
+            $table->string('cor_path')->nullable();
+            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending')->index();
+            $table->text('rejection_reason')->nullable();
+            $table->foreignId('reviewed_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamp('reviewed_at')->nullable();
             $table->timestamps();
         });
     }
