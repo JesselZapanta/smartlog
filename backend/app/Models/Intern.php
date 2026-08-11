@@ -22,11 +22,24 @@ class Intern extends Model
         'mothers_contact',
         'parents_guardian_address',
         'practicum_instructor',
+        'cor_path',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'reviewed_at' => 'datetime',
+        ];
+    }
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
     }
 
     public function academicYear(): BelongsTo

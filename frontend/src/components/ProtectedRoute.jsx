@@ -2,7 +2,15 @@ import { Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
-export default function ProtectedRoute({ children }) {
+export const homeByRole = {
+  admin: "/admin",
+  intern: "/intern",
+  ojt_instructor: "/instructor",
+  ojt_coordinator: "/coordinator",
+  hte: "/hte",
+};
+
+export default function ProtectedRoute({ children, roles }) {
   const { user, loading } = useAuth();
   const location = useLocation();
 
@@ -19,6 +27,10 @@ export default function ProtectedRoute({ children }) {
 
   if (!user) {
     return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (roles && !roles.includes(user.role)) {
+    return <Navigate to={homeByRole[user.role] || "/"} replace />;
   }
 
   return children;

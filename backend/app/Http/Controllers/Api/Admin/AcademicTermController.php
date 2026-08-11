@@ -17,7 +17,7 @@ class AcademicTermController extends Controller
     {
         return response()->json([
             'data' => AcademicTerm::orderByDesc('start_at')
-                ->get(['id', 'code', 'description']),
+                ->get(['id', 'code', 'description', 'status']),
         ]);
     }
 

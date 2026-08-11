@@ -39,6 +39,7 @@ class RegisterRequest extends FormRequest
             'mothers_contact' => ['required', 'string', 'max:255'],
             'parents_guardian_address' => ['required', 'string', 'max:255'],
             'practicum_instructor' => ['required', 'string', 'max:255'],
+            'cor' => ['required', 'file', 'mimes:pdf', 'max:10240'],
             'region' => ['required', 'string', 'max:255'],
             'province' => ['required', 'string', 'max:255'],
             'city_municipality' => ['required', 'string', 'max:255'],

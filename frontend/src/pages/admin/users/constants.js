@@ -37,6 +37,7 @@ export const roleStepConfig = {
       "mothers_contact",
       "parents_guardian_address",
       "practicum_instructor",
+      "cor",
     ],
   },
   ojt_coordinator: {

@@ -22,6 +22,8 @@ import {
   ChevronRight,
   ImagePlus,
   X,
+  FileText,
+  Upload,
 } from "lucide-react";
 import AdminLayout from "@/layouts/AdminLayout.jsx";
 import api from "@/lib/api";
@@ -103,6 +105,7 @@ const roleFields = {
   practicum_instructor: z.string(),
   name: z.string(),
   moa: z.union([z.string(), z.instanceof(File)]).optional(),
+  cor: z.union([z.string(), z.instanceof(File)]).optional(),
   start_at: z.string(),
   end_at: z.string(),
 };
@@ -150,6 +153,13 @@ const roleFieldMessages = {
 };
 
 const MAX_AVATAR_SIZE = 2 * 1024 * 1024;
+
+const MAX_COR_SIZE = 10 * 1024 * 1024;
+
+function formatFileSize(bytes) {
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 const avatarMimeTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
@@ -244,6 +254,7 @@ function buildRolePayload(type, values) {
       mothers_contact: values.mothers_contact || null,
       parents_guardian_address: values.parents_guardian_address || null,
       practicum_instructor: values.practicum_instructor || null,
+      cor: values.cor instanceof File ? values.cor : undefined,
     };
   }
   if (type === "hte") {
@@ -288,6 +299,7 @@ export default function UserFormPage() {
   const [loadingInstitutes, setLoadingInstitutes] = useState(true);
   const [loadingPrograms, setLoadingPrograms] = useState(true);
   const [existingMoaUrl, setExistingMoaUrl] = useState(null);
+  const [existingCorUrl, setExistingCorUrl] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [existingAvatarUrl, setExistingAvatarUrl] = useState(null);
 
@@ -320,6 +332,7 @@ export default function UserFormPage() {
       practicum_instructor: "",
       name: "",
       moa: "",
+      cor: "",
       start_at: "",
       end_at: "",
       email: "",
@@ -356,6 +369,7 @@ export default function UserFormPage() {
       if (step > 2) setStep(1);
       roleStepAllFields.forEach((field) => form.setValue(field, ""));
       setExistingMoaUrl(null);
+      setExistingCorUrl(null);
       loadedRoleValues.current = null;
       previousRole.current = role;
     }
@@ -492,6 +506,7 @@ export default function UserFormPage() {
       form.setValue("mothers_contact", record.mothers_contact || "");
       form.setValue("parents_guardian_address", record.parents_guardian_address || "");
       form.setValue("practicum_instructor", record.practicum_instructor || "");
+      setExistingCorUrl(record.cor || null);
     } else if (type === "hte") {
       form.setValue("name", record.name || "");
       form.setValue("institute_id", record.institute_id ? String(record.institute_id) : "");
@@ -687,6 +702,22 @@ export default function UserFormPage() {
     form.setValue("profile_picture", "");
   }
 
+  function handleCorChange(event, onChange) {
+    const file = event.target.files?.[0] || null;
+    event.target.value = "";
+    if (!file) return;
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      toast.error("Invalid file", { description: "Only PDF files are allowed." });
+      return;
+    }
+    if (file.size > MAX_COR_SIZE) {
+      toast.error("File too large", { description: "COR file must be 10 MB or smaller." });
+      return;
+    }
+    setExistingCorUrl(null);
+    onChange(file);
+  }
+
   async function handleSave() {
     const valid = await form.trigger(stepFields[lastStep]);
     if (!valid) return;
@@ -723,13 +754,16 @@ export default function UserFormPage() {
 
       const buildRoleSave = (targetId) => {
         const rolePayload = buildRolePayload(nextType, values);
-        if (nextType === "hte" && rolePayload.moa instanceof File) {
+        const hasFile =
+          (nextType === "hte" && rolePayload.moa instanceof File) ||
+          (nextType === "intern" && rolePayload.cor instanceof File);
+        if (hasFile) {
           const formData = new FormData();
           Object.entries(rolePayload).forEach(([key, value]) => {
             if (value !== undefined && value !== null) formData.append(key, value);
           });
           formData.append("_method", "PUT");
-          return api.post(`/users/${targetId}/hte`, formData);
+          return api.post(`/users/${targetId}/${nextType}`, formData);
         }
         return api.put(`/users/${targetId}/${nextType}`, rolePayload);
       };
@@ -1211,15 +1245,87 @@ export default function UserFormPage() {
 
                   {step === 3 && roleStep && (
                     roleStep.type === "intern" ? (
-                      <InternDetailsStep
-                        form={form}
-                        terms={terms}
-                        institutes={institutes}
-                        programs={programs}
-                        loadingTerms={loadingTerms}
-                        loadingInstitutes={loadingInstitutes}
-                        loadingPrograms={loadingPrograms}
-                      />
+                      <Fragment>
+                        <InternDetailsStep
+                          form={form}
+                          terms={terms}
+                          institutes={institutes}
+                          programs={programs}
+                          loadingTerms={loadingTerms}
+                          loadingInstitutes={loadingInstitutes}
+                          loadingPrograms={loadingPrograms}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="cor"
+                          render={({ field }) => {
+                            const selectedFile = field.value instanceof File ? field.value : null;
+                            const hasExisting = !selectedFile && typeof field.value === "string" && Boolean(field.value);
+                            return (
+                              <FormItem>
+                                <FormLabel className="text-xs font-bold uppercase tracking-wider text-gray-700">
+                                  Certificate of Registration (COR)
+                                </FormLabel>
+                                <FormControl>
+                                  <div className="space-y-2">
+                                    {hasExisting && existingCorUrl && (
+                                      <div className="flex min-h-11 items-center justify-between gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
+                                        <a
+                                          href={existingCorUrl}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="flex min-w-0 items-center gap-2 text-sm font-medium text-green-700 hover:underline"
+                                        >
+                                          <FileText size={16} className="shrink-0" />
+                                          <span className="truncate">Current COR file</span>
+                                        </a>
+                                        <span className="shrink-0 text-xs text-gray-400">opens in new tab</span>
+                                      </div>
+                                    )}
+                                    {selectedFile && (
+                                      <div className="flex min-h-11 items-center justify-between gap-2 rounded-xl border border-green-200 bg-green-50 px-3 py-2">
+                                        <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-green-800">
+                                          <FileText size={16} className="shrink-0" />
+                                          <span className="truncate">{selectedFile.name}</span>
+                                          <span className="shrink-0 text-xs text-gray-500">{formatFileSize(selectedFile.size)}</span>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => field.onChange("")}
+                                          className="-my-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-green-100 hover:text-red-600"
+                                          aria-label="Remove selected COR file"
+                                        >
+                                          <X size={16} />
+                                        </button>
+                                      </div>
+                                    )}
+                                    <label
+                                      htmlFor="cor-file-input"
+                                      className="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-600 transition-colors hover:border-green-500 hover:bg-green-50 hover:text-green-700"
+                                    >
+                                      <Upload size={16} />
+                                      {selectedFile || hasExisting ? "Choose a new PDF" : "Choose PDF file"}
+                                    </label>
+                                    <input
+                                      id="cor-file-input"
+                                      type="file"
+                                      accept="application/pdf,.pdf"
+                                      className="hidden"
+                                      name={field.name}
+                                      onChange={(event) => handleCorChange(event, field.onChange)}
+                                    />
+                                  </div>
+                                </FormControl>
+                                <FormDescription className="text-xs text-gray-400">
+                                  PDF only, max 10 MB. {hasExisting ? "Uploading a new file replaces the current one." : "Optional."}
+                                </FormDescription>
+                                <div className="min-h-[1.25rem]"><FormMessage /></div>
+                              </FormItem>
+                            );
+                          }}
+                        />
+                      </Fragment>
                     ) : roleStep.type === "hte" ? (
                       <HteDetailsStep
                         form={form}

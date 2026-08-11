@@ -2,7 +2,16 @@ import { Route, Routes } from "react-router-dom";
 import Landing from "@/pages/Landing.jsx";
 import Login from "@/pages/Login.jsx";
 import RegisterPage from "@/pages/RegisterPage.jsx";
+import VerifyEmailPage from "@/pages/VerifyEmailPage.jsx";
 import AdminDashboard from "@/pages/admin/AdminDashboard.jsx";
+import InternDashboard from "@/pages/intern/InternDashboard.jsx";
+import ResubmitRegistrationPage from "@/pages/intern/ResubmitRegistrationPage.jsx";
+import CoordinatorDashboard from "@/pages/ojt_coordinator/CoordinatorDashboard.jsx";
+import RegistrationApprovalsListPage from "@/pages/ojt_coordinator/registrations/RegistrationApprovalsListPage.jsx";
+import RegistrationApprovalDetailPage from "@/pages/ojt_coordinator/registrations/RegistrationApprovalDetailPage.jsx";
+import InstructorDashboard from "@/pages/ojt_instructor/InstructorDashboard.jsx";
+import HteDashboard from "@/pages/hte/HteDashboard.jsx";
+import ProfilePage from "@/pages/profile/ProfilePage.jsx";
 import UserListPage from "@/pages/admin/users/UserListPage.jsx";
 import UserFormPage from "@/pages/admin/users/UserFormPage.jsx";
 import AcademicTermListPage from "@/pages/admin/academic-terms/AcademicTermListPage.jsx";
@@ -16,18 +25,75 @@ function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route
         path="/admin"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={["admin"]}>
             <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/intern"
+        element={
+          <ProtectedRoute roles={["intern"]}>
+            <InternDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/intern/resubmit"
+        element={
+          <ProtectedRoute roles={["intern"]}>
+            <ResubmitRegistrationPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coordinator"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <CoordinatorDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coordinator/registrations"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <RegistrationApprovalsListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coordinator/registrations/:uuid"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <RegistrationApprovalDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor"
+        element={
+          <ProtectedRoute roles={["ojt_instructor"]}>
+            <InstructorDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/hte"
+        element={
+          <ProtectedRoute roles={["hte"]}>
+            <HteDashboard />
           </ProtectedRoute>
         }
       />
       <Route
         path="/admin/users"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={["admin"]}>
             <UserListPage />
           </ProtectedRoute>
         }
@@ -35,7 +101,7 @@ function App() {
       <Route
         path="/admin/users/new"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={["admin"]}>
             <UserFormPage />
           </ProtectedRoute>
         }
@@ -43,7 +109,7 @@ function App() {
       <Route
         path="/admin/users/:id/edit"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={["admin"]}>
             <UserFormPage />
           </ProtectedRoute>
         }
@@ -51,7 +117,7 @@ function App() {
       <Route
         path="/admin/academic-years"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={["admin"]}>
             <AcademicTermListPage />
           </ProtectedRoute>
         }
@@ -59,7 +125,7 @@ function App() {
       <Route
         path="/admin/institutes"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={["admin"]}>
             <InstituteListPage />
           </ProtectedRoute>
         }
@@ -67,8 +133,16 @@ function App() {
       <Route
         path="/admin/programs"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={["admin"]}>
             <ProgramListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute roles={["admin", "intern", "ojt_coordinator", "ojt_instructor", "hte"]}>
+            <ProfilePage />
           </ProtectedRoute>
         }
       />

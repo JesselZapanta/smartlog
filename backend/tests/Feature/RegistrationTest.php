@@ -50,11 +50,12 @@ function registrationPayload(bool $withActiveTerm = true): array
         'province' => 'Misamis Occidental',
         'city_municipality' => 'Tangub City',
         'barangay' => 'Mantic',
+        'cor' => UploadedFile::fake()->create('cor.pdf', 1024, 'application/pdf'),
     ];
 }
 
 test('an intern can register with account, intern and location details', function () {
-    $response = $this->postJson('/api/register', registrationPayload());
+    $response = $this->post('/api/register', registrationPayload(), ['Accept' => 'application/json']);
 
     $response->assertStatus(201);
 
@@ -64,11 +65,13 @@ test('an intern can register with account, intern and location details', functio
 
     expect($user)->not->toBeNull();
     expect($user->role)->toBe('intern');
+    expect($user->email_verified_at)->toBeNull();
     expect($user->intern)->not->toBeNull();
     expect($user->intern->academic_year_id)->toBe($activeTerm->id);
+    expect($user->intern->cor_path)->not->toBeNull();
     expect($user->location)->not->toBeNull();
     expect($user->location->barangay)->toBe('Mantic');
-    expect($response->json('data.access_token'))->not->toBeNull();
+    expect($response->json('data.access_token'))->toBeNull();
     $response->assertJsonPath('data.user.email', 'juan@smartlog.test');
 });
 
@@ -88,7 +91,7 @@ test('registration assigns the active academic year when multiple exist', functi
         'end_at' => '2028-07-31 00:00:00',
     ]);
 
-    $this->postJson('/api/register', registrationPayload(false))->assertStatus(201);
+    $this->post('/api/register', registrationPayload(false), ['Accept' => 'application/json'])->assertStatus(201);
 
     $user = User::where('email', 'juan@smartlog.test')->first();
 
@@ -111,7 +114,7 @@ test('registration falls back to the most recent academic year when none is acti
         'end_at' => '2026-07-31 00:00:00',
     ]);
 
-    $this->postJson('/api/register', registrationPayload(false))->assertStatus(201);
+    $this->post('/api/register', registrationPayload(false), ['Accept' => 'application/json'])->assertStatus(201);
 
     $user = User::where('email', 'juan@smartlog.test')->first();
 
@@ -122,7 +125,7 @@ test('registration fails when no academic year exists', function () {
     $payload = registrationPayload(false);
     $payload['email'] = 'other@smartlog.test';
 
-    $this->postJson('/api/register', $payload)
+    $this->post('/api/register', $payload, ['Accept' => 'application/json'])
         ->assertStatus(422)
         ->assertJsonValidationErrors('academic_year_id');
 
@@ -163,7 +166,7 @@ test('registration with a profile picture stores the avatar', function () {
     $response = $this->post('/api/register', [
         ...registrationPayload(),
         'profile_picture' => UploadedFile::fake()->image('avatar.jpg'),
-    ]);
+    ], ['Accept' => 'application/json']);
 
     $response->assertStatus(201);
 
@@ -176,7 +179,7 @@ test('registration with a profile picture stores the avatar', function () {
 test('registration rejects a duplicate email', function () {
     User::factory()->create(['email' => 'juan@smartlog.test']);
 
-    $this->postJson('/api/register', registrationPayload())
+    $this->post('/api/register', registrationPayload(), ['Accept' => 'application/json'])
         ->assertStatus(422)
         ->assertJsonValidationErrors('email');
 
@@ -187,7 +190,7 @@ test('registration requires intern and location fields', function () {
     $payload = registrationPayload();
     unset($payload['date_of_birth'], $payload['place_of_birth'], $payload['region']);
 
-    $this->postJson('/api/register', $payload)
+    $this->post('/api/register', $payload, ['Accept' => 'application/json'])
         ->assertStatus(422)
         ->assertJsonValidationErrors(['date_of_birth', 'place_of_birth', 'region']);
 
@@ -198,9 +201,31 @@ test('registration requires matching passwords', function () {
     $payload = registrationPayload();
     $payload['password_confirmation'] = 'different';
 
-    $this->postJson('/api/register', $payload)
+    $this->post('/api/register', $payload, ['Accept' => 'application/json'])
         ->assertStatus(422)
         ->assertJsonValidationErrors('password');
 
     expect(User::where('email', 'juan@smartlog.test')->exists())->toBeFalse();
+});
+
+test('registration requires a certificate of registration (COR)', function () {
+    $payload = registrationPayload();
+    unset($payload['cor']);
+
+    $this->post('/api/register', $payload, ['Accept' => 'application/json'])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('cor');
+
+    expect(User::where('email', 'juan@smartlog.test')->exists())->toBeFalse();
+});
+
+test('registration stores the COR pdf on the public disk', function () {
+    Storage::fake('public');
+
+    $this->post('/api/register', registrationPayload(), ['Accept' => 'application/json'])->assertStatus(201);
+
+    $user = User::where('email', 'juan@smartlog.test')->first();
+
+    expect($user->intern->cor_path)->not->toBeNull();
+    Storage::disk('public')->assertExists($user->intern->cor_path);
 });

@@ -9,6 +9,7 @@ use App\Models\AcademicTerm;
 use App\Models\Institute;
 use App\Models\Program;
 use App\Models\User;
+use App\Services\EmailVerificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +18,8 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    public function __construct(private readonly EmailVerificationService $verification) {}
+
     public function referenceData(): JsonResponse
     {
         return response()->json([
@@ -51,6 +54,10 @@ class AuthController extends Controller
             $data['profile_picture'] = $request->file('profile_picture')->store('avatars', 'public');
         }
 
+        if ($request->hasFile('cor')) {
+            $data['cor_path'] = $request->file('cor')->store('cor', 'public');
+        }
+
         $user = User::create([
             'uuid' => (string) Str::uuid(),
             'firstname' => $data['firstname'],
@@ -62,7 +69,7 @@ class AuthController extends Controller
             'role' => 'intern',
             'email' => $data['email'],
             'password' => $data['password'],
-            'email_verified_at' => now(),
+            'email_verified_at' => null,
         ]);
 
         $user->intern()->create([
@@ -79,6 +86,7 @@ class AuthController extends Controller
             'mothers_contact' => $data['mothers_contact'],
             'parents_guardian_address' => $data['parents_guardian_address'],
             'practicum_instructor' => $data['practicum_instructor'],
+            'cor_path' => $data['cor_path'] ?? null,
         ]);
 
         $user->location()->create([
@@ -89,6 +97,31 @@ class AuthController extends Controller
             'status' => 'active',
         ]);
 
+        $this->verification->sendOtp($user);
+
+        return response()->json([
+            'data' => [
+                'message' => 'Registration successful. Enter the verification code sent to your email.',
+                'user' => new UserResource($user),
+            ],
+        ], 201);
+    }
+
+    public function verifyEmail(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email', 'exists:users,email'],
+            'code' => ['required', 'string', 'size:6'],
+        ]);
+
+        $user = User::where('email', $data['email'])->firstOrFail();
+
+        if (! $user->email_verified_at && ! $this->verification->verify($user, $data['code'])) {
+            throw ValidationException::withMessages([
+                'code' => ['The verification code is invalid or has expired.'],
+            ]);
+        }
+
         $token = Auth::guard('api')->login($user);
 
         return response()->json([
@@ -98,7 +131,28 @@ class AuthController extends Controller
                 'expires_in' => Auth::guard('api')->factory()->getTTL() * 60,
                 'user' => new UserResource($user),
             ],
-        ], 201);
+        ]);
+    }
+
+    public function resendVerification(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email', 'exists:users,email'],
+        ]);
+
+        $user = User::where('email', $data['email'])->firstOrFail();
+
+        if ($user->email_verified_at) {
+            return response()->json([
+                'data' => ['message' => 'Your email is already verified. You can sign in.'],
+            ]);
+        }
+
+        $this->verification->sendOtp($user);
+
+        return response()->json([
+            'data' => ['message' => 'A new verification code has been sent to your email.'],
+        ]);
     }
 
     public function login(Request $request): JsonResponse
@@ -116,6 +170,14 @@ class AuthController extends Controller
 
         /** @var User $user */
         $user = Auth::guard('api')->user();
+
+        if (! $user->email_verified_at) {
+            Auth::guard('api')->logout();
+
+            throw ValidationException::withMessages([
+                'email' => ['Please verify your email address first. Check your inbox for the one-time code.'],
+            ])->status(403);
+        }
 
         return response()->json([
             'data' => [

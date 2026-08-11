@@ -8,6 +8,7 @@ use App\Http\Resources\InternResource;
 use App\Models\Intern;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Storage;
 
 class InternController extends Controller
 {
@@ -21,7 +22,19 @@ class InternController extends Controller
     public function update(UpdateInternRequest $request, User $user): JsonResponse
     {
         $intern = Intern::firstOrNew(['user_id' => $user->id]);
-        $intern->fill($request->validated());
+
+        if ($request->hasFile('cor')) {
+            $oldPath = $intern->cor_path;
+            $newPath = $request->file('cor')->store('cor', 'public');
+
+            if ($oldPath && $oldPath !== $newPath) {
+                Storage::disk('public')->delete($oldPath);
+            }
+
+            $intern->cor_path = $newPath;
+        }
+
+        $intern->fill($request->safe()->except(['cor']));
         $intern->save();
 
         return response()->json([

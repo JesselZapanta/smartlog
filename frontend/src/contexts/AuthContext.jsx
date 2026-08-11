@@ -44,6 +44,11 @@ export function AuthProvider({ children }) {
 
   const register = useCallback(async (payload) => {
     const res = await api.post("/register", payload);
+    return res.data.data.user;
+  }, []);
+
+  const verifyEmail = useCallback(async (email, code) => {
+    const res = await api.post("/verify-email", { email, code });
     const { access_token: token, user: authedUser } = res.data.data;
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(USER_KEY, JSON.stringify(authedUser));
@@ -62,7 +67,18 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
-  return <AuthContext.Provider value={{ user, loading, login, register, logout }}>{children}</AuthContext.Provider>;
+  const refreshUser = useCallback(async () => {
+    const res = await api.get("/me");
+    localStorage.setItem(USER_KEY, JSON.stringify(res.data.data));
+    setUser(res.data.data);
+    return res.data.data;
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{ user, loading, login, register, verifyEmail, logout, refreshUser }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

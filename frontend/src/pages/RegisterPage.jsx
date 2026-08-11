@@ -5,10 +5,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import {
+  AlertCircle,
   ArrowRight,
   ChevronLeft,
   ChevronRight,
   Check,
+  FileText,
   GraduationCap,
   ImagePlus,
   KeyRound,
@@ -85,6 +87,7 @@ const internFields = {
   mothers_contact: z.string(),
   parents_guardian_address: z.string(),
   practicum_instructor: z.string(),
+  cor: z.union([z.string(), z.instanceof(File)]),
 };
 
 const internRequiredFields = [
@@ -100,6 +103,7 @@ const internRequiredFields = [
   "mothers_contact",
   "parents_guardian_address",
   "practicum_instructor",
+  "cor",
 ];
 
 const internFieldMessages = {
@@ -115,9 +119,11 @@ const internFieldMessages = {
   mothers_contact: "Mother's contact is required",
   parents_guardian_address: "Parents / guardian address is required",
   practicum_instructor: "Practicum instructor is required",
+  cor: "Certificate of Registration (COR) is required",
 };
 
 const MAX_AVATAR_SIZE = 2 * 1024 * 1024;
+const MAX_COR_SIZE = 10 * 1024 * 1024;
 
 const avatarMimeTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
@@ -213,6 +219,7 @@ export default function RegisterPage() {
       extension: "",
       contact_number: "",
       profile_picture: "",
+      cor: "",
       region: "",
       province: "",
       city_municipality: "",
@@ -368,6 +375,21 @@ export default function RegisterPage() {
     form.setValue("profile_picture", "");
   }
 
+  function handleCorChange(event) {
+    const file = event.target.files?.[0] || null;
+    event.target.value = "";
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      toast.error("Invalid file", { description: "Only PDF files are allowed." });
+      return;
+    }
+    if (file.size > MAX_COR_SIZE) {
+      toast.error("File too large", { description: "COR must be 10 MB or smaller." });
+      return;
+    }
+    form.setValue("cor", file);
+  }
+
   async function handleSubmit() {
     const valid = await form.trigger(credentialsStepFields);
     if (!valid) return;
@@ -404,20 +426,22 @@ export default function RegisterPage() {
       };
 
       const avatarIsFile = values.profile_picture instanceof File;
+      const corIsFile = values.cor instanceof File;
       let body = payload;
-      if (avatarIsFile) {
+      if (avatarIsFile || corIsFile) {
         body = new FormData();
         Object.entries(payload).forEach(([key, value]) => {
           if (value !== undefined && value !== null) body.append(key, value);
         });
-        body.append("profile_picture", values.profile_picture);
+        if (avatarIsFile) body.append("profile_picture", values.profile_picture);
+        if (corIsFile) body.append("cor", values.cor);
       }
 
-      const user = await register(body);
+      await register(body);
       toast.success("Registration successful", {
-        description: `Welcome to SMARTLOG, ${user.full_name}.`,
+        description: "Check your email for the 6-digit verification code.",
       });
-      navigate("/admin");
+      navigate(`/verify-email?email=${encodeURIComponent(values.email)}`);
     } catch (err) {
       toast.error("Registration failed", { description: firstErrorMessage(err) });
       const errors = err.response?.data?.errors;
@@ -837,16 +861,40 @@ export default function RegisterPage() {
                       </div>
                     )}
 
-                    {step === 3 && (
-                      <InternDetailsStep
-                        form={form}
-                        institutes={institutes}
-                        programs={programs}
-                        loadingInstitutes={loadingInstitutes}
-                        loadingPrograms={loadingPrograms}
-                        hideAcademicYear
-                      />
-                    )}
+{step === 3 && (
+  <div className="space-y-4">
+    <InternDetailsStep
+      form={form}
+      institutes={institutes}
+      programs={programs}
+      loadingInstitutes={loadingInstitutes}
+      loadingPrograms={loadingPrograms}
+      hideAcademicYear
+    />
+
+    <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-gray-200 bg-gray-50/60 p-4 ring-1 ring-gray-100 sm:flex-row sm:items-center sm:gap-4">
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-bold uppercase tracking-wider text-gray-700">
+          Certificate of Registration (COR) *
+        </p>
+        <p className="mt-0.5 text-xs text-gray-400">Upload your COR for this semester as a PDF. Max 10 MB.</p>
+      </div>
+      <label
+        htmlFor="register-cor-input"
+        className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-green-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-green-700"
+      >
+        <FileText size={16} />
+        {form.watch("cor") instanceof File ? form.watch("cor").name : "Upload COR"}
+      </label>
+      <input id="register-cor-input" type="file" accept="application/pdf" className="hidden" onChange={handleCorChange} />
+    </div>
+    {form.formState.errors.cor && (
+      <p className="flex items-center gap-1.5 text-xs font-medium text-red-600">
+        <AlertCircle size={13} /> {form.formState.errors.cor.message}
+      </p>
+    )}
+  </div>
+)}
 
                     {step === 4 && (
                       <div className="space-y-4">

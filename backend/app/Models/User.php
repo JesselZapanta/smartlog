@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -41,6 +42,7 @@ class User extends Authenticatable implements JWTSubject
      */
     protected $hidden = [
         'password',
+        'email_otp',
         'remember_token',
     ];
 
@@ -53,6 +55,7 @@ class User extends Authenticatable implements JWTSubject
     {
         return [
             'email_verified_at' => 'datetime',
+            'email_otp_expires_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
@@ -91,5 +94,17 @@ class User extends Authenticatable implements JWTSubject
             'uuid' => $this->uuid,
             'role' => $this->role,
         ];
+    }
+
+    protected function fullName(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => trim(implode(' ', array_filter([
+                $this->firstname,
+                $this->middlename,
+                $this->lastname,
+                $this->extension,
+            ]))),
+        );
     }
 }
