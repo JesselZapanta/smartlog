@@ -9,12 +9,16 @@ import ResubmitRegistrationPage from "@/pages/intern/ResubmitRegistrationPage.js
 import CoordinatorDashboard from "@/pages/ojt_coordinator/CoordinatorDashboard.jsx";
 import RegistrationApprovalsListPage from "@/pages/ojt_coordinator/registrations/RegistrationApprovalsListPage.jsx";
 import RegistrationApprovalDetailPage from "@/pages/ojt_coordinator/registrations/RegistrationApprovalDetailPage.jsx";
+import CoordinatorInternListPage from "@/pages/ojt_coordinator/interns/CoordinatorInternListPage.jsx";
+import CoordinatorInternDetailPage from "@/pages/ojt_coordinator/interns/CoordinatorInternDetailPage.jsx";
 import InstructorDashboard from "@/pages/ojt_instructor/InstructorDashboard.jsx";
 import HteDashboard from "@/pages/hte/HteDashboard.jsx";
 import ProfilePage from "@/pages/profile/ProfilePage.jsx";
 import NotificationsPage from "@/pages/notifications/NotificationsPage.jsx";
 import UserListPage from "@/pages/admin/users/UserListPage.jsx";
 import UserFormPage from "@/pages/admin/users/UserFormPage.jsx";
+import InternListPage from "@/pages/admin/interns/InternListPage.jsx";
+import InternDetailPage from "@/pages/admin/interns/InternDetailPage.jsx";
 import AcademicTermListPage from "@/pages/admin/academic-terms/AcademicTermListPage.jsx";
 import InstituteListPage from "@/pages/admin/institutes/InstituteListPage.jsx";
 import ProgramListPage from "@/pages/admin/programs/ProgramListPage.jsx";
@@ -76,6 +80,22 @@ function App() {
         }
       />
       <Route
+        path="/coordinator/interns"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <CoordinatorInternListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coordinator/interns/:uuid"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <CoordinatorInternDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/instructor"
         element={
           <ProtectedRoute roles={["ojt_instructor"]}>
@@ -112,6 +132,22 @@ function App() {
         element={
           <ProtectedRoute roles={["admin"]}>
             <UserFormPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/interns"
+        element={
+          <ProtectedRoute roles={["admin"]}>
+            <InternListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/interns/:uuid"
+        element={
+          <ProtectedRoute roles={["admin"]}>
+            <InternDetailPage />
           </ProtectedRoute>
         }
       />
