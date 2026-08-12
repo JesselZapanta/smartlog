@@ -155,6 +155,7 @@ class UserSeeder extends Seeder
         $family = self::FAMILY[($index - 1) % count(self::FAMILY)];
         $female = $index % 2 === 0;
         $firstNames = $female ? self::FIRST_NAMES_FEMALE : self::FIRST_NAMES_MALE;
+        $approved = $index === 1;
 
         $user = $this->createUser(
             email: $slug === 'ite' && $index === 1
@@ -171,6 +172,10 @@ class UserSeeder extends Seeder
         $academicYearId = AcademicTerm::where('status', 'active')->latest('start_at')->value('id')
             ?? AcademicTerm::latest('start_at')->value('id');
 
+        $reviewerId = Coordinator::where('institute_id', $institute->id)
+            ->whereHas('user', fn ($query) => $query->where('role', 'ojt_coordinator'))
+            ->value('user_id');
+
         Intern::updateOrCreate(
             ['user_id' => $user->id],
             [
@@ -185,10 +190,10 @@ class UserSeeder extends Seeder
                 'parents_guardian_address' => 'Brgy. '.self::BARANGAYS[($index - 1) % count(self::BARANGAYS)].', Tangub City',
                 'practicum_instructor' => 'Prof. '.self::LAST_NAMES[$index % count(self::LAST_NAMES)],
                 'cor_path' => null,
-                'status' => 'pending',
+                'status' => $approved ? 'approved' : 'pending',
                 'rejection_reason' => null,
-                'reviewed_by' => null,
-                'reviewed_at' => null,
+                'reviewed_by' => $approved ? $reviewerId : null,
+                'reviewed_at' => $approved ? now() : null,
             ]
         );
     }
