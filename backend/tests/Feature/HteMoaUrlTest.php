@@ -3,6 +3,7 @@
 use App\Models\Institute;
 use App\Models\Program;
 use App\Models\User;
+use App\Support\StorageUrl;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -38,5 +39,5 @@ test('hte moa_url only points to files that exist on disk', function () {
 
     $this->withToken($token)->getJson("/api/users/{$existing->uuid}/hte")
         ->assertOk()
-        ->assertJsonPath('data.moa_url', Storage::disk('public')->url($path));
+        ->assertJsonPath('data.moa_url', StorageUrl::url($path));
 });

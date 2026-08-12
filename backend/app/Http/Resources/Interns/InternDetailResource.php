@@ -3,9 +3,9 @@
 namespace App\Http\Resources\Interns;
 
 use App\Http\Resources\LocationResource;
+use App\Support\StorageUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
 
 class InternDetailResource extends JsonResource
 {
@@ -27,7 +27,7 @@ class InternDetailResource extends JsonResource
             'program' => $this->program?->name,
             'academic_year' => $this->academicYear?->description,
             'practicum_instructor' => $this->practicum_instructor,
-            'cor' => $this->cor_path ? Storage::disk('public')->url($this->cor_path) : null,
+            'cor' => StorageUrl::url($this->cor_path),
             'date_of_birth' => $this->date_of_birth,
             'place_of_birth' => $this->place_of_birth,
             'fathers_name' => $this->fathers_name,
