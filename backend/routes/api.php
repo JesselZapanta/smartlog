@@ -11,8 +11,12 @@ use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Coordinator\RegistrationApprovalController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ProfileController;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
+
+Broadcast::routes(['middleware' => ['auth:api']]);
 
 Route::get('/register/reference-data', [AuthController::class, 'referenceData'])->name('api.register.reference-data');
 Route::post('/register', [AuthController::class, 'register'])->name('api.register');
@@ -29,6 +33,10 @@ Route::middleware('auth:api')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout'])->name('api.logout');
 
     Route::get('/dashboard', [DashboardController::class, 'show'])->name('api.dashboard');
+
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('api.notifications');
+    Route::put('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('api.notifications.read');
+    Route::put('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('api.notifications.read-all');
 
     Route::get('academic-terms/options', [AcademicTermController::class, 'options'])->name('api.academic-terms.options');
 

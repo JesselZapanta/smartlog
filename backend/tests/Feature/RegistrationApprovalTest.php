@@ -138,7 +138,7 @@ test('approving a registration sets approved and notifies the intern', function 
     expect($intern->intern->reviewed_by)->not->toBeNull();
     expect($intern->intern->reviewed_at)->not->toBeNull();
 
-    Mail::assertSent(RegistrationApprovalNotification::class, function (RegistrationApprovalNotification $mail) use ($intern) {
+    Mail::assertQueued(RegistrationApprovalNotification::class, function (RegistrationApprovalNotification $mail) use ($intern) {
         return $mail->hasTo($intern->email) && $mail->approved === true;
     });
 });
@@ -166,7 +166,7 @@ test('rejecting a registration requires a reason and notifies the intern', funct
     expect($intern->intern->status)->toBe('rejected');
     expect($intern->intern->rejection_reason)->toBe('Incomplete guardianship details');
 
-    Mail::assertSent(RegistrationApprovalNotification::class, function (RegistrationApprovalNotification $mail) use ($intern) {
+    Mail::assertQueued(RegistrationApprovalNotification::class, function (RegistrationApprovalNotification $mail) use ($intern) {
         return $mail->hasTo($intern->email) && $mail->approved === false && $mail->reason === 'Incomplete guardianship details';
     });
 });
