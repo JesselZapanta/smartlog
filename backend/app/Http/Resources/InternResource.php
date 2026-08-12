@@ -2,9 +2,9 @@
 
 namespace App\Http\Resources;
 
+use App\Support\StorageUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
 
 class InternResource extends JsonResource
 {
@@ -31,7 +31,7 @@ class InternResource extends JsonResource
             'mothers_contact' => $this->mothers_contact,
             'parents_guardian_address' => $this->parents_guardian_address,
             'practicum_instructor' => $this->practicum_instructor,
-            'cor' => $this->cor_path ? Storage::disk('public')->url($this->cor_path) : null,
+            'cor' => StorageUrl::url($this->cor_path),
             'status' => $this->status,
             'rejection_reason' => $this->rejection_reason,
             'reviewed_by' => $this->reviewed_by,

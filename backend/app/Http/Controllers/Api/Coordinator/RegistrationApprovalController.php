@@ -11,6 +11,7 @@ use App\Mail\RegistrationApprovalNotification;
 use App\Models\Intern;
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Support\StorageUrl;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -343,7 +344,7 @@ class RegistrationApprovalController extends Controller
             'institute' => $intern->institute?->name,
             'academic_year' => $intern->academicYear?->description,
             'practicum_instructor' => $intern->practicum_instructor,
-            'cor' => $intern->cor_path ? Storage::disk('public')->url($intern->cor_path) : null,
+            'cor' => StorageUrl::url($intern->cor_path),
             'date_of_birth' => $intern->date_of_birth,
             'place_of_birth' => $intern->place_of_birth,
             'fathers_name' => $intern->fathers_name,

@@ -3,6 +3,7 @@
 use App\Models\Institute;
 use App\Models\Program;
 use App\Models\User;
+use App\Support\StorageUrl;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -37,7 +38,7 @@ test('an admin can upload a profile picture when creating a user', function () {
     expect($user)->not->toBeNull();
     expect($user->profile_picture)->not->toBeNull();
     Storage::disk('public')->assertExists($user->profile_picture);
-    $response->assertJsonPath('data.profile_picture', Storage::disk('public')->url($user->profile_picture));
+    $response->assertJsonPath('data.profile_picture', StorageUrl::url($user->profile_picture));
 });
 
 test('an admin can replace a profile picture when updating a user', function () {
@@ -61,7 +62,7 @@ test('an admin can replace a profile picture when updating a user', function () 
     expect($user->profile_picture)->not->toBe($old);
     Storage::disk('public')->assertExists($user->profile_picture);
     Storage::disk('public')->assertMissing($old);
-    $response->assertJsonPath('data.profile_picture', Storage::disk('public')->url($user->profile_picture));
+    $response->assertJsonPath('data.profile_picture', StorageUrl::url($user->profile_picture));
 });
 
 test('a non-image profile picture is rejected', function () {
@@ -138,7 +139,7 @@ test('a spoofed multipart update via POST with _method PUT updates the user and 
     expect($user->profile_picture)->not->toBe($old);
     Storage::disk('public')->assertExists($user->profile_picture);
     Storage::disk('public')->assertMissing($old);
-    $response->assertJsonPath('data.profile_picture', Storage::disk('public')->url($user->profile_picture));
+    $response->assertJsonPath('data.profile_picture', StorageUrl::url($user->profile_picture));
 });
 
 test('a spoofed multipart update via POST with _method PUT stores the MOA and the HTE text fields', function () {

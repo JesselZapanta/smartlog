@@ -13,6 +13,14 @@ export function getEcho() {
   const token = localStorage.getItem("smartlog_token");
   if (!token) return null;
 
+  const apiBase = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+  const scheme = import.meta.env.VITE_REVERB_SCHEME || "http";
+  const port = import.meta.env.VITE_REVERB_PORT || 8080;
+  const key = import.meta.env.VITE_REVERB_APP_KEY;
+
+  // No app key configured → realtime is unavailable; never crash the app.
+  if (!key) return null;
+
   if (echoInstance && echoToken === token) return echoInstance;
 
   if (echoInstance) {
@@ -20,14 +28,10 @@ export function getEcho() {
     echoInstance = null;
   }
 
-  const apiBase = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
-  const scheme = import.meta.env.VITE_REVERB_SCHEME || "http";
-  const port = import.meta.env.VITE_REVERB_PORT || 8080;
-
   window.Pusher = Pusher;
   echoInstance = new Echo({
     broadcaster: "reverb",
-    key: import.meta.env.VITE_REVERB_APP_KEY,
+    key,
     wsHost: import.meta.env.VITE_REVERB_HOST || "localhost",
     wsPort: port,
     wssPort: port,

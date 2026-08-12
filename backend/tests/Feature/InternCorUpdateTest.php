@@ -5,6 +5,7 @@ use App\Models\Institute;
 use App\Models\Intern;
 use App\Models\Program;
 use App\Models\User;
+use App\Support\StorageUrl;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -54,7 +55,7 @@ test('an admin can upload a COR pdf to an intern record', function () {
     $intern->refresh();
     expect($intern->intern->cor_path)->not->toBeNull();
     Storage::disk('public')->assertExists($intern->intern->cor_path);
-    $response->assertJsonPath('data.cor', Storage::disk('public')->url($intern->intern->cor_path));
+    $response->assertJsonPath('data.cor', StorageUrl::url($intern->intern->cor_path));
 });
 
 test('uploading a new COR replaces the previous file on disk', function () {
