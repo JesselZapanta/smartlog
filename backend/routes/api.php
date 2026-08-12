@@ -5,10 +5,12 @@ use App\Http\Controllers\Api\Admin\CoordinatorController;
 use App\Http\Controllers\Api\Admin\HteController;
 use App\Http\Controllers\Api\Admin\InstituteController;
 use App\Http\Controllers\Api\Admin\InternController;
+use App\Http\Controllers\Api\Admin\Interns\InternController as InternsInternController;
 use App\Http\Controllers\Api\Admin\LocationController;
 use App\Http\Controllers\Api\Admin\ProgramController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\Coordinator\Interns\InternController as CoordinatorInternController;
 use App\Http\Controllers\Api\Coordinator\RegistrationApprovalController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\NotificationController;
@@ -58,6 +60,8 @@ Route::middleware('auth:api')->group(function (): void {
 
     Route::middleware('role:ojt_coordinator')->group(function (): void {
         Route::get('/registrations/pending', [RegistrationApprovalController::class, 'pending'])->name('api.registrations.pending');
+        Route::get('/registrations/interns', [CoordinatorInternController::class, 'index'])->name('api.registrations.interns');
+        Route::get('/registrations/interns/{user:uuid}', [CoordinatorInternController::class, 'show'])->name('api.registrations.interns.show');
         Route::get('/registrations/{user:uuid}', [RegistrationApprovalController::class, 'show'])->name('api.registrations.show');
         Route::post('/registrations/{user:uuid}/approve', [RegistrationApprovalController::class, 'approve'])->name('api.registrations.approve');
         Route::post('/registrations/{user:uuid}/reject', [RegistrationApprovalController::class, 'reject'])->name('api.registrations.reject');
@@ -82,6 +86,9 @@ Route::middleware('auth:api')->group(function (): void {
         Route::get('users/{user:uuid}/coordinator', [CoordinatorController::class, 'show'])->name('api.users.coordinator');
         Route::put('users/{user:uuid}/coordinator', [CoordinatorController::class, 'update'])->name('api.users.coordinator.update');
         Route::delete('users/{user:uuid}/coordinator', [CoordinatorController::class, 'destroy'])->name('api.users.coordinator.destroy');
+
+        Route::get('interns', [InternsInternController::class, 'index'])->name('api.interns.index');
+        Route::get('interns/{user:uuid}', [InternsInternController::class, 'show'])->name('api.interns.show');
 
         Route::apiResource('academic-terms', AcademicTermController::class)
             ->except(['create', 'edit']);
