@@ -9,6 +9,7 @@ use App\Models\AcademicTerm;
 use App\Models\Institute;
 use App\Models\Program;
 use App\Models\User;
+use App\Models\UserNotification;
 use App\Services\EmailVerificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -96,6 +97,14 @@ class AuthController extends Controller
             'barangay' => $data['barangay'],
             'status' => 'active',
         ]);
+
+        UserNotification::notifyCoordinators(
+            (int) $data['institute_id'],
+            'registration_submitted',
+            'New registration submitted',
+            "{$user->full_name} submitted their OJT registration for review.",
+            ['uuid' => $user->uuid],
+        );
 
         $this->verification->sendOtp($user);
 

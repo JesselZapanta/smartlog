@@ -10,6 +10,7 @@ use App\Http\Resources\LocationResource;
 use App\Mail\RegistrationApprovalNotification;
 use App\Models\Intern;
 use App\Models\User;
+use App\Models\UserNotification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -125,6 +126,14 @@ class RegistrationApprovalController extends Controller
 
         Mail::to($user)->send(new RegistrationApprovalNotification($user->full_name, true));
 
+        UserNotification::notify(
+            $user,
+            'registration_approved',
+            'Registration approved',
+            'Congratulations! Your OJT registration has been approved.',
+            ['uuid' => $user->uuid],
+        );
+
         return response()->json([
             'data' => $this->row($intern->refresh()),
         ]);
@@ -156,6 +165,15 @@ class RegistrationApprovalController extends Controller
             $request->validated('reason'),
         ));
 
+        UserNotification::notify(
+            $user,
+            'registration_rejected',
+            'Registration rejected',
+            'Your OJT registration was not approved. Review the reason and resubmit your details.'
+                .($request->validated('reason') ? ' Reason: '.$request->validated('reason') : ''),
+            ['uuid' => $user->uuid],
+        );
+
         return response()->json([
             'data' => $this->row($intern->refresh()),
         ]);
@@ -173,6 +191,12 @@ class RegistrationApprovalController extends Controller
             'data' => [
                 'intern' => $user->intern ? new InternResource($user->intern) : null,
                 'location' => $user->location ? new LocationResource($user->location) : null,
+                'institute' => $user->intern?->institute
+                    ? ['id' => $user->intern->institute_id, 'name' => $user->intern->institute->name]
+                    : null,
+                'program' => $user->intern?->program
+                    ? ['id' => $user->intern->program_id, 'name' => $user->intern->program->name]
+                    : null,
             ],
         ]);
     }
@@ -236,6 +260,14 @@ class RegistrationApprovalController extends Controller
             'city_municipality',
             'barangay',
         ]));
+
+        UserNotification::notifyCoordinators(
+            $user->intern->institute_id,
+            'registration_resubmitted',
+            'Registration resubmitted',
+            "{$user->full_name} resubmitted their registration for review.",
+            ['uuid' => $user->uuid],
+        );
 
         return response()->json([
             'data' => [

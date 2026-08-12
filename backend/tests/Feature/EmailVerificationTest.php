@@ -92,14 +92,14 @@ test('resending the code delivers a fresh OTP email', function () {
         ->assertOk()
         ->assertJsonPath('data.message', 'A new verification code has been sent to your email.');
 
-    Mail::assertSent(EmailVerificationOtp::class, function (EmailVerificationOtp $mail) use ($user) {
+    Mail::assertQueued(EmailVerificationOtp::class, function (EmailVerificationOtp $mail) use ($user) {
         return $mail->hasTo($user->email) && strlen($mail->code) === 6;
     });
 
     $user->refresh();
 
     expect($user->email_otp)->not->toBeNull();
-    expect(Hash::check(Mail::sent(EmailVerificationOtp::class)->first()->code, $user->email_otp))->toBeTrue();
+    expect(Hash::check(Mail::queued(EmailVerificationOtp::class)->first()->code, $user->email_otp))->toBeTrue();
 });
 
 test('resending for an already verified email reports verified', function () {

@@ -1,0 +1,81 @@
+<?php
+
+namespace App\Models;
+
+use Database\Factories\UserNotificationFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class UserNotification extends Model
+{
+    /** @use HasFactory<UserNotificationFactory> */
+    use HasFactory;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
+    protected $fillable = [
+        'user_id',
+        'type',
+        'title',
+        'message',
+        'data',
+        'is_read',
+    ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'data' => 'array',
+            'is_read' => 'boolean',
+        ];
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Create an unread notification for a user.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public static function notify(User $user, string $type, string $title, string $message, array $data = []): self
+    {
+        return self::create([
+            'user_id' => $user->id,
+            'type' => $type,
+            'title' => $title,
+            'message' => $message,
+            'data' => $data,
+            'is_read' => false,
+        ]);
+    }
+
+    /**
+     * Notify every OJT coordinator assigned to the given institute.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public static function notifyCoordinators(int $instituteId, string $type, string $title, string $message, array $data = []): int
+    {
+        $coordinators = User::where('role', 'ojt_coordinator')
+            ->whereHas('coordinator', fn ($query) => $query->where('institute_id', $instituteId))
+            ->get();
+
+        foreach ($coordinators as $coordinator) {
+            self::notify($coordinator, $type, $title, $message, $data);
+        }
+
+        return $coordinators->count();
+    }
+}

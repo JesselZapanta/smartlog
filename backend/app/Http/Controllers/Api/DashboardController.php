@@ -12,6 +12,7 @@ use App\Models\Program;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class DashboardController extends Controller
 {
@@ -155,6 +156,7 @@ class DashboardController extends Controller
                 'status' => $intern->status,
                 'rejection_reason' => $intern->rejection_reason,
                 'reviewed_at' => $intern->reviewed_at,
+                'cor' => $intern->cor_path ? Storage::disk('public')->url($intern->cor_path) : null,
             ] : null,
         ];
     }

@@ -17,6 +17,8 @@ import {
   Clock3,
   XCircle,
   ArrowRight,
+  FileText,
+  ExternalLink,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -140,7 +142,8 @@ export default function InternDashboard() {
             <div className="lg:col-span-2">
               <SectionCard title="Internship Details" subtitle="Your assigned institute, program and academic year">
                 {data.intern ? (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
+                  <>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
                     {[
                       { icon: Building2, label: "Institute", value: data.intern.institute || "—" },
                       { icon: BookOpen, label: "Program", value: data.intern.program || "—" },
@@ -158,6 +161,25 @@ export default function InternDashboard() {
                       </div>
                     ))}
                   </div>
+                  {data.intern.cor && (
+                    <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-700">
+                          <FileText size={16} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Certificate of Registration (COR)</p>
+                          <p className="truncate text-sm font-semibold text-gray-800">{data.intern.cor.split("/").pop()}</p>
+                        </div>
+                      </div>
+                      <Button asChild variant="outline" className="h-11 shrink-0 rounded-xl border-green-200 font-semibold text-green-700 hover:bg-green-50">
+                        <a href={data.intern.cor} target="_blank" rel="noreferrer">
+                          <ExternalLink size={16} /> Open PDF
+                        </a>
+                      </Button>
+                    </div>
+                  )}
+                  </>
                 ) : (
                   <div className="flex flex-col items-center gap-2 py-8 text-center">
                     <Building2 size={28} className="text-gray-300" />

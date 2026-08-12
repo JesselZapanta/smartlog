@@ -3,12 +3,13 @@
 namespace App\Mail;
 
 use App\Models\User;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 
-class EmailVerificationOtp extends Mailable
+class EmailVerificationOtp extends Mailable implements ShouldQueue
 {
     public function __construct(
         public string $code,

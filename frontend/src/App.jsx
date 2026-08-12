@@ -12,6 +12,7 @@ import RegistrationApprovalDetailPage from "@/pages/ojt_coordinator/registration
 import InstructorDashboard from "@/pages/ojt_instructor/InstructorDashboard.jsx";
 import HteDashboard from "@/pages/hte/HteDashboard.jsx";
 import ProfilePage from "@/pages/profile/ProfilePage.jsx";
+import NotificationsPage from "@/pages/notifications/NotificationsPage.jsx";
 import UserListPage from "@/pages/admin/users/UserListPage.jsx";
 import UserFormPage from "@/pages/admin/users/UserFormPage.jsx";
 import AcademicTermListPage from "@/pages/admin/academic-terms/AcademicTermListPage.jsx";
@@ -143,6 +144,14 @@ function App() {
         element={
           <ProtectedRoute roles={["admin", "intern", "ojt_coordinator", "ojt_instructor", "hte"]}>
             <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notifications"
+        element={
+          <ProtectedRoute roles={["admin", "intern", "ojt_coordinator", "ojt_instructor", "hte"]}>
+            <NotificationsPage />
           </ProtectedRoute>
         }
       />

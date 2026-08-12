@@ -1,12 +1,20 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate, Navigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, Navigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { ArrowLeft, FileText, Loader2, Send, MapPin, RotateCcw } from "lucide-react";
+import { CloudOff, ExternalLink, FileText, Loader2, Send, MapPin, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -22,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LogoMark } from "@/components/Logo.jsx";
+import InternLayout from "@/layouts/InternLayout.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import InternDetailsStep from "@/pages/admin/users/InternDetailsStep.jsx";
@@ -76,6 +84,9 @@ export default function ResubmitRegistrationPage() {
   const [loadingInstitutes, setLoadingInstitutes] = useState(true);
   const [loadingPrograms, setLoadingPrograms] = useState(true);
   const [codes, setCodes] = useState({ region: "", province: "", city: "", barangay: "" });
+  const [psgcFailed, setPsgcFailed] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const pendingValues = useRef(null);
 
   const form = useForm({
     resolver: zodResolver(resubmitSchema),
@@ -100,93 +111,128 @@ export default function ResubmitRegistrationPage() {
     },
   });
 
+  async function prefillFromReg(data) {
+    const { intern, location } = data;
+    if (!intern) return;
+
+    form.setValue("institute_id", intern.institute_id ? String(intern.institute_id) : "");
+    form.setValue("program_id", intern.program_id ? String(intern.program_id) : "");
+    form.setValue("date_of_birth", intern.date_of_birth ? String(intern.date_of_birth).slice(0, 10) : "");
+    form.setValue("place_of_birth", intern.place_of_birth || "");
+    form.setValue("fathers_name", intern.fathers_name || "");
+    form.setValue("fathers_occupation", intern.fathers_occupation || "");
+    form.setValue("fathers_contact", intern.fathers_contact || "");
+    form.setValue("mothers_name", intern.mothers_name || "");
+    form.setValue("mothers_occupation", intern.mothers_occupation || "");
+    form.setValue("mothers_contact", intern.mothers_contact || "");
+    form.setValue("parents_guardian_address", intern.parents_guardian_address || "");
+    form.setValue("practicum_instructor", intern.practicum_instructor || "");
+    form.setValue("region", location?.region || "");
+    form.setValue("province", location?.province || "");
+    form.setValue("city_municipality", location?.city_municipality || "");
+    form.setValue("barangay", location?.barangay || "");
+
+    if (!location) return;
+
+    let regionsData = regions;
+    if (!regionsData.length) {
+      try {
+        regionsData = await getRegions();
+        setRegions(regionsData);
+      } catch {
+        setPsgcFailed(true);
+        return;
+      }
+    }
+
+    const regionCode = codeOf(regionsData, location.region);
+    setCodes((c) => ({ ...c, region: regionCode }));
+    if (!regionCode) return;
+
+    setLoadingProvinces(true);
+    try {
+      const provs = await getProvinces(regionCode);
+      setProvinces(provs);
+      const provinceCode = codeOf(provs, location.province);
+      setCodes((c) => ({ ...c, province: provinceCode }));
+      if (!provinceCode) return;
+
+      setLoadingCities(true);
+      let citiesData = [];
+      try {
+        citiesData = await getCities(provinceCode);
+      } catch {
+        citiesData = await getRegionCities(regionCode);
+      }
+      setCities(citiesData);
+      const cityCode = codeOf(citiesData, location.city_municipality);
+      setCodes((c) => ({ ...c, city: cityCode }));
+      if (!cityCode) return;
+
+      setLoadingBarangays(true);
+      const brgs = await getBarangays(cityCode);
+      setBarangays(brgs);
+      const brgCode = codeOf(brgs, location.barangay);
+      if (brgCode) setCodes((c) => ({ ...c, barangay: brgCode }));
+    } catch (err) {
+      toast.error("Failed to prefill your location", { description: err.message });
+    } finally {
+      setLoadingProvinces(false);
+      setLoadingCities(false);
+      setLoadingBarangays(false);
+    }
+  }
+
   useEffect(() => {
     let active = true;
-    Promise.all([api.get("/my-registration"), api.get("/register/reference-data"), getRegions()])
-      .then(([regRes, refRes, regionsData]) => {
+
+    api
+      .get("/my-registration")
+      .then((res) => {
         if (!active) return;
-        setReg(regRes.data.data);
-        setInstitutes(refRes.data.data.institutes || []);
-        setPrograms(refRes.data.data.programs || []);
-        setRegions(regionsData);
+        const data = res.data.data;
+        setReg(data);
+        prefillFromReg(data);
       })
       .catch((err) => {
         if (active) toast.error("Failed to load your registration", { description: firstErrorMessage(err) });
       })
       .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    api
+      .get("/register/reference-data")
+      .then((res) => {
+        if (!active) return;
+        setInstitutes(res.data.data.institutes || []);
+        setPrograms(res.data.data.programs || []);
+      })
+      .catch((err) => {
+        if (active) toast.error("Failed to load institute and program options", { description: firstErrorMessage(err) });
+      })
+      .finally(() => {
         if (active) {
           setLoadingInstitutes(false);
           setLoadingPrograms(false);
-          setLoadingRegions(false);
-          setLoading(false);
         }
       });
+
+    getRegions()
+      .then((data) => {
+        if (active) setRegions(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (active) setPsgcFailed(true);
+      })
+      .finally(() => {
+        if (active) setLoadingRegions(false);
+      });
+
     return () => {
       active = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (!reg?.intern || !reg?.location || regions.length === 0) return;
-
-    const { intern, location } = reg;
-
-    form.reset({
-      institute_id: intern.institute_id ? String(intern.institute_id) : "",
-      program_id: intern.program_id ? String(intern.program_id) : "",
-      date_of_birth: intern.date_of_birth ? String(intern.date_of_birth).slice(0, 10) : "",
-      place_of_birth: intern.place_of_birth || "",
-      fathers_name: intern.fathers_name || "",
-      fathers_occupation: intern.fathers_occupation || "",
-      fathers_contact: intern.fathers_contact || "",
-      mothers_name: intern.mothers_name || "",
-      mothers_occupation: intern.mothers_occupation || "",
-      mothers_contact: intern.mothers_contact || "",
-      parents_guardian_address: intern.parents_guardian_address || "",
-      practicum_instructor: intern.practicum_instructor || "",
-      region: location.region || "",
-      province: location.province || "",
-      city_municipality: location.city_municipality || "",
-      barangay: location.barangay || "",
-    });
-
-    const regionCode = codeOf(regions, location.region);
-    if (!regionCode) return;
-
-    (async () => {
-      setCodes((c) => ({ ...c, region: regionCode }));
-      setLoadingProvinces(true);
-      try {
-        const provs = await getProvinces(regionCode);
-        setProvinces(provs);
-        const provinceCode = codeOf(provs, location.province);
-        if (!provinceCode) return;
-        setCodes((c) => ({ ...c, province: provinceCode }));
-
-        let citiesData = [];
-        try {
-          citiesData = await getCities(provinceCode);
-        } catch {
-          citiesData = await getRegionCities(regionCode);
-        }
-        setCities(citiesData);
-        const cityCode = codeOf(citiesData, location.city_municipality);
-        if (!cityCode) return;
-        setCodes((c) => ({ ...c, city: cityCode }));
-
-        setLoadingBarangays(true);
-        const brgs = await getBarangays(cityCode);
-        setBarangays(brgs);
-        const brgCode = codeOf(brgs, location.barangay);
-        if (brgCode) setCodes((c) => ({ ...c, barangay: brgCode }));
-      } catch (err) {
-        toast.error("Failed to prefill your location", { description: err.message });
-      } finally {
-        setLoadingProvinces(false);
-        setLoadingBarangays(false);
-      }
-    })();
-  }, [reg, regions, form]);
 
   function onRegionChange(code) {
     setCodes((c) => ({ ...c, region: code, province: "", city: "", barangay: "" }));
@@ -310,6 +356,42 @@ export default function ResubmitRegistrationPage() {
     }
   }
 
+  function onRequestResubmit(values) {
+    pendingValues.current = values;
+    setConfirmOpen(true);
+  }
+
+  function confirmResubmit() {
+    const values = pendingValues.current;
+    setConfirmOpen(false);
+    if (values) onSubmit(values);
+  }
+
+  const savedInstituteId = reg?.intern?.institute_id ? Number(reg.intern.institute_id) : null;
+  const savedProgramId = reg?.intern?.program_id ? Number(reg.intern.program_id) : null;
+
+  const instituteOptions = useMemo(() => {
+    if (!savedInstituteId || institutes.some((i) => i.id === savedInstituteId)) return institutes;
+    return reg?.institute?.name ? [...institutes, { id: savedInstituteId, name: reg.institute.name }] : institutes;
+  }, [institutes, savedInstituteId, reg?.institute?.name]);
+
+  const programOptions = useMemo(() => {
+    if (!savedProgramId || programs.some((p) => p.id === savedProgramId)) return programs;
+    return reg?.program?.name
+      ? [...programs, { id: savedProgramId, institute_id: savedInstituteId, name: reg.program.name }]
+      : programs;
+  }, [programs, savedProgramId, savedInstituteId, reg?.program?.name]);
+
+  const savedLocation = reg?.location;
+  const regionOptions = regions.length > 0 ? regions : savedLocation?.region ? [{ code: savedLocation.region, name: savedLocation.region }] : [];
+  const provinceOptions = provinces.length > 0 ? provinces : savedLocation?.province ? [{ code: savedLocation.province, name: savedLocation.province }] : [];
+  const cityOptions = cities.length > 0 ? cities : savedLocation?.city_municipality ? [{ code: savedLocation.city_municipality, name: savedLocation.city_municipality }] : [];
+  const barangayOptions = barangays.length > 0 ? barangays : savedLocation?.barangay ? [{ code: savedLocation.barangay, name: savedLocation.barangay }] : [];
+  const regionValue = codes.region || (regions.length === 0 && savedLocation?.region ? savedLocation.region : undefined);
+  const provinceValue = codes.province || (provinces.length === 0 && savedLocation?.province ? savedLocation.province : undefined);
+  const cityValue = codes.city || (cities.length === 0 && savedLocation?.city_municipality ? savedLocation.city_municipality : undefined);
+  const barangayValue = codes.barangay || (barangays.length === 0 && savedLocation?.barangay ? savedLocation.barangay : undefined);
+
   if (!loading && reg && reg.intern?.status !== "rejected") {
     return <Navigate to="/intern" replace />;
   }
@@ -318,25 +400,8 @@ export default function ResubmitRegistrationPage() {
   const existingCorName = reg?.intern?.cor ? reg.intern.cor.split("/").pop() : null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 z-30 border-b border-gray-100 bg-white/95 px-4 py-3 shadow-sm backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center justify-between">
-          <Link to="/intern" className="flex items-center gap-2 no-underline">
-            <LogoMark size={32} />
-            <div>
-              <div className="font-heading text-sm font-bold leading-tight text-green-900">SMARTLOG</div>
-              <div className="font-mono text-[11px] font-medium text-green-700/75">RESUBMIT REGISTRATION</div>
-            </div>
-          </Link>
-          <Button asChild variant="ghost" className="h-11 gap-2 rounded-xl text-sm font-semibold text-gray-600">
-            <Link to="/intern">
-              <ArrowLeft size={16} /> Back to dashboard
-            </Link>
-          </Button>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-3xl space-y-4 px-3 pb-10 pt-4 sm:px-4 sm:pt-6">
+    <InternLayout>
+      <div className="mx-auto max-w-3xl space-y-4">
         <section className="rounded-3xl border border-red-200 bg-red-50 p-4 sm:p-5">
           <h1 className="font-heading text-lg font-bold text-red-900">Fix and resubmit your registration</h1>
           <p className="mt-1 text-sm text-red-700">
@@ -358,11 +423,11 @@ export default function ResubmitRegistrationPage() {
           <Card className="rounded-3xl border-gray-200 shadow-sm">
             <CardContent className="p-4 sm:p-6">
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+                <form onSubmit={form.handleSubmit(onRequestResubmit)} className="space-y-5">
                   <InternDetailsStep
                     form={form}
-                    institutes={institutes}
-                    programs={programs}
+                    institutes={instituteOptions}
+                    programs={programOptions}
                     loadingInstitutes={loadingInstitutes}
                     loadingPrograms={loadingPrograms}
                     hideAcademicYear
@@ -381,13 +446,26 @@ export default function ResubmitRegistrationPage() {
                             : "Upload your COR for this semester as a PDF. Max 10 MB."}
                       </p>
                     </div>
-                    <label
-                      htmlFor="resubmit-cor-input"
-                      className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-green-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-green-700"
-                    >
-                      <FileText size={16} />
-                      {selectedCorName ? "Change file" : existingCorName ? "Replace COR" : "Upload COR"}
-                    </label>
+                    <div className="flex shrink-0 flex-row gap-2">
+                      {existingCorName && reg?.intern?.cor && (
+                        <a
+                          href={reg.intern.cor}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+                        >
+                          <ExternalLink size={16} />
+                          Open
+                        </a>
+                      )}
+                      <label
+                        htmlFor="resubmit-cor-input"
+                        className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-green-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-green-700"
+                      >
+                        <FileText size={16} />
+                        {selectedCorName ? "Change file" : existingCorName ? "Replace COR" : "Upload COR"}
+                      </label>
+                    </div>
                     <input
                       id="resubmit-cor-input"
                       type="file"
@@ -406,6 +484,19 @@ export default function ResubmitRegistrationPage() {
                       Select your address from the Philippine Standard Geographic Code (PSGC).
                     </p>
 
+                    {psgcFailed && (
+                      <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3 ring-1 ring-amber-100">
+                        <CloudOff size={16} className="mt-0.5 shrink-0 text-amber-600" />
+                        <div className="min-w-0 text-xs text-amber-800">
+                          <p className="font-bold">The Philippine location service is unreachable</p>
+                          <p className="mt-0.5">
+                            Your saved address is shown below, but the dropdown lists can&apos;t be reloaded until the
+                            service is back. Reload the page to try again.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="grid gap-4">
                       <FormField
                         control={form.control}
@@ -415,14 +506,14 @@ export default function ResubmitRegistrationPage() {
                             <FormLabel className="text-xs font-bold uppercase tracking-wider text-gray-700">
                               Region *
                             </FormLabel>
-                            <Select disabled={loadingRegions} onValueChange={onRegionChange} value={codes.region || undefined}>
+                            <Select disabled={loadingRegions} onValueChange={onRegionChange} value={regionValue}>
                               <FormControl>
                                 <SelectTrigger className={selectClass}>
                                   <SelectValue placeholder={loadingRegions ? "Loading regions…" : "Select region"} />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {regions.map((r) => (
+                                {regionOptions.map((r) => (
                                   <SelectItem key={r.code} value={r.code}>
                                     {r.name}
                                   </SelectItem>
@@ -443,9 +534,9 @@ export default function ResubmitRegistrationPage() {
                               Province *
                             </FormLabel>
                             <Select
-                              disabled={!codes.region || loadingProvinces}
+                              disabled={!regionValue || loadingProvinces}
                               onValueChange={onProvinceChange}
-                              value={codes.province || undefined}
+                              value={provinceValue}
                             >
                               <FormControl>
                                 <SelectTrigger className={selectClass}>
@@ -453,7 +544,7 @@ export default function ResubmitRegistrationPage() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {provinces.map((p) => (
+                                {provinceOptions.map((p) => (
                                   <SelectItem key={p.code} value={p.code}>
                                     {p.name}
                                   </SelectItem>
@@ -474,9 +565,9 @@ export default function ResubmitRegistrationPage() {
                               City / Municipality *
                             </FormLabel>
                             <Select
-                              disabled={!codes.province || loadingCities}
+                              disabled={!provinceValue || loadingCities}
                               onValueChange={onCityChange}
-                              value={codes.city || undefined}
+                              value={cityValue}
                             >
                               <FormControl>
                                 <SelectTrigger className={selectClass}>
@@ -484,7 +575,7 @@ export default function ResubmitRegistrationPage() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {cities.map((c) => (
+                                {cityOptions.map((c) => (
                                   <SelectItem key={c.code} value={c.code}>
                                     {c.name}
                                   </SelectItem>
@@ -505,9 +596,9 @@ export default function ResubmitRegistrationPage() {
                               Barangay *
                             </FormLabel>
                             <Select
-                              disabled={!codes.city || loadingBarangays}
+                              disabled={!cityValue || loadingBarangays}
                               onValueChange={onBarangayChange}
-                              value={codes.barangay || undefined}
+                              value={barangayValue}
                             >
                               <FormControl>
                                 <SelectTrigger className={selectClass}>
@@ -515,7 +606,7 @@ export default function ResubmitRegistrationPage() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {barangays.map((b) => (
+                                {barangayOptions.map((b) => (
                                   <SelectItem key={b.code} value={b.code}>
                                     {b.name}
                                   </SelectItem>
@@ -556,7 +647,44 @@ export default function ResubmitRegistrationPage() {
             </CardContent>
           </Card>
         )}
-      </main>
-    </div>
+
+        <Dialog open={confirmOpen} onOpenChange={(open) => !open && !submitting && setConfirmOpen(false)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Resubmit registration?</DialogTitle>
+              <DialogDescription>
+                Your updated details will be sent to your OJT coordinator for another review. You won't be able to
+                change them again until the review is finished.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button
+                variant="outline"
+                className="h-11 rounded-xl"
+                onClick={() => setConfirmOpen(false)}
+                disabled={submitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="h-11 rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700"
+                disabled={submitting}
+                onClick={confirmResubmit}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" /> Resubmitting…
+                  </>
+                ) : (
+                  <>
+                    <Send size={16} /> Confirm resubmit
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </InternLayout>
   );
 }
