@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Events\NotificationPushed;
+use App\Http\Resources\UserNotificationResource;
 use Database\Factories\UserNotificationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -51,7 +53,7 @@ class UserNotification extends Model
      */
     public static function notify(User $user, string $type, string $title, string $message, array $data = []): self
     {
-        return self::create([
+        $notification = self::create([
             'user_id' => $user->id,
             'type' => $type,
             'title' => $title,
@@ -59,6 +61,14 @@ class UserNotification extends Model
             'data' => $data,
             'is_read' => false,
         ]);
+
+        NotificationPushed::dispatch(
+            $user->uuid,
+            (new UserNotificationResource($notification))->resolve(),
+            $user->userNotifications()->where('is_read', false)->count(),
+        );
+
+        return $notification;
     }
 
     /**

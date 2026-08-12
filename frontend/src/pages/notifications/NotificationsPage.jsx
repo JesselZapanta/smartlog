@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import api from "@/lib/api";
+import { getEcho } from "@/lib/echo";
 import { formatNotificationDate, notificationIcon, notificationStyles, routeFor } from "@/lib/notifications";
 import { useAuth } from "@/contexts/AuthContext";
 import AdminLayout from "@/layouts/AdminLayout.jsx";
@@ -81,6 +82,23 @@ export default function NotificationsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!user) return;
+    const echo = getEcho();
+    if (!echo) return;
+
+    const channel = echo.private(`user.${user.uuid}`);
+    channel.listen(".notification.pushed", () => {
+      if (page === 1) load();
+      else setPage(1);
+    });
+
+    return () => {
+      channel.stopListening(".notification.pushed");
+      echo.leaveChannel(`private-user.${user.uuid}`);
+    };
+  }, [user, page, load]);
 
   async function handleClick(notification) {
     if (!notification.is_read) {

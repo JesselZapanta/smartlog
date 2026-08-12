@@ -1,5 +1,6 @@
 <?php
 
+use App\Events\NotificationPushed;
 use App\Models\AcademicTerm;
 use App\Models\Coordinator;
 use App\Models\Institute;
@@ -8,8 +9,11 @@ use App\Models\Location;
 use App\Models\Program;
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Services\EmailVerificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
@@ -120,7 +124,7 @@ test('mark all read clears every unread notification', function () {
     expect($user->userNotifications()->where('is_read', false)->count())->toBe(0);
 });
 
-test('registering an intern notifies the coordinators of the chosen institute', function () {
+test('registering does not notify coordinators until the intern verifies their email', function () {
     Mail::fake();
     AcademicTerm::create(['code' => '2025-2026', 'description' => 'First Semester', 'status' => 'active']);
 
@@ -153,15 +157,64 @@ test('registering an intern notifies the coordinators of the chosen institute', 
         'barangay' => 'Mantic',
     ], ['Accept' => 'application/json'])->assertStatus(201);
 
+    expect(UserNotification::where('user_id', $coordinator->id)->count())->toBe(0);
+
+    $intern = User::where('email', 'juan@smartlog.test')->first();
+    $code = app(EmailVerificationService::class)->sendOtp($intern);
+
+    $this->postJson('/api/verify-email', ['email' => 'juan@smartlog.test', 'code' => $code])
+        ->assertOk()
+        ->assertJsonStructure(['data' => ['access_token', 'user']]);
+
     $notification = UserNotification::where('user_id', $coordinator->id)->first();
 
     expect($notification)->not->toBeNull();
     expect($notification->type)->toBe('registration_submitted');
     expect($notification->title)->toBe('New registration submitted');
     expect($notification->is_read)->toBeFalse();
+    expect($notification->data)->toMatchArray(['uuid' => $intern->uuid]);
+});
+
+test('verifying an already verified email does not notify coordinators again', function () {
+    Mail::fake();
+    AcademicTerm::create(['code' => '2025-2026', 'description' => 'First Semester', 'status' => 'active']);
+
+    $institute = notificationInstitute();
+    $program = notificationProgram($institute);
+    $coordinator = notificationCoordinator($institute);
+
+    $this->post('/api/register', [
+        'firstname' => 'Juan',
+        'lastname' => 'Dela Cruz',
+        'email' => 'juan@smartlog.test',
+        'password' => 'password123',
+        'password_confirmation' => 'password123',
+        'institute_id' => $institute->id,
+        'program_id' => $program->id,
+        'date_of_birth' => '2000-01-01',
+        'place_of_birth' => 'Tangub City',
+        'fathers_name' => 'Pedro Dela Cruz',
+        'fathers_occupation' => 'Farmer',
+        'fathers_contact' => '09170000000',
+        'mothers_name' => 'Juana Dela Cruz',
+        'mothers_occupation' => 'Teacher',
+        'mothers_contact' => '09170000001',
+        'parents_guardian_address' => 'Brgy. Mantic, Tangub City',
+        'practicum_instructor' => 'Prof. Santos',
+        'cor' => UploadedFile::fake()->create('cor.pdf', 1024, 'application/pdf'),
+        'region' => '10',
+        'province' => 'Misamis Occidental',
+        'city_municipality' => 'Tangub City',
+        'barangay' => 'Mantic',
+    ], ['Accept' => 'application/json'])->assertStatus(201);
 
     $intern = User::where('email', 'juan@smartlog.test')->first();
-    expect($notification->data)->toMatchArray(['uuid' => $intern->uuid]);
+    $code = app(EmailVerificationService::class)->sendOtp($intern);
+
+    $this->postJson('/api/verify-email', ['email' => 'juan@smartlog.test', 'code' => $code])->assertOk();
+    $this->postJson('/api/verify-email', ['email' => 'juan@smartlog.test', 'code' => $code])->assertOk();
+
+    expect(UserNotification::where('user_id', $coordinator->id)->count())->toBe(1);
 });
 
 test('registering does not notify coordinators of other institutes', function () {
@@ -172,6 +225,7 @@ test('registering does not notify coordinators of other institutes', function ()
     $otherInstitute = Institute::create(['name' => 'Institute of Education']);
     $program = notificationProgram($institute);
     $otherProgram = Program::create(['institute_id' => $otherInstitute->id, 'name' => 'BS Education']);
+    $coordinator = notificationCoordinator($institute);
     $otherCoordinator = notificationCoordinator($otherInstitute);
 
     $this->post('/api/register', [
@@ -199,6 +253,12 @@ test('registering does not notify coordinators of other institutes', function ()
         'barangay' => 'Mantic',
     ], ['Accept' => 'application/json'])->assertStatus(201);
 
+    $intern = User::where('email', 'maria@smartlog.test')->first();
+    $code = app(EmailVerificationService::class)->sendOtp($intern);
+
+    $this->postJson('/api/verify-email', ['email' => 'maria@smartlog.test', 'code' => $code])->assertOk();
+
+    expect(UserNotification::where('user_id', $coordinator->id)->count())->toBe(1);
     expect(UserNotification::where('user_id', $otherCoordinator->id)->count())->toBe(0);
 });
 
@@ -333,4 +393,51 @@ test('resubmitting does not notify coordinators of other institutes', function (
         ->assertOk();
 
     expect(UserNotification::where('user_id', $otherCoordinator->id)->count())->toBe(0);
+});
+
+test('creating a notification broadcasts a pushed event to the owner private channel', function () {
+    Event::fake([NotificationPushed::class]);
+
+    $user = User::factory()->create();
+    UserNotification::factory()->count(2)->create(['user_id' => $user->id]);
+
+    UserNotification::notify($user, 'test_type', 'Hello', 'World');
+
+    Event::assertDispatched(NotificationPushed::class, function (NotificationPushed $event) use ($user) {
+        $channels = $event->broadcastOn();
+        expect($channels)->toHaveCount(1);
+        expect($channels[0]->name)->toBe("private-user.{$user->uuid}");
+        expect($event->broadcastAs())->toBe('notification.pushed');
+        expect($event->unreadCount)->toBe(3);
+        expect($event->notification['title'])->toBe('Hello');
+        expect($event->notification['message'])->toBe('World');
+
+        return true;
+    });
+});
+
+test('broadcasting auth accepts only the channel owner', function () {
+    config()->set('broadcasting.default', 'pusher');
+    config()->set('broadcasting.connections.pusher.key', 'broadcast-key');
+    config()->set('broadcasting.connections.pusher.secret', 'broadcast-secret');
+    config()->set('broadcasting.connections.pusher.app_id', 'broadcast-app');
+
+    Broadcast::channel('user.{uuid}', fn ($user, string $uuid) => $user->uuid === $uuid, ['guards' => ['api']]);
+
+    $user = User::factory()->create();
+    $other = User::factory()->create();
+
+    $this->actingAs($user, 'api')
+        ->postJson('/api/broadcasting/auth', [
+            'socket_id' => '123456.789012',
+            'channel_name' => "private-user.{$user->uuid}",
+        ])
+        ->assertOk();
+
+    $this->actingAs($user, 'api')
+        ->postJson('/api/broadcasting/auth', [
+            'socket_id' => '123456.789013',
+            'channel_name' => "private-user.{$other->uuid}",
+        ])
+        ->assertForbidden();
 });

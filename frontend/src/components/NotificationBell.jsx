@@ -11,10 +11,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import api from "@/lib/api";
+import { getEcho } from "@/lib/echo";
 import { notificationIcon, notificationStyles, routeFor, timeAgo } from "@/lib/notifications";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function NotificationBell() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [items, setItems] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -33,8 +36,22 @@ export default function NotificationBell() {
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    if (user) load();
+  }, [user, load]);
+
+  useEffect(() => {
+    if (!user) return;
+    const echo = getEcho();
+    if (!echo) return;
+
+    const channel = echo.private(`user.${user.uuid}`);
+    channel.listen(".notification.pushed", load);
+
+    return () => {
+      channel.stopListening(".notification.pushed");
+      echo.leaveChannel(`private-user.${user.uuid}`);
+    };
+  }, [user, load]);
 
   function handleOpen(open) {
     if (open) load();
@@ -128,13 +145,13 @@ export default function NotificationBell() {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center justify-between gap-2">
-                    <span className={`truncate text-sm ${notification.is_read ? "font-medium text-gray-600" : "font-bold text-green-950"}`}>
+                    <span className={`truncate text-[13px] ${notification.is_read ? "font-medium text-gray-600" : "font-bold text-green-950"}`}>
                       {notification.title}
                     </span>
                     {!notification.is_read && <span className="h-2 w-2 shrink-0 rounded-full bg-green-600" />}
                   </span>
-                  <span className="mt-0.5 line-clamp-2 block text-xs text-gray-500">{notification.message}</span>
-                  <span className="mt-1 block text-[11px] text-gray-400">{timeAgo(notification.created_at)}</span>
+                  <span className="mt-0.5 line-clamp-2 block text-[11px] text-gray-500">{notification.message}</span>
+                  <span className="mt-1 block text-[10px] text-gray-400">{timeAgo(notification.created_at)}</span>
                 </span>
               </DropdownMenuItem>
             );

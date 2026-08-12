@@ -98,14 +98,6 @@ class AuthController extends Controller
             'status' => 'active',
         ]);
 
-        UserNotification::notifyCoordinators(
-            (int) $data['institute_id'],
-            'registration_submitted',
-            'New registration submitted',
-            "{$user->full_name} submitted their OJT registration for review.",
-            ['uuid' => $user->uuid],
-        );
-
         $this->verification->sendOtp($user);
 
         return response()->json([
@@ -125,11 +117,15 @@ class AuthController extends Controller
 
         $user = User::where('email', $data['email'])->firstOrFail();
 
-        if (! $user->email_verified_at && ! $this->verification->verify($user, $data['code'])) {
+        $wasUnverified = is_null($user->email_verified_at);
+
+        if ($wasUnverified && ! $this->verification->verify($user, $data['code'])) {
             throw ValidationException::withMessages([
                 'code' => ['The verification code is invalid or has expired.'],
             ]);
         }
+
+        $this->notifyPendingRegistration($user, $wasUnverified);
 
         $token = Auth::guard('api')->login($user);
 
@@ -215,5 +211,38 @@ class AuthController extends Controller
         return response()->json([
             'data' => ['message' => 'Successfully logged out.'],
         ]);
+    }
+
+    /**
+     * Notify the coordinators that an intern's registration is awaiting review,
+     * but only the first time the intern's email gets verified.
+     */
+    private function notifyPendingRegistration(User $user, bool $wasUnverified): void
+    {
+        if (! $wasUnverified || $user->role !== 'intern') {
+            return;
+        }
+
+        $intern = $user->intern;
+
+        if (! $intern || $intern->status !== 'pending') {
+            return;
+        }
+
+        $alreadyNotified = UserNotification::where('type', 'registration_submitted')
+            ->whereJsonContains('data->uuid', $user->uuid)
+            ->exists();
+
+        if ($alreadyNotified) {
+            return;
+        }
+
+        UserNotification::notifyCoordinators(
+            (int) $intern->institute_id,
+            'registration_submitted',
+            'New registration submitted',
+            "{$user->full_name} verified their email and their OJT registration is awaiting review.",
+            ['uuid' => $user->uuid],
+        );
     }
 }

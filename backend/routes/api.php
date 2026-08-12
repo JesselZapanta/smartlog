@@ -13,7 +13,10 @@ use App\Http\Controllers\Api\Coordinator\RegistrationApprovalController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ProfileController;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
+
+Broadcast::routes(['middleware' => ['auth:api']]);
 
 Route::get('/register/reference-data', [AuthController::class, 'referenceData'])->name('api.register.reference-data');
 Route::post('/register', [AuthController::class, 'register'])->name('api.register');
