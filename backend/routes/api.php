@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Admin\AcademicTermController;
 use App\Http\Controllers\Api\Admin\CoordinatorController;
 use App\Http\Controllers\Api\Admin\HteController;
+use App\Http\Controllers\Api\Admin\Htes\HteController as HtesHteController;
 use App\Http\Controllers\Api\Admin\InstituteController;
 use App\Http\Controllers\Api\Admin\InternController;
 use App\Http\Controllers\Api\Admin\Interns\InternController as InternsInternController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\Api\Admin\LocationController;
 use App\Http\Controllers\Api\Admin\ProgramController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\Coordinator\Htes\HteController as CoordinatorHteController;
 use App\Http\Controllers\Api\Coordinator\Interns\InternController as CoordinatorInternController;
 use App\Http\Controllers\Api\Coordinator\RegistrationApprovalController;
 use App\Http\Controllers\Api\DashboardController;
@@ -65,6 +67,13 @@ Route::middleware('auth:api')->group(function (): void {
         Route::get('/registrations/{user:uuid}', [RegistrationApprovalController::class, 'show'])->name('api.registrations.show');
         Route::post('/registrations/{user:uuid}/approve', [RegistrationApprovalController::class, 'approve'])->name('api.registrations.approve');
         Route::post('/registrations/{user:uuid}/reject', [RegistrationApprovalController::class, 'reject'])->name('api.registrations.reject');
+
+        Route::get('/coordinator/htes/reference', [CoordinatorHteController::class, 'reference'])->name('api.coordinator.htes.reference');
+        Route::get('/coordinator/htes', [CoordinatorHteController::class, 'index'])->name('api.coordinator.htes.index');
+        Route::post('/coordinator/htes', [CoordinatorHteController::class, 'store'])->name('api.coordinator.htes.store');
+        Route::get('/coordinator/htes/{user:uuid}', [CoordinatorHteController::class, 'show'])->name('api.coordinator.htes.show');
+        Route::put('/coordinator/htes/{user:uuid}', [CoordinatorHteController::class, 'update'])->name('api.coordinator.htes.update');
+        Route::delete('/coordinator/htes/{user:uuid}', [CoordinatorHteController::class, 'destroy'])->name('api.coordinator.htes.destroy');
     });
 
     Route::middleware('role:admin')->group(function (): void {
@@ -89,6 +98,9 @@ Route::middleware('auth:api')->group(function (): void {
 
         Route::get('interns', [InternsInternController::class, 'index'])->name('api.interns.index');
         Route::get('interns/{user:uuid}', [InternsInternController::class, 'show'])->name('api.interns.show');
+
+        Route::get('htes', [HtesHteController::class, 'index'])->name('api.htes.index');
+        Route::get('htes/{user:uuid}', [HtesHteController::class, 'show'])->name('api.htes.show');
 
         Route::apiResource('academic-terms', AcademicTermController::class)
             ->except(['create', 'edit']);

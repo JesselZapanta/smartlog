@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Users, Search, Eye, X, ArrowUp, ArrowDown, ChevronsUpDown, CalendarDays, School } from "lucide-react";
+import { Store, Search, Eye, X, ArrowUp, ArrowDown, ChevronsUpDown, CalendarDays } from "lucide-react";
 import AdminLayout from "@/layouts/AdminLayout.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
@@ -36,6 +36,13 @@ import {
 } from "@/components/ui/pagination";
 
 const PER_PAGE = 10;
+
+const statusOptions = [
+  { value: "all", label: "All statuses" },
+  { value: "active", label: "Active" },
+  { value: "expired", label: "Expired" },
+  { value: "inactive", label: "Inactive" },
+];
 
 function formatDate(value) {
   if (!value) return "—";
@@ -93,15 +100,14 @@ function SortableHeader({ label, column, sort, order, onSort, className }) {
   );
 }
 
-export default function InternListPage() {
+export default function HteListPage() {
   const [rows, setRows] = useState([]);
   const [meta, setMeta] = useState(null);
   const [institutes, setInstitutes] = useState([]);
-  const [terms, setTerms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [academicYear, setAcademicYear] = useState("all");
+  const [status, setStatus] = useState("all");
   const [instituteId, setInstituteId] = useState("all");
   const [order, setOrder] = useState("desc");
   const [page, setPage] = useState(1);
@@ -121,13 +127,6 @@ export default function InternListPage() {
       .catch(() => {});
   }, []);
 
-  useEffect(() => {
-    api
-      .get("/academic-terms/options")
-      .then((res) => setTerms(res.data.data || []))
-      .catch(() => {});
-  }, []);
-
   const loadRows = useCallback(async () => {
     setLoading(true);
     try {
@@ -138,24 +137,24 @@ export default function InternListPage() {
         order,
       });
       if (debouncedSearch) params.set("search", debouncedSearch);
-      if (academicYear !== "all") params.set("academic_year_id", academicYear);
+      if (status !== "all") params.set("status", status);
       if (instituteId !== "all") params.set("institute_id", instituteId);
-      const res = await api.get(`/interns?${params.toString()}`);
+      const res = await api.get(`/htes?${params.toString()}`);
       setRows(res.data.data);
       setMeta(res.data.meta);
     } catch (err) {
-      toast.error("Failed to load interns", { description: firstErrorMessage(err) });
+      toast.error("Failed to load HTEs", { description: firstErrorMessage(err) });
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedSearch, order, academicYear, instituteId]);
+  }, [page, debouncedSearch, order, status, instituteId]);
 
   useEffect(() => {
     loadRows();
   }, [loadRows]);
 
-  function onAcademicYearChange(value) {
-    setAcademicYear(value);
+  function onStatusChange(value) {
+    setStatus(value);
     setPage(1);
   }
 
@@ -171,19 +170,19 @@ export default function InternListPage() {
 
   function clearFilters() {
     setSearch("");
-    setAcademicYear("all");
+    setStatus("all");
     setInstituteId("all");
     setPage(1);
   }
 
-  const hasFilters = Boolean(search) || academicYear !== "all" || instituteId !== "all";
+  const hasFilters = Boolean(search) || status !== "all" || instituteId !== "all";
 
   return (
     <AdminLayout>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-heading text-2xl font-bold text-green-950 sm:text-3xl">Interns</h1>
-          <p className="mt-1 text-sm text-gray-500">View all approved interns and their placement details.</p>
+          <h1 className="font-heading text-2xl font-bold text-green-950 sm:text-3xl">Host Training Est.</h1>
+          <p className="mt-1 text-sm text-gray-500">View all HTE accounts and their placement details.</p>
         </div>
       </div>
 
@@ -193,7 +192,7 @@ export default function InternListPage() {
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search name or email…"
+            placeholder="Search HTE or contact…"
             className="h-11 rounded-xl pl-10 pr-10"
           />
           {search && (
@@ -207,15 +206,14 @@ export default function InternListPage() {
             </button>
           )}
         </div>
-        <Select value={academicYear} onValueChange={onAcademicYearChange}>
-          <SelectTrigger className="data-[size=default]:h-11 w-full rounded-xl sm:w-52">
-            <SelectValue placeholder="All academic years" />
+        <Select value={status} onValueChange={onStatusChange}>
+          <SelectTrigger className="data-[size=default]:h-11 w-full rounded-xl sm:w-44">
+            <SelectValue placeholder="All statuses" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All academic years</SelectItem>
-            {terms.map((term) => (
-              <SelectItem key={term.id} value={String(term.id)}>
-                {term.description}
+            {statusOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
               </SelectItem>
             ))}
           </SelectContent>
@@ -273,10 +271,10 @@ export default function InternListPage() {
                 <TableHeader>
                   <TableRow className="bg-green-50 hover:bg-green-50">
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">ID</TableHead>
-                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Intern</TableHead>
-                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Institute</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">HTE</TableHead>
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Status</TableHead>
-                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Registered</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Start</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">End</TableHead>
                     <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-green-700">
                       Actions
                     </TableHead>
@@ -298,10 +296,10 @@ export default function InternListPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-6 w-20 rounded-full" />
                       </TableCell>
                       <TableCell>
-                        <Skeleton className="h-6 w-20 rounded-full" />
+                        <Skeleton className="h-4 w-24" />
                       </TableCell>
                       <TableCell>
                         <Skeleton className="h-4 w-24" />
@@ -322,9 +320,9 @@ export default function InternListPage() {
         {!loading && rows.length === 0 && (
           <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-gray-400">
-              <Users size={20} />
+              <Store size={20} />
             </div>
-            <p className="text-sm font-semibold text-gray-700">No interns found</p>
+            <p className="text-sm font-semibold text-gray-700">No HTEs found</p>
             <p className="text-xs text-gray-400">Try adjusting your search or filters.</p>
             {hasFilters && (
               <Button variant="outline" className="mt-1 h-10 rounded-xl text-green-700" onClick={clearFilters}>
@@ -337,40 +335,36 @@ export default function InternListPage() {
         {!loading && rows.length > 0 && (
           <>
             <div className="space-y-2.5 p-3 sm:p-4 md:hidden">
-              {rows.map((intern) => (
+              {rows.map((hte) => (
                 <div
-                  key={intern.uuid}
+                  key={hte.uuid}
                   className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm ring-1 ring-gray-100"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-2.5">
                       <Avatar className="h-9 w-9 shrink-0">
-                        {intern.profile_picture && <AvatarImage src={intern.profile_picture} alt={intern.full_name} />}
+                        {hte.profile_picture && <AvatarImage src={hte.profile_picture} alt={hte.contact_person} />}
                         <AvatarFallback className="bg-gradient-to-br from-green-700 to-green-500 text-xs font-bold text-white">
-                          {getInitials(intern.full_name)}
+                          {getInitials(hte.contact_person)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-gray-900">{intern.full_name}</p>
-                        <p className="truncate text-xs text-gray-400">{intern.email}</p>
+                        <p className="truncate text-sm font-semibold text-gray-900">{hte.name}</p>
+                        <p className="truncate text-xs text-gray-400">{hte.contact_person}</p>
                       </div>
                     </div>
-                    <StatusChip status={intern.status} />
+                    <StatusChip status={hte.status} />
                   </div>
                   <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
                     <span className="inline-flex items-center gap-1.5">
-                      <School size={13} className="shrink-0 text-gray-300" />
-                      {intern.institute || "—"}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
                       <CalendarDays size={13} className="shrink-0 text-gray-300" />
-                      Registered {formatDate(intern.created_at)}
+                      {formatDate(hte.start_at)} – {formatDate(hte.end_at)}
                     </span>
-                    <span className="font-mono text-gray-400">#{intern.id}</span>
+                    <span className="font-mono text-gray-400">#{hte.id}</span>
                   </div>
                   <div className="mt-3 flex gap-2 border-t border-gray-50 pt-3">
                     <Button asChild variant="outline" className="h-10 flex-1 rounded-xl border-green-200 text-green-700 hover:bg-green-50">
-                      <Link to={`/admin/interns/${intern.uuid}`}>
+                      <Link to={`/admin/htes/${hte.uuid}`}>
                         <Eye size={15} /> View details
                       </Link>
                     </Button>
@@ -384,47 +378,46 @@ export default function InternListPage() {
                 <TableHeader>
                   <TableRow className="bg-green-50 hover:bg-green-50">
                     <SortableHeader label="ID" column="id" sort="id" order={order} onSort={toggleOrder} />
-                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Intern</TableHead>
-                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Institute</TableHead>
-                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Program</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">HTE</TableHead>
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Status</TableHead>
-                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Registered</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Start</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">End</TableHead>
                     <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-green-700">
                       Actions
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((intern) => (
+                  {rows.map((hte) => (
                     <TableRow
-                      key={intern.uuid}
+                      key={hte.uuid}
                       className="group border-b border-gray-50 transition-colors last:border-0 hover:bg-green-50/40"
                     >
                       <TableCell>
-                        <span className="font-mono text-sm font-semibold text-green-700">#{intern.id}</span>
+                        <span className="font-mono text-sm font-semibold text-green-700">#{hte.id}</span>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-9 w-9">
-                            {intern.profile_picture && <AvatarImage src={intern.profile_picture} alt={intern.full_name} />}
+                            {hte.profile_picture && <AvatarImage src={hte.profile_picture} alt={hte.contact_person} />}
                             <AvatarFallback className="bg-gradient-to-br from-green-700 to-green-500 text-xs font-bold text-white">
-                              {getInitials(intern.full_name)}
+                              {getInitials(hte.contact_person)}
                             </AvatarFallback>
                           </Avatar>
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-gray-900">{intern.full_name}</p>
-                            <p className="truncate text-xs text-gray-400">{intern.email}</p>
+                            <p className="truncate text-sm font-semibold text-gray-900">{hte.name}</p>
+                            <p className="truncate text-xs text-gray-400">{hte.contact_person}</p>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-gray-600">{intern.institute || "—"}</span>
+                        <StatusChip status={hte.status} />
                       </TableCell>
                       <TableCell>
-                        <StatusChip status={intern.status} />
+                        <span className="text-sm text-gray-600">{formatDate(hte.start_at)}</span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-gray-600">{formatDate(intern.created_at)}</span>
+                        <span className="text-sm text-gray-600">{formatDate(hte.end_at)}</span>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end">
@@ -432,10 +425,10 @@ export default function InternListPage() {
                             asChild
                             variant="ghost"
                             size="icon"
-                            aria-label={`View ${intern.full_name}`}
+                            aria-label={`View ${hte.name}`}
                             className="h-10 w-10 rounded-xl text-gray-400 transition-colors hover:bg-green-50 hover:text-green-700 group-hover:text-gray-500"
                           >
-                            <Link to={`/admin/interns/${intern.uuid}`}>
+                            <Link to={`/admin/htes/${hte.uuid}`}>
                               <Eye size={16} />
                             </Link>
                           </Button>
@@ -455,7 +448,7 @@ export default function InternListPage() {
               Showing{" "}
               <span className="font-semibold text-gray-700">{meta.from ?? 0}</span>–
               <span className="font-semibold text-gray-700">{meta.to ?? 0}</span> of{" "}
-              <span className="font-semibold text-gray-700">{meta.total}</span> interns
+              <span className="font-semibold text-gray-700">{meta.total}</span> HTEs
             </p>
             <Pagination className="mx-0 w-auto">
               <PaginationContent>
