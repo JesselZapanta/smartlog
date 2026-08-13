@@ -31,6 +31,7 @@ import AcademicTermListPage from "@/pages/admin/academic-terms/AcademicTermListP
 import InstituteListPage from "@/pages/admin/institutes/InstituteListPage.jsx";
 import ProgramListPage from "@/pages/admin/programs/ProgramListPage.jsx";
 import RequirementListPage from "@/pages/admin/requirements/RequirementListPage.jsx";
+import OjtHourListPage from "@/pages/admin/ojt-hours/OjtHourListPage.jsx";
 import ProtectedRoute from "@/components/ProtectedRoute.jsx";
 
 function App() {
@@ -261,6 +262,14 @@ function App() {
         element={
           <ProtectedRoute roles={["admin"]}>
             <RequirementListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/ojt-hours"
+        element={
+          <ProtectedRoute roles={["admin"]}>
+            <OjtHourListPage />
           </ProtectedRoute>
         }
       />

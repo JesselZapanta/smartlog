@@ -7,7 +7,6 @@ use App\Http\Requests\Intern\ResubmitRegistrationRequest;
 use App\Http\Requests\OjtCoordinator\RejectRegistrationRequest;
 use App\Http\Resources\Intern\InternResource;
 use App\Http\Resources\LocationResource;
-use App\Mail\RegistrationApprovalNotification;
 use App\Models\Intern;
 use App\Models\User;
 use App\Models\UserNotification;
@@ -15,7 +14,6 @@ use App\Support\StorageUrl;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
@@ -125,8 +123,6 @@ class RegistrationApprovalController extends Controller
             'reviewed_at' => now(),
         ])->save();
 
-        Mail::to($user)->send(new RegistrationApprovalNotification($user->full_name, true));
-
         UserNotification::notify(
             $user,
             'registration_approved',
@@ -159,12 +155,6 @@ class RegistrationApprovalController extends Controller
             'reviewed_by' => $request->user()->id,
             'reviewed_at' => now(),
         ])->save();
-
-        Mail::to($user)->send(new RegistrationApprovalNotification(
-            $user->full_name,
-            false,
-            $request->validated('reason'),
-        ));
 
         UserNotification::notify(
             $user,
