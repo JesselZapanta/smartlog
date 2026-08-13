@@ -6,6 +6,7 @@ import VerifyEmailPage from "@/pages/VerifyEmailPage.jsx";
 import AdminDashboard from "@/pages/admin/AdminDashboard.jsx";
 import InternDashboard from "@/pages/intern/InternDashboard.jsx";
 import ResubmitRegistrationPage from "@/pages/intern/ResubmitRegistrationPage.jsx";
+import InternRequirementsPage from "@/pages/intern/requirements/InternRequirementsPage.jsx";
 import CoordinatorDashboard from "@/pages/ojt_coordinator/CoordinatorDashboard.jsx";
 import RegistrationApprovalsListPage from "@/pages/ojt_coordinator/registrations/RegistrationApprovalsListPage.jsx";
 import RegistrationApprovalDetailPage from "@/pages/ojt_coordinator/registrations/RegistrationApprovalDetailPage.jsx";
@@ -14,6 +15,8 @@ import CoordinatorInternDetailPage from "@/pages/ojt_coordinator/interns/Coordin
 import CoordinatorHteListPage from "@/pages/ojt_coordinator/htes/CoordinatorHteListPage.jsx";
 import CoordinatorHteFormPage from "@/pages/ojt_coordinator/htes/CoordinatorHteFormPage.jsx";
 import CoordinatorRequirementListPage from "@/pages/ojt_coordinator/requirements/CoordinatorRequirementListPage.jsx";
+import CoordinatorInternRequirementsPage from "@/pages/ojt_coordinator/requirements/CoordinatorInternRequirementsPage.jsx";
+import CoordinatorInternRequirementsDetailPage from "@/pages/ojt_coordinator/requirements/CoordinatorInternRequirementsDetailPage.jsx";
 import InstructorDashboard from "@/pages/ojt_instructor/InstructorDashboard.jsx";
 import HteDashboard from "@/pages/hte/HteDashboard.jsx";
 import ProfilePage from "@/pages/profile/ProfilePage.jsx";
@@ -58,6 +61,14 @@ function App() {
         element={
           <ProtectedRoute roles={["intern"]}>
             <ResubmitRegistrationPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/intern/requirements"
+        element={
+          <ProtectedRoute roles={["intern"]} approvedIntern>
+            <InternRequirementsPage />
           </ProtectedRoute>
         }
       />
@@ -130,6 +141,22 @@ function App() {
         element={
           <ProtectedRoute roles={["ojt_coordinator"]}>
             <CoordinatorRequirementListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coordinator/intern-requirements"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <CoordinatorInternRequirementsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coordinator/intern-requirements/:uuid"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <CoordinatorInternRequirementsDetailPage />
           </ProtectedRoute>
         }
       />
