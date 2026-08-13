@@ -10,7 +10,7 @@ export const homeByRole = {
   hte: "/hte",
 };
 
-export default function ProtectedRoute({ children, roles }) {
+export default function ProtectedRoute({ children, roles, approvedIntern = false }) {
   const { user, loading } = useAuth();
   const location = useLocation();
 
@@ -31,6 +31,10 @@ export default function ProtectedRoute({ children, roles }) {
 
   if (roles && !roles.includes(user.role)) {
     return <Navigate to={homeByRole[user.role] || "/"} replace />;
+  }
+
+  if (approvedIntern && user.role === "intern" && user.registration_status !== "approved") {
+    return <Navigate to="/intern" replace />;
   }
 
   return children;

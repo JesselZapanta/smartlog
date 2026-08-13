@@ -13,10 +13,12 @@ use App\Http\Controllers\Api\Admin\RequirementController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\Intern\RequirementController as InternRequirementController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OjtCoordinator\Htes\HteController as CoordinatorHteController;
 use App\Http\Controllers\Api\OjtCoordinator\Interns\InternController as CoordinatorInternController;
 use App\Http\Controllers\Api\OjtCoordinator\RegistrationApprovalController;
+use App\Http\Controllers\Api\OjtCoordinator\Requirements\InternRequirementController as CoordinatorInternRequirementController;
 use App\Http\Controllers\Api\OjtCoordinator\Requirements\RequirementController as CoordinatorRequirementController;
 use App\Http\Controllers\Api\ProfileController;
 use Illuminate\Support\Facades\Broadcast;
@@ -60,6 +62,10 @@ Route::middleware('auth:api')->group(function (): void {
     Route::middleware('role:intern')->group(function (): void {
         Route::get('/my-registration', [RegistrationApprovalController::class, 'myRegistration'])->name('api.my-registration');
         Route::post('/my-registration/resubmit', [RegistrationApprovalController::class, 'resubmit'])->name('api.my-registration.resubmit');
+
+        Route::get('/intern/requirements', [InternRequirementController::class, 'index'])->name('api.intern.requirements.index');
+        Route::post('/intern/requirements/{requirement}/submit', [InternRequirementController::class, 'submit'])->name('api.intern.requirements.submit');
+        Route::delete('/intern/requirements/{requirement}', [InternRequirementController::class, 'destroy'])->name('api.intern.requirements.destroy');
     });
 
     Route::middleware('role:ojt_coordinator')->group(function (): void {
@@ -82,6 +88,13 @@ Route::middleware('auth:api')->group(function (): void {
         Route::get('/coordinator/requirements/{requirement}', [CoordinatorRequirementController::class, 'show'])->name('api.coordinator.requirements.show');
         Route::put('/coordinator/requirements/{requirement}', [CoordinatorRequirementController::class, 'update'])->name('api.coordinator.requirements.update');
         Route::delete('/coordinator/requirements/{requirement}', [CoordinatorRequirementController::class, 'destroy'])->name('api.coordinator.requirements.destroy');
+
+        Route::get('/coordinator/intern-requirements', [CoordinatorInternRequirementController::class, 'interns'])->name('api.coordinator.intern-requirements.interns');
+        Route::get('/coordinator/intern-requirements/{user:uuid}', [CoordinatorInternRequirementController::class, 'show'])->name('api.coordinator.intern-requirements.show');
+        Route::post('/coordinator/intern-requirements/{user:uuid}/approve-all', [CoordinatorInternRequirementController::class, 'approveAll'])->name('api.coordinator.intern-requirements.approve-all');
+        Route::post('/coordinator/intern-requirements/{user:uuid}/reject-all', [CoordinatorInternRequirementController::class, 'rejectAll'])->name('api.coordinator.intern-requirements.reject-all');
+        Route::post('/coordinator/intern-requirements/{user:uuid}/{requirement}/approve', [CoordinatorInternRequirementController::class, 'approve'])->name('api.coordinator.intern-requirements.approve');
+        Route::post('/coordinator/intern-requirements/{user:uuid}/{requirement}/reject', [CoordinatorInternRequirementController::class, 'reject'])->name('api.coordinator.intern-requirements.reject');
     });
 
     Route::middleware('role:admin')->group(function (): void {
