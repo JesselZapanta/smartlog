@@ -275,7 +275,6 @@ export default function InternListPage() {
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">ID</TableHead>
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Intern</TableHead>
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Institute</TableHead>
-                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Program</TableHead>
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Status</TableHead>
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Registered</TableHead>
                     <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-green-700">
@@ -300,9 +299,6 @@ export default function InternListPage() {
                       </TableCell>
                       <TableCell>
                         <Skeleton className="h-4 w-32" />
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton className="h-4 w-36" />
                       </TableCell>
                       <TableCell>
                         <Skeleton className="h-6 w-20 rounded-full" />
@@ -423,9 +419,6 @@ export default function InternListPage() {
                       </TableCell>
                       <TableCell>
                         <span className="text-sm text-gray-600">{intern.institute || "—"}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-gray-600">{intern.program || "—"}</span>
                       </TableCell>
                       <TableCell>
                         <StatusChip status={intern.status} />
