@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Admin\InstituteController;
 use App\Http\Controllers\Api\Admin\InternController;
 use App\Http\Controllers\Api\Admin\Interns\InternController as InternsInternController;
 use App\Http\Controllers\Api\Admin\LocationController;
+use App\Http\Controllers\Api\Admin\OjtHourController;
 use App\Http\Controllers\Api\Admin\ProgramController;
 use App\Http\Controllers\Api\Admin\RequirementController;
 use App\Http\Controllers\Api\Admin\UserController;
@@ -133,6 +134,9 @@ Route::middleware('auth:api')->group(function (): void {
             ->except(['create', 'edit']);
 
         Route::apiResource('requirements', RequirementController::class)
+            ->except(['create', 'edit']);
+
+        Route::apiResource('ojt-hours', OjtHourController::class)
             ->except(['create', 'edit']);
     });
 });

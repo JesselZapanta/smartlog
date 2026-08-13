@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             InstituteSeeder::class,
             ProgramSeeder::class,
             RequirementSeeder::class,
+            OjtHourSeeder::class,
             UserSeeder::class,
         ]);
     }
