@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreAcademicTermRequest;
 use App\Http\Requests\Admin\UpdateAcademicTermRequest;
-use App\Http\Resources\AcademicTermResource;
+use App\Http\Resources\Admin\AcademicTermResource;
 use App\Models\AcademicTerm;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;

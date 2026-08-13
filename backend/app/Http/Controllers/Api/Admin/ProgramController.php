@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreProgramRequest;
 use App\Http\Requests\Admin\UpdateProgramRequest;
-use App\Http\Resources\ProgramResource;
+use App\Http\Resources\Admin\ProgramResource;
 use App\Models\Program;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;

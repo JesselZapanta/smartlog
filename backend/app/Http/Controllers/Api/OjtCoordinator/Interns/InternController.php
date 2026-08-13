@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\Admin\Interns;
+namespace App\Http\Controllers\Api\OjtCoordinator\Interns;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Intern\InternDetailResource;
@@ -14,11 +14,28 @@ use Illuminate\Http\Request;
 class InternController extends Controller
 {
     /**
-     * View-only list of approved interns with server-side search, filters, sorting and pagination.
+     * View-only list of approved interns for the coordinator's institute.
      */
     public function index(Request $request): JsonResponse
     {
+        $instituteId = $request->user()->coordinator?->institute_id;
+
+        if (! $instituteId) {
+            return response()->json([
+                'data' => [],
+                'meta' => [
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => 10,
+                    'total' => 0,
+                    'from' => null,
+                    'to' => null,
+                ],
+            ]);
+        }
+
         $query = Intern::with(['user', 'institute', 'program', 'academicYear'])
+            ->where('institute_id', $instituteId)
             ->where('status', 'approved');
 
         $search = $request->string('search')->trim()->toString();
@@ -30,12 +47,6 @@ class InternController extends Controller
                     ->orWhere('lastname', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%");
             });
-        }
-
-        $instituteId = $request->integer('institute_id');
-
-        if ($instituteId > 0) {
-            $query->where('institute_id', $instituteId);
         }
 
         $academicYearId = $request->integer('academic_year_id');
@@ -73,22 +84,40 @@ class InternController extends Controller
     }
 
     /**
-     * View-only detail for a single intern.
+     * View-only detail for an approved intern of the coordinator's institute.
      */
-    public function show(User $user): JsonResponse
+    public function show(Request $request, User $user): JsonResponse
     {
-        $intern = $user->intern;
-
-        if (! $intern) {
-            return response()->json([
-                'data' => ['message' => 'This user has no intern record.'],
-            ], 404);
-        }
+        $intern = $this->authorizeIntern($request, $user);
 
         $intern->loadMissing(['user.location', 'program', 'institute', 'academicYear', 'reviewer']);
 
         return response()->json([
             'data' => new InternDetailResource($intern),
         ]);
+    }
+
+    /**
+     * Ensure the intern is approved and belongs to the coordinator's institute.
+     */
+    private function authorizeIntern(Request $request, User $user): Intern
+    {
+        $instituteId = $request->user()->coordinator?->institute_id;
+
+        if (! $instituteId) {
+            abort(403, 'Your account is not assigned to an institute yet.');
+        }
+
+        $intern = $user->intern;
+
+        if (! $intern) {
+            abort(404, 'This user has no intern record.');
+        }
+
+        if ($intern->institute_id !== $instituteId || $intern->status !== 'approved') {
+            abort(403, 'This intern does not belong to your institute.');
+        }
+
+        return $intern;
     }
 }

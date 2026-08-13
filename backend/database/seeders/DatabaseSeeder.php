@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             AcademicTermSeeder::class,
             InstituteSeeder::class,
             ProgramSeeder::class,
+            RequirementSeeder::class,
             UserSeeder::class,
         ]);
     }

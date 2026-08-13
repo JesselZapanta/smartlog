@@ -9,13 +9,15 @@ use App\Http\Controllers\Api\Admin\InternController;
 use App\Http\Controllers\Api\Admin\Interns\InternController as InternsInternController;
 use App\Http\Controllers\Api\Admin\LocationController;
 use App\Http\Controllers\Api\Admin\ProgramController;
+use App\Http\Controllers\Api\Admin\RequirementController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\Coordinator\Htes\HteController as CoordinatorHteController;
-use App\Http\Controllers\Api\Coordinator\Interns\InternController as CoordinatorInternController;
-use App\Http\Controllers\Api\Coordinator\RegistrationApprovalController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\OjtCoordinator\Htes\HteController as CoordinatorHteController;
+use App\Http\Controllers\Api\OjtCoordinator\Interns\InternController as CoordinatorInternController;
+use App\Http\Controllers\Api\OjtCoordinator\RegistrationApprovalController;
+use App\Http\Controllers\Api\OjtCoordinator\Requirements\RequirementController as CoordinatorRequirementController;
 use App\Http\Controllers\Api\ProfileController;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
@@ -74,6 +76,12 @@ Route::middleware('auth:api')->group(function (): void {
         Route::get('/coordinator/htes/{user:uuid}', [CoordinatorHteController::class, 'show'])->name('api.coordinator.htes.show');
         Route::put('/coordinator/htes/{user:uuid}', [CoordinatorHteController::class, 'update'])->name('api.coordinator.htes.update');
         Route::delete('/coordinator/htes/{user:uuid}', [CoordinatorHteController::class, 'destroy'])->name('api.coordinator.htes.destroy');
+
+        Route::get('/coordinator/requirements', [CoordinatorRequirementController::class, 'index'])->name('api.coordinator.requirements.index');
+        Route::post('/coordinator/requirements', [CoordinatorRequirementController::class, 'store'])->name('api.coordinator.requirements.store');
+        Route::get('/coordinator/requirements/{requirement}', [CoordinatorRequirementController::class, 'show'])->name('api.coordinator.requirements.show');
+        Route::put('/coordinator/requirements/{requirement}', [CoordinatorRequirementController::class, 'update'])->name('api.coordinator.requirements.update');
+        Route::delete('/coordinator/requirements/{requirement}', [CoordinatorRequirementController::class, 'destroy'])->name('api.coordinator.requirements.destroy');
     });
 
     Route::middleware('role:admin')->group(function (): void {
@@ -109,6 +117,9 @@ Route::middleware('auth:api')->group(function (): void {
             ->except(['create', 'edit']);
 
         Route::apiResource('programs', ProgramController::class)
+            ->except(['create', 'edit']);
+
+        Route::apiResource('requirements', RequirementController::class)
             ->except(['create', 'edit']);
     });
 });

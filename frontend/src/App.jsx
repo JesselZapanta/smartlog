@@ -13,6 +13,7 @@ import CoordinatorInternListPage from "@/pages/ojt_coordinator/interns/Coordinat
 import CoordinatorInternDetailPage from "@/pages/ojt_coordinator/interns/CoordinatorInternDetailPage.jsx";
 import CoordinatorHteListPage from "@/pages/ojt_coordinator/htes/CoordinatorHteListPage.jsx";
 import CoordinatorHteFormPage from "@/pages/ojt_coordinator/htes/CoordinatorHteFormPage.jsx";
+import CoordinatorRequirementListPage from "@/pages/ojt_coordinator/requirements/CoordinatorRequirementListPage.jsx";
 import InstructorDashboard from "@/pages/ojt_instructor/InstructorDashboard.jsx";
 import HteDashboard from "@/pages/hte/HteDashboard.jsx";
 import ProfilePage from "@/pages/profile/ProfilePage.jsx";
@@ -26,6 +27,7 @@ import HteDetailPage from "@/pages/admin/htes/HteDetailPage.jsx";
 import AcademicTermListPage from "@/pages/admin/academic-terms/AcademicTermListPage.jsx";
 import InstituteListPage from "@/pages/admin/institutes/InstituteListPage.jsx";
 import ProgramListPage from "@/pages/admin/programs/ProgramListPage.jsx";
+import RequirementListPage from "@/pages/admin/requirements/RequirementListPage.jsx";
 import ProtectedRoute from "@/components/ProtectedRoute.jsx";
 
 function App() {
@@ -124,6 +126,14 @@ function App() {
         }
       />
       <Route
+        path="/coordinator/requirements"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <CoordinatorRequirementListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/instructor"
         element={
           <ProtectedRoute roles={["ojt_instructor"]}>
@@ -216,6 +226,14 @@ function App() {
         element={
           <ProtectedRoute roles={["admin"]}>
             <ProgramListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/requirements"
+        element={
+          <ProtectedRoute roles={["admin"]}>
+            <RequirementListPage />
           </ProtectedRoute>
         }
       />

@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\Admin\Htes;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Htes\HteDetailResource;
-use App\Http\Resources\Htes\HteListResource;
+use App\Http\Resources\Hte\HteDetailResource;
+use App\Http\Resources\Hte\HteListResource;
 use App\Models\Hte;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
