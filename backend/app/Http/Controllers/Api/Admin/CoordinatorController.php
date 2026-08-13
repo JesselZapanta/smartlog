@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateCoordinatorRequest;
-use App\Http\Resources\CoordinatorResource;
+use App\Http\Resources\OjtCoordinator\CoordinatorResource;
 use App\Models\Coordinator;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;

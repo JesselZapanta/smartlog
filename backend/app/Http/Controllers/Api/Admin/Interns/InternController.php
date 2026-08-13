@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\Admin\Interns;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Interns\InternDetailResource;
-use App\Http\Resources\Interns\InternListResource;
+use App\Http\Resources\Intern\InternDetailResource;
+use App\Http\Resources\Intern\InternListResource;
 use App\Models\Intern;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;

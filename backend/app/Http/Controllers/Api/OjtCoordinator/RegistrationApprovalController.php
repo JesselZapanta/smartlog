@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\Api\Coordinator;
+namespace App\Http\Controllers\Api\OjtCoordinator;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\RejectRegistrationRequest;
-use App\Http\Requests\Api\ResubmitRegistrationRequest;
-use App\Http\Resources\InternResource;
+use App\Http\Requests\Intern\ResubmitRegistrationRequest;
+use App\Http\Requests\OjtCoordinator\RejectRegistrationRequest;
+use App\Http\Resources\Intern\InternResource;
 use App\Http\Resources\LocationResource;
 use App\Mail\RegistrationApprovalNotification;
 use App\Models\Intern;

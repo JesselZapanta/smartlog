@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\OjtCoordinator;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class ProgramResource extends JsonResource
+class CoordinatorResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -16,11 +16,9 @@ class ProgramResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'user_id' => $this->user_id,
             'institute_id' => $this->institute_id,
-            'institute' => new InstituteResource($this->whenLoaded('institute')),
-            'name' => $this->name,
-            'description' => $this->description,
-            'is_active' => (bool) $this->is_active,
+            'program_id' => $this->program_id,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

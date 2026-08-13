@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Resources\Interns;
+namespace App\Http\Resources\Intern;
 
 use App\Http\Resources\LocationResource;
 use App\Support\StorageUrl;

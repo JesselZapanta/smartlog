@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateInternRequest;
-use App\Http\Resources\InternResource;
+use App\Http\Resources\Intern\InternResource;
 use App\Models\Intern;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateHteRequest;
-use App\Http\Resources\HteResource;
+use App\Http\Resources\Hte\HteResource;
 use App\Models\Hte;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;

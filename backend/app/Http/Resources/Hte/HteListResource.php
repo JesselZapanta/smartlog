@@ -1,14 +1,11 @@
 <?php
 
-namespace App\Http\Resources\Htes;
+namespace App\Http\Resources\Hte;
 
-use App\Http\Resources\LocationResource;
-use App\Support\StorageUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
 
-class HteDetailResource extends JsonResource
+class HteListResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -25,16 +22,13 @@ class HteDetailResource extends JsonResource
             'email' => $this->user->email,
             'contact_number' => $this->user->contact_number,
             'profile_picture' => $this->user->profile_picture,
+            'institute_id' => $this->institute_id,
+            'program_id' => $this->program_id,
             'institute' => $this->institute?->name,
             'program' => $this->program?->name,
-            'moa' => $this->moa,
-            'moa_url' => $this->moa && Storage::disk('public')->exists($this->moa)
-                ? StorageUrl::url($this->moa)
-                : null,
+            'status' => $this->status,
             'start_at' => $this->start_at?->format('Y-m-d'),
             'end_at' => $this->end_at?->format('Y-m-d'),
-            'location' => $this->user->location ? new LocationResource($this->user->location) : null,
-            'status' => $this->status,
             'created_at' => $this->created_at,
         ];
     }

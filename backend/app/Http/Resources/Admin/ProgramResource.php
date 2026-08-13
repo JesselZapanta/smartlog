@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\Admin;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class AcademicTermResource extends JsonResource
+class ProgramResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -16,11 +16,11 @@ class AcademicTermResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'code' => $this->code,
+            'institute_id' => $this->institute_id,
+            'institute' => new InstituteResource($this->whenLoaded('institute')),
+            'name' => $this->name,
             'description' => $this->description,
-            'status' => $this->status,
-            'start_at' => $this->start_at?->format('Y-m-d'),
-            'end_at' => $this->end_at?->format('Y-m-d'),
+            'is_active' => (bool) $this->is_active,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

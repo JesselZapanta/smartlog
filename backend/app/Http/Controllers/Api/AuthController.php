@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\RegisterRequest;
+use App\Http\Requests\Intern\RegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Models\AcademicTerm;
 use App\Models\Institute;

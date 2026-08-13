@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreInstituteRequest;
 use App\Http\Requests\Admin\UpdateInstituteRequest;
-use App\Http\Resources\InstituteResource;
+use App\Http\Resources\Admin\InstituteResource;
 use App\Models\Institute;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;

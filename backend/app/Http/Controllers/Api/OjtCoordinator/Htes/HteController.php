@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\Api\Coordinator\Htes;
+namespace App\Http\Controllers\Api\OjtCoordinator\Htes;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\CoordinatorStoreHteRequest;
-use App\Http\Requests\Api\CoordinatorUpdateHteRequest;
-use App\Http\Resources\Htes\HteDetailResource;
-use App\Http\Resources\Htes\HteListResource;
+use App\Http\Requests\OjtCoordinator\CoordinatorStoreHteRequest;
+use App\Http\Requests\OjtCoordinator\CoordinatorUpdateHteRequest;
+use App\Http\Resources\Hte\HteDetailResource;
+use App\Http\Resources\Hte\HteListResource;
 use App\Models\Hte;
 use App\Models\Program;
 use App\Models\User;

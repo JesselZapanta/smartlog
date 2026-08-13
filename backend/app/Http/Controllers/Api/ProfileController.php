@@ -3,15 +3,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\UpdateHteProfileRequest;
-use App\Http\Requests\Api\UpdateInternProfileRequest;
 use App\Http\Requests\Api\UpdateProfileLocationRequest;
 use App\Http\Requests\Api\UpdateProfilePasswordRequest;
 use App\Http\Requests\Api\UpdateProfileRequest;
-use App\Http\Resources\CoordinatorResource;
-use App\Http\Resources\HteResource;
-use App\Http\Resources\InternResource;
+use App\Http\Requests\Hte\UpdateHteProfileRequest;
+use App\Http\Requests\Intern\UpdateInternProfileRequest;
+use App\Http\Resources\Hte\HteResource;
+use App\Http\Resources\Intern\InternResource;
 use App\Http\Resources\LocationResource;
+use App\Http\Resources\OjtCoordinator\CoordinatorResource;
 use App\Http\Resources\UserResource;
 use App\Models\AcademicTerm;
 use App\Models\Institute;
