@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ClipboardList, FileText, Upload, X, Loader2, CheckCircle2, ExternalLink, AlertTriangle, Clock3 } from "lucide-react";
+import { Building2, ClipboardList, FileText, GraduationCap, Landmark, Mail, Upload, UserRound, X, Loader2, CheckCircle2, ExternalLink, AlertTriangle, Clock3 } from "lucide-react";
 import InternLayout from "@/layouts/InternLayout.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
@@ -13,6 +13,20 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 function formatDate(value) {
   if (!value) return "—";
   return new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function DetailRow({ icon: Icon, label, value }) {
+  return (
+    <div className="flex min-w-0 items-start gap-2.5">
+      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-600 ring-1 ring-green-100">
+        <Icon size={14} />
+      </span>
+      <div className="min-w-0">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{label}</p>
+        <p className="truncate text-sm font-semibold text-gray-800">{value || "—"}</p>
+      </div>
+    </div>
+  );
 }
 
 function TypePill({ type }) {
@@ -48,6 +62,7 @@ function StatusPill({ status }) {
 
 export default function InternRequirementsPage() {
   const [requirements, setRequirements] = useState([]);
+  const [hte, setHte] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submittingId, setSubmittingId] = useState(null);
   const [removingId, setRemovingId] = useState(null);
@@ -57,6 +72,7 @@ export default function InternRequirementsPage() {
     try {
       const res = await api.get("/intern/requirements");
       setRequirements(res.data.data || []);
+      setHte(res.data.hte || null);
     } catch (err) {
       toast.error("Failed to load requirements", { description: firstErrorMessage(err) });
     } finally {
@@ -123,14 +139,6 @@ export default function InternRequirementsPage() {
             Submit the PDF requirements for your OJT internship.
           </p>
         </div>
-        {!loading && requirements.length > 0 && (
-          <div className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-gray-100">
-            <CheckCircle2 size={18} className={submittedCount === requirements.length ? "text-green-600" : "text-gray-300"} />
-            <span className="text-sm font-semibold text-gray-700">
-              {submittedCount} / {requirements.length} submitted
-            </span>
-          </div>
-        )}
       </div>
 
       {loading ? (
@@ -146,6 +154,16 @@ export default function InternRequirementsPage() {
             </div>
           ))}
         </div>
+      ) : !hte ? (
+        <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-white py-12 text-center shadow-sm ring-1 ring-gray-100">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-500">
+            <Building2 size={20} />
+          </div>
+          <p className="text-sm font-semibold text-gray-700">No assigned HTE yet</p>
+          <p className="max-w-xs text-xs text-gray-400">
+            Your requirements will appear here once the OJT coordinator assigns you to a host training establishment.
+          </p>
+        </div>
       ) : requirements.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-white py-12 text-center shadow-sm ring-1 ring-gray-100">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-gray-400">
@@ -155,8 +173,36 @@ export default function InternRequirementsPage() {
           <p className="text-xs text-gray-400">Your institute hasn't published any requirements.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {requirements.map((requirement) => (
+        <>
+          <div className="overflow-hidden rounded-2xl border border-green-100 bg-white shadow-sm ring-1 ring-green-100">
+            <div className="flex items-center gap-3 border-b border-green-100/70 bg-gradient-to-r from-green-700 to-green-500 px-4 py-3 sm:px-5">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-white/30">
+                <Building2 size={18} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-green-100">
+                  Host Training Establishment
+                </p>
+                <p className="truncate font-heading text-base font-bold text-white sm:text-lg">{hte.name}</p>
+              </div>
+              <Badge className="shrink-0 rounded-full bg-white font-semibold capitalize text-green-700 ring-0">
+                {hte.status || "active"}
+              </Badge>
+            </div>
+            <div className="grid grid-cols-1 gap-x-6 gap-y-3.5 px-4 py-4 sm:grid-cols-2 sm:px-5">
+              <DetailRow icon={UserRound} label="Contact person" value={hte.contact_person} />
+              <DetailRow icon={Mail} label="Email" value={hte.email} />
+              <DetailRow icon={GraduationCap} label="Program" value={hte.program} />
+              <DetailRow icon={Landmark} label="Institute" value={hte.institute} />
+            </div>
+          </div>
+
+          <p className="mt-4 text-xs font-bold uppercase tracking-wider text-gray-400">
+            Pre-deployment requirements — {submittedCount} / {requirements.length} submitted
+          </p>
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {requirements.map((requirement) => (
             <div key={requirement.id} className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm ring-1 ring-gray-100">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -259,7 +305,8 @@ export default function InternRequirementsPage() {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        </>
       )}
     </InternLayout>
   );

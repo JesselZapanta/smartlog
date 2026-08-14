@@ -32,6 +32,7 @@ class CoordinatorStoreHteRequest extends FormRequest
             'moa' => ['nullable', 'file', 'mimes:pdf', 'max:10240'],
             'start_at' => ['nullable', 'date'],
             'end_at' => ['nullable', 'date', 'after_or_equal:start_at'],
+            'status' => ['required', Rule::in(['active', 'expired', 'inactive'])],
             'region' => ['nullable', 'string', 'max:255'],
             'province' => ['nullable', 'string', 'max:255'],
             'city_municipality' => ['nullable', 'string', 'max:255'],

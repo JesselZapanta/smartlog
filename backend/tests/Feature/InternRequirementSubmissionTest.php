@@ -2,6 +2,7 @@
 
 use App\Models\AcademicTerm;
 use App\Models\Coordinator;
+use App\Models\Hte;
 use App\Models\Institute;
 use App\Models\Intern;
 use App\Models\Program;
@@ -25,6 +26,20 @@ function internReqProgram(Institute $institute): Program
     return Program::create(['institute_id' => $institute->id, 'name' => 'BS Computer Science']);
 }
 
+function internReqHte(Institute $institute, Program $program, array $attributes = []): User
+{
+    $user = User::factory()->create(['role' => 'hte', ...$attributes]);
+    Hte::create([
+        'user_id' => $user->id,
+        'institute_id' => $institute->id,
+        'program_id' => $program->id,
+        'name' => $attributes['name'] ?? 'City Hall',
+        'status' => $attributes['status'] ?? 'active',
+    ]);
+
+    return $user;
+}
+
 function internReqUser(Institute $institute, Program $program, array $attributes = []): User
 {
     $user = User::factory()->create(['role' => 'intern', ...$attributes]);
@@ -36,6 +51,8 @@ function internReqUser(Institute $institute, Program $program, array $attributes
     ]);
 
     $record->forceFill(['status' => 'approved'])->save();
+
+    $record->forceFill(['assigned_hte' => internReqHte($institute, $program)->hte->id])->save();
 
     return $user;
 }
@@ -73,7 +90,39 @@ test('intern sees only active requirements of their institute with submission st
         ->assertJsonPath('data.0.name', 'Medical Certificate')
         ->assertJsonStructure(['data' => [['id', 'name', 'description', 'type', 'submission']]])
         ->assertJsonPath('data.0.submission.id', $submission->id)
-        ->assertJsonPath('data.0.submission.file_name', basename($submission->file_path));
+        ->assertJsonPath('data.0.submission.file_name', basename($submission->file_path))
+        ->assertJsonPath('hte.name', 'City Hall')
+        ->assertJsonPath('hte.status', 'active')
+        ->assertJsonPath('hte.institute', 'Institute of Computing');
+});
+
+test('intern without an assigned hte sees no requirements and no hte info', function () {
+    $institute = internReqInstitute();
+    $program = internReqProgram($institute);
+    $intern = internReqUser($institute, $program);
+    internReqRequirement($institute, ['name' => 'Medical Certificate']);
+    Intern::where('user_id', $intern->id)->update(['assigned_hte' => null]);
+
+    $this->actingAs($intern, 'api')
+        ->getJson('/api/intern/requirements')
+        ->assertOk()
+        ->assertJsonCount(0, 'data')
+        ->assertJsonPath('hte', null);
+});
+
+test('intern without an assigned hte cannot submit requirements', function () {
+    Storage::fake('public');
+    $institute = internReqInstitute();
+    $program = internReqProgram($institute);
+    $intern = internReqUser($institute, $program);
+    $requirement = internReqRequirement($institute);
+    Intern::where('user_id', $intern->id)->update(['assigned_hte' => null]);
+
+    $this->actingAs($intern, 'api')
+        ->postJson("/api/intern/requirements/{$requirement->id}/submit", [
+            'file' => UploadedFile::fake()->create('cert.pdf', 1024, 'application/pdf'),
+        ])
+        ->assertForbidden();
 });
 
 test('intern does not see requirements of other institutes', function () {

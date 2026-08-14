@@ -8,6 +8,7 @@ use App\Http\Requests\OjtCoordinator\CoordinatorUpdateHteRequest;
 use App\Http\Resources\Hte\HteDetailResource;
 use App\Http\Resources\Hte\HteListResource;
 use App\Models\Hte;
+use App\Models\Intern;
 use App\Models\Program;
 use App\Models\User;
 use App\Services\EmailVerificationService;
@@ -50,6 +51,7 @@ class HteController extends Controller
 
     /**
      * CRUD list of HTEs for the coordinator's institute.
+     * When an academic year is provided, assigned counts are scoped to that year.
      */
     public function index(Request $request): JsonResponse
     {
@@ -69,7 +71,15 @@ class HteController extends Controller
             ]);
         }
 
+        $academicYearId = $request->integer('academic_year_id');
+
+        $assignedCountQuery = fn ($builder) => $builder;
+        if ($academicYearId > 0) {
+            $assignedCountQuery = fn ($builder) => $builder->where('academic_year_id', $academicYearId);
+        }
+
         $query = Hte::with(['user', 'institute', 'program'])
+            ->withCount(['assignedInterns' => $assignedCountQuery])
             ->where('institute_id', $instituteId);
 
         $search = $request->string('search')->trim()->toString();
@@ -135,6 +145,163 @@ class HteController extends Controller
     }
 
     /**
+     * Approved interns of the coordinator's institute (for the given academic year)
+     * that are not yet assigned to any HTE.
+     */
+    public function assignableInterns(Request $request, User $user): JsonResponse
+    {
+        $hte = $this->authorizeHte($request, $user);
+
+        $academicYearId = $request->integer('academic_year_id');
+
+        if ($academicYearId <= 0) {
+            throw ValidationException::withMessages([
+                'academic_year_id' => ['An academic year is required.'],
+            ]);
+        }
+
+        $query = Intern::with(['user', 'program'])
+            ->where('institute_id', $hte->institute_id)
+            ->where('academic_year_id', $academicYearId)
+            ->where('status', 'approved')
+            ->whereNull('assigned_hte');
+
+        $search = $request->string('search')->trim()->toString();
+
+        if ($search !== '') {
+            $query->whereHas('user', function (Builder $builder) use ($search): void {
+                $builder->where('firstname', 'like', "%{$search}%")
+                    ->orWhere('middlename', 'like', "%{$search}%")
+                    ->orWhere('lastname', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $perPage = min(max($request->integer('per_page', 10), 1), 100);
+
+        $interns = $query->orderBy('id')
+            ->paginate($perPage)
+            ->withQueryString()
+            ->through(fn (Intern $intern): array => $this->internListItem($intern));
+
+        return response()->json([
+            'data' => $interns->items(),
+            'meta' => [
+                'current_page' => $interns->currentPage(),
+                'last_page' => $interns->lastPage(),
+                'per_page' => $interns->perPage(),
+                'total' => $interns->total(),
+                'from' => $interns->firstItem(),
+                'to' => $interns->lastItem(),
+            ],
+        ]);
+    }
+
+    /**
+     * Interns of the given academic year currently assigned to this HTE.
+     */
+    public function assignedInterns(Request $request, User $user): JsonResponse
+    {
+        $hte = $this->authorizeHte($request, $user);
+
+        $academicYearId = $request->integer('academic_year_id');
+
+        if ($academicYearId <= 0) {
+            throw ValidationException::withMessages([
+                'academic_year_id' => ['An academic year is required.'],
+            ]);
+        }
+
+        $interns = Intern::with(['user', 'program'])
+            ->where('institute_id', $hte->institute_id)
+            ->where('academic_year_id', $academicYearId)
+            ->where('status', 'approved')
+            ->where('assigned_hte', $hte->id)
+            ->orderBy('id')
+            ->get()
+            ->map(fn (Intern $intern): array => $this->internListItem($intern))
+            ->values();
+
+        return response()->json([
+            'data' => $interns,
+        ]);
+    }
+
+    /**
+     * Unassign selected interns (of the given academic year) from the HTE.
+     */
+    public function unassign(Request $request, User $user): JsonResponse
+    {
+        $hte = $this->authorizeHte($request, $user);
+
+        $data = $request->validate([
+            'academic_year_id' => ['required', 'integer', 'exists:academic_terms,id'],
+            'intern_ids' => ['required', 'array', 'min:1'],
+            'intern_ids.*' => ['integer', 'distinct'],
+        ]);
+
+        $interns = Intern::where('institute_id', $hte->institute_id)
+            ->where('academic_year_id', $data['academic_year_id'])
+            ->where('assigned_hte', $hte->id)
+            ->whereIn('id', $data['intern_ids'])
+            ->get();
+
+        foreach ($interns as $intern) {
+            $intern->forceFill(['assigned_hte' => null])->save();
+        }
+
+        return response()->json([
+            'data' => [
+                'message' => $interns->count().' intern(s) unassigned from '.$hte->name.'.',
+                'count' => $interns->count(),
+            ],
+        ]);
+    }
+
+    private function internListItem(Intern $intern): array
+    {
+        return [
+            'id' => $intern->id,
+            'uuid' => $intern->user->uuid,
+            'full_name' => $intern->user->full_name,
+            'email' => $intern->user->email,
+            'program' => $intern->program?->name,
+        ];
+    }
+
+    /**
+     * Assign selected interns (of the given academic year) to the HTE.
+     */
+    public function assign(Request $request, User $user): JsonResponse
+    {
+        $hte = $this->authorizeHte($request, $user);
+
+        $data = $request->validate([
+            'academic_year_id' => ['required', 'integer', 'exists:academic_terms,id'],
+            'intern_ids' => ['required', 'array', 'min:1'],
+            'intern_ids.*' => ['integer', 'distinct'],
+        ]);
+
+        $interns = Intern::where('institute_id', $hte->institute_id)
+            ->where('academic_year_id', $data['academic_year_id'])
+            ->where('status', 'approved')
+            ->whereNull('assigned_hte')
+            ->whereIn('id', $data['intern_ids'])
+            ->get();
+
+        foreach ($interns as $intern) {
+            $intern->forceFill(['assigned_hte' => $hte->id])->save();
+        }
+
+        return response()->json([
+            'data' => [
+                'message' => $interns->count().' intern(s) assigned to '.$hte->name.'.',
+                'count' => $interns->count(),
+            ],
+        ]);
+    }
+
+    /**
      * Create an HTE account (user + hte record + optional location) for the coordinator's institute.
      */
     public function store(CoordinatorStoreHteRequest $request): JsonResponse
@@ -185,7 +352,7 @@ class HteController extends Controller
             'moa' => $moaPath,
             'start_at' => $data['start_at'] ?? null,
             'end_at' => $data['end_at'] ?? null,
-            'status' => 'active',
+            'status' => $data['status'] ?? 'active',
         ]);
 
         if ($request->filled('region')) {
@@ -246,7 +413,7 @@ class HteController extends Controller
             $this->verification->sendOtp($user->refresh());
         }
 
-        $hteData = collect($data)->only(['name', 'program_id', 'start_at', 'end_at'])->all();
+        $hteData = collect($data)->only(['name', 'program_id', 'start_at', 'end_at', 'status'])->all();
 
         if ($request->hasFile('moa')) {
             if ($hte->moa) {

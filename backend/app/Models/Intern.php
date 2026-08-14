@@ -23,11 +23,17 @@ class Intern extends Model
         'parents_guardian_address',
         'practicum_instructor',
         'cor_path',
+        'assigned_hte',
+        'ojt_status',
+        'start_date',
+        'end_date',
     ];
 
     protected function casts(): array
     {
         return [
+            'start_date' => 'date',
+            'end_date' => 'date',
             'reviewed_at' => 'datetime',
         ];
     }
@@ -40,6 +46,11 @@ class Intern extends Model
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    public function assignedHte(): BelongsTo
+    {
+        return $this->belongsTo(Hte::class, 'assigned_hte');
     }
 
     public function academicYear(): BelongsTo

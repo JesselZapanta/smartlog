@@ -80,6 +80,7 @@ const hteFields = {
   moa: z.union([z.string(), z.instanceof(File)]).optional(),
   start_at: z.string(),
   end_at: z.string(),
+  status: z.string().min(1, "Select a status"),
 };
 
 const credentialsFields = {
@@ -137,7 +138,7 @@ const editSchema = z
 
 const accountStepFields = ["firstname", "middlename", "lastname", "extension", "contact_number", "profile_picture"];
 const locationStepFields = ["region", "province", "city_municipality", "barangay"];
-const hteStepFields = ["name", "program_id", "moa", "start_at", "end_at"];
+const hteStepFields = ["name", "program_id", "moa", "start_at", "end_at", "status"];
 const credentialsStepFields = ["email", "password", "password_confirmation"];
 
 const stepFields = {
@@ -193,6 +194,7 @@ export default function CoordinatorHteFormPage() {
       moa: "",
       start_at: "",
       end_at: "",
+      status: "active",
       email: "",
       password: "",
       password_confirmation: "",
@@ -254,6 +256,7 @@ export default function CoordinatorHteFormPage() {
           moa: "",
           start_at: data.start_at || "",
           end_at: data.end_at || "",
+          status: data.status || "active",
           email: data.email || "",
           password: "",
           password_confirmation: "",
@@ -404,6 +407,7 @@ export default function CoordinatorHteFormPage() {
         program_id: Number(values.program_id),
         start_at: values.start_at || null,
         end_at: values.end_at || null,
+        status: values.status || "active",
         region: values.region,
         province: values.province,
         city_municipality: values.city_municipality,
@@ -851,6 +855,30 @@ export default function CoordinatorHteFormPage() {
                               <FormLabel className={labelClass}>End date</FormLabel>
                               <FormControl>
                                 <Input type="date" className="h-11 rounded-xl" {...field} />
+                              </FormControl>
+                              <div className="min-h-[1.25rem]"><FormMessage /></div>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="status"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className={labelClass}>Status</FormLabel>
+                              <FormControl>
+                                <Select value={field.value} onValueChange={field.onChange}>
+                                  <SelectTrigger className={selectClass}>
+                                    <SelectValue placeholder="Select status" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {[{ value: "active", label: "Active" }, { value: "expired", label: "Expired" }, { value: "inactive", label: "Inactive" }].map((option) => (
+                                      <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
                               </FormControl>
                               <div className="min-h-[1.25rem]"><FormMessage /></div>
                             </FormItem>

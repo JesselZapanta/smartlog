@@ -25,17 +25,33 @@ class RequirementController extends Controller
 
         $intern = $user->intern;
 
-        if (! $intern) {
+        if (! $intern || $intern->status !== 'approved') {
             return response()->json([
                 'data' => [],
+                'hte' => null,
             ]);
         }
 
-        if ($intern->status !== 'approved') {
+        $hte = $intern->assignedHte()->with(['user', 'program', 'institute'])->first();
+
+        if (! $hte) {
             return response()->json([
                 'data' => [],
+                'hte' => null,
             ]);
         }
+
+        $hteInfo = [
+            'id' => $hte->id,
+            'name' => $hte->name,
+            'contact_person' => $hte->user->full_name,
+            'email' => $hte->user->email,
+            'program' => $hte->program?->name,
+            'institute' => $hte->institute?->name,
+            'status' => $hte->status,
+            'start_at' => $hte->start_at,
+            'end_at' => $hte->end_at,
+        ];
 
         $instituteId = $intern->institute_id;
 
@@ -65,6 +81,7 @@ class RequirementController extends Controller
 
         return response()->json([
             'data' => $rows,
+            'hte' => $hteInfo,
         ]);
     }
 
@@ -146,6 +163,10 @@ class RequirementController extends Controller
 
         if ($intern->status !== 'approved') {
             abort(403, 'Your registration must be approved before submitting requirements.');
+        }
+
+        if ($intern->assigned_hte === null) {
+            abort(403, 'You must be assigned to an HTE before submitting requirements.');
         }
 
         if ($requirement->institute_id !== $intern->institute_id || ! $requirement->is_active) {
