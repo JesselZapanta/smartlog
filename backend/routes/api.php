@@ -83,6 +83,10 @@ Route::middleware('auth:api')->group(function (): void {
         Route::get('/coordinator/htes/{user:uuid}', [CoordinatorHteController::class, 'show'])->name('api.coordinator.htes.show');
         Route::put('/coordinator/htes/{user:uuid}', [CoordinatorHteController::class, 'update'])->name('api.coordinator.htes.update');
         Route::delete('/coordinator/htes/{user:uuid}', [CoordinatorHteController::class, 'destroy'])->name('api.coordinator.htes.destroy');
+        Route::get('/coordinator/htes/{user:uuid}/assignable-interns', [CoordinatorHteController::class, 'assignableInterns'])->name('api.coordinator.htes.assignable-interns');
+        Route::get('/coordinator/htes/{user:uuid}/assigned-interns', [CoordinatorHteController::class, 'assignedInterns'])->name('api.coordinator.htes.assigned-interns');
+        Route::post('/coordinator/htes/{user:uuid}/assign', [CoordinatorHteController::class, 'assign'])->name('api.coordinator.htes.assign');
+        Route::post('/coordinator/htes/{user:uuid}/unassign', [CoordinatorHteController::class, 'unassign'])->name('api.coordinator.htes.unassign');
 
         Route::get('/coordinator/requirements', [CoordinatorRequirementController::class, 'index'])->name('api.coordinator.requirements.index');
         Route::post('/coordinator/requirements', [CoordinatorRequirementController::class, 'store'])->name('api.coordinator.requirements.store');

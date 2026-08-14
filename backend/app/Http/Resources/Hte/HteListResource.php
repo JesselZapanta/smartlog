@@ -29,6 +29,7 @@ class HteListResource extends JsonResource
             'status' => $this->status,
             'start_at' => $this->start_at?->format('Y-m-d'),
             'end_at' => $this->end_at?->format('Y-m-d'),
+            'assigned_count' => $this->whenCounted('assignedInterns'),
             'created_at' => $this->created_at,
         ];
     }
