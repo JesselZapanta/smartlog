@@ -56,7 +56,7 @@ export const roleStepConfig = {
     type: "hte",
     label: "HTE Details",
     icon: Building2,
-    fields: ["name", "institute_id", "program_id", "moa", "start_at", "end_at"],
+    fields: ["name", "institute_id", "program_id", "moa", "start_at", "end_at", "status"],
   },
 };
 

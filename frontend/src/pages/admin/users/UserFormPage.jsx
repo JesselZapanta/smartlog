@@ -108,6 +108,7 @@ const roleFields = {
   cor: z.union([z.string(), z.instanceof(File)]).optional(),
   start_at: z.string(),
   end_at: z.string(),
+  status: z.string(),
 };
 
 const credentialsFields = {
@@ -265,7 +266,7 @@ function buildRolePayload(type, values) {
       moa: values.moa instanceof File ? values.moa : undefined,
       start_at: values.start_at || null,
       end_at: values.end_at || null,
-      status: "active",
+      status: values.status || "active",
     };
   }
   return {
@@ -335,6 +336,7 @@ export default function UserFormPage() {
       cor: "",
       start_at: "",
       end_at: "",
+      status: "active",
       email: "",
       password: "",
       password_confirmation: "",
@@ -515,6 +517,7 @@ export default function UserFormPage() {
       setExistingMoaUrl(record.moa_url || null);
       form.setValue("start_at", record.start_at ? String(record.start_at).slice(0, 10) : "");
       form.setValue("end_at", record.end_at ? String(record.end_at).slice(0, 10) : "");
+      form.setValue("status", record.status || "active");
     } else {
       form.setValue("institute_id", record.institute_id ? String(record.institute_id) : "");
       form.setValue("program_id", record.program_id ? String(record.program_id) : "");
@@ -562,11 +565,12 @@ export default function UserFormPage() {
           mothers_contact: "",
           parents_guardian_address: "",
           practicum_instructor: "",
-          name: "",
-          moa: "",
-          start_at: "",
-          end_at: "",
-          email: user.email || "",
+      name: "",
+      moa: "",
+      start_at: "",
+      end_at: "",
+      status: "active",
+      email: user.email || "",
           password: "",
           password_confirmation: "",
         });

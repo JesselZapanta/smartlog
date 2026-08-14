@@ -9,10 +9,23 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import InstituteProgramFields from "@/pages/admin/users/InstituteProgramFields.jsx";
 
 const labelClass = "text-xs font-bold uppercase tracking-wider text-gray-700";
 const MAX_MOA_SIZE = 10 * 1024 * 1024;
+
+const statusOptions = [
+  { value: "active", label: "Active" },
+  { value: "expired", label: "Expired" },
+  { value: "inactive", label: "Inactive" },
+];
 
 function formatFileSize(bytes) {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
@@ -168,6 +181,31 @@ export default function HteDetailsStep({
               <FormLabel className={labelClass}>End date</FormLabel>
               <FormControl>
                 <Input type="date" className="h-11 rounded-xl" {...field} />
+              </FormControl>
+              <div className="min-h-[1.25rem]"><FormMessage /></div>
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="status"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className={labelClass}>Status</FormLabel>
+              <FormControl>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger className="h-11 w-full rounded-xl">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </FormControl>
               <div className="min-h-[1.25rem]"><FormMessage /></div>
             </FormItem>
