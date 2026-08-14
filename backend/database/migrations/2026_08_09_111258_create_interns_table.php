@@ -29,7 +29,7 @@ return new class extends Migration
             $table->string('practicum_instructor')->nullable();
             $table->string('cor_path')->nullable();
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending')->index();
-            $table->foreignId('assigned_hte')->nullable()->constrained('htes')->nullOnDelete();
+            $table->unsignedBigInteger('assigned_hte')->nullable()->index();
             $table->enum('ojt_status', ['pending', 'ongoing', 'completed'])->default('pending')->index();
             $table->date('start_date')->nullable();
             $table->date('end_date')->nullable();
