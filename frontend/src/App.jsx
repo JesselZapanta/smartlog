@@ -7,6 +7,7 @@ import AdminDashboard from "@/pages/admin/AdminDashboard.jsx";
 import InternDashboard from "@/pages/intern/InternDashboard.jsx";
 import ResubmitRegistrationPage from "@/pages/intern/ResubmitRegistrationPage.jsx";
 import InternRequirementsPage from "@/pages/intern/requirements/InternRequirementsPage.jsx";
+import InternPhotoDtrPage from "@/pages/intern/photo-dtr/InternPhotoDtrPage.jsx";
 import CoordinatorDashboard from "@/pages/ojt_coordinator/CoordinatorDashboard.jsx";
 import RegistrationApprovalsListPage from "@/pages/ojt_coordinator/registrations/RegistrationApprovalsListPage.jsx";
 import RegistrationApprovalDetailPage from "@/pages/ojt_coordinator/registrations/RegistrationApprovalDetailPage.jsx";
@@ -72,6 +73,14 @@ function App() {
         element={
           <ProtectedRoute roles={["intern"]} approvedIntern>
             <InternRequirementsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/intern/photo-dtr"
+        element={
+          <ProtectedRoute roles={["intern"]} approvedIntern>
+            <InternPhotoDtrPage />
           </ProtectedRoute>
         }
       />

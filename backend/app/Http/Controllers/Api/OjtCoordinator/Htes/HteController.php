@@ -13,6 +13,7 @@ use App\Models\Program;
 use App\Models\User;
 use App\Models\UserNotification;
 use App\Services\EmailVerificationService;
+use App\Services\ImageOptimizer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -333,7 +334,7 @@ class HteController extends Controller
         }
 
         if ($request->hasFile('profile_picture')) {
-            $data['profile_picture'] = $request->file('profile_picture')->store('avatars', 'public');
+            $data['profile_picture'] = ImageOptimizer::storeAvatar($request->file('profile_picture'));
         }
 
         $user = User::create([
@@ -402,7 +403,7 @@ class HteController extends Controller
             if ($user->profile_picture) {
                 Storage::disk('public')->delete($user->profile_picture);
             }
-            $data['profile_picture'] = $request->file('profile_picture')->store('avatars', 'public');
+            $data['profile_picture'] = ImageOptimizer::storeAvatar($request->file('profile_picture'));
         } else {
             unset($data['profile_picture']);
         }

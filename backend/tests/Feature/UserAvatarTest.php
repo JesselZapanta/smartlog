@@ -28,7 +28,7 @@ test('an admin can upload a profile picture when creating a user', function () {
         'email' => 'juan@smartlog.test',
         'password' => 'password',
         'password_confirmation' => 'password',
-        'profile_picture' => UploadedFile::fake()->image('avatar.jpg'),
+        'profile_picture' => UploadedFile::fake()->image('avatar.jpg', 1200, 900),
     ]);
 
     $response->assertStatus(201);
@@ -37,7 +37,13 @@ test('an admin can upload a profile picture when creating a user', function () {
 
     expect($user)->not->toBeNull();
     expect($user->profile_picture)->not->toBeNull();
+    expect($user->profile_picture)->toEndWith('.webp');
     Storage::disk('public')->assertExists($user->profile_picture);
+
+    [$width, $height] = getimagesize(Storage::disk('public')->path($user->profile_picture));
+    expect($width <= 512)->toBeTrue();
+    expect($height <= 512)->toBeTrue();
+
     $response->assertJsonPath('data.profile_picture', StorageUrl::url($user->profile_picture));
 });
 
