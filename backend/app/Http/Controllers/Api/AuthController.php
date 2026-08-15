@@ -11,6 +11,7 @@ use App\Models\Program;
 use App\Models\User;
 use App\Models\UserNotification;
 use App\Services\EmailVerificationService;
+use App\Services\ImageOptimizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -52,7 +53,7 @@ class AuthController extends Controller
         }
 
         if ($request->hasFile('profile_picture')) {
-            $data['profile_picture'] = $request->file('profile_picture')->store('avatars', 'public');
+            $data['profile_picture'] = ImageOptimizer::storeAvatar($request->file('profile_picture'));
         }
 
         if ($request->hasFile('cor')) {

@@ -17,6 +17,7 @@ use App\Models\AcademicTerm;
 use App\Models\Institute;
 use App\Models\Program;
 use App\Services\EmailVerificationService;
+use App\Services\ImageOptimizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -67,7 +68,7 @@ class ProfileController extends Controller
             if ($user->profile_picture) {
                 Storage::disk('public')->delete($user->profile_picture);
             }
-            $data['profile_picture'] = $request->file('profile_picture')->store('avatars', 'public');
+            $data['profile_picture'] = ImageOptimizer::storeAvatar($request->file('profile_picture'));
         } else {
             unset($data['profile_picture']);
         }
