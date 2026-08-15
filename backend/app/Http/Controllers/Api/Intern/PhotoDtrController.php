@@ -36,10 +36,20 @@ class PhotoDtrController extends Controller
         }
 
         $records = PhotoDtr::with(['verifier', 'checker'])
-            ->where('intern_id', $intern->id)
-            ->orderByDesc('dtr_date')
-            ->limit(60)
-            ->get();
+            ->where('intern_id', $intern->id);
+
+        $from = $request->string('from')->trim()->toString();
+        $to = $request->string('to')->trim()->toString();
+
+        if ($from !== '') {
+            $records->whereDate('dtr_date', '>=', $from);
+        }
+
+        if ($to !== '') {
+            $records->whereDate('dtr_date', '<=', $to);
+        }
+
+        $records = $records->orderByDesc('dtr_date')->limit(60)->get();
 
         $today = $records->first(fn (PhotoDtr $record): bool => $record->dtr_date->isToday());
 

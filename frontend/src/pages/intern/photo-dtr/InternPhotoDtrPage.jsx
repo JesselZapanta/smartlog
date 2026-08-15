@@ -16,17 +16,8 @@ import {
 import InternLayout from "@/layouts/InternLayout.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
 const SLOTS = [
   { key: "am_in", label: "AM In" },
@@ -81,29 +72,7 @@ function formatDate(value) {
   });
 }
 
-function StatusPill({ status }) {
-  const tones = {
-    pending: "bg-amber-50 text-amber-700 ring-amber-200",
-    verified: "bg-green-50 text-green-700 ring-green-200",
-    checked: "bg-indigo-50 text-indigo-700 ring-indigo-200",
-    disapproved: "bg-red-50 text-red-600 ring-red-200",
-  };
-  const labels = {
-    pending: "Pending",
-    verified: "Verified by HTE",
-    checked: "Checked by instructor",
-    disapproved: "Disapproved",
-  };
-  return (
-    <Badge className={`inline-flex items-center gap-1.5 rounded-full font-semibold ring-1 ${tones[status] || tones.pending}`}>
-      <span className="h-1.5 w-1.5 rounded-full bg-current" />
-      {labels[status] || status}
-    </Badge>
-  );
-}
-
 export default function InternPhotoDtrPage() {
-  const [records, setRecords] = useState([]);
   const [today, setToday] = useState(null);
   const [deployed, setDeployed] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -140,7 +109,6 @@ export default function InternPhotoDtrPage() {
     setLoading(true);
     try {
       const res = await api.get("/intern/photo-dtr");
-      setRecords(res.data.data || []);
       setToday(res.data.today || null);
       setDeployed(Boolean(res.data.deployed));
     } catch (err) {
@@ -413,146 +381,6 @@ export default function InternPhotoDtrPage() {
                 ))}
               </div>
             </div>
-          </section>
-
-          <section>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">History</h2>
-            {records.length === 0 ? (
-              <div className="mt-3 flex flex-col items-center gap-2 rounded-2xl border border-dashed border-gray-200 py-10 text-center">
-                <Clock3 size={20} className="text-gray-300" />
-                <p className="text-sm font-semibold text-gray-500">No DTR records yet</p>
-                <p className="text-xs text-gray-400">Clock in to start your daily record.</p>
-              </div>
-            ) : (
-              <div className="mt-3 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ring-1 ring-gray-100">
-                <div className="space-y-2.5 p-3 md:hidden">
-                  {records.map((record) => (
-                    <div
-                      key={record.id}
-                      className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm ring-1 ring-gray-100"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-bold text-gray-800">{formatDate(record.dtr_date)}</p>
-                        <StatusPill status={record.status} />
-                      </div>
-                      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                        {SLOTS.map((slot) => {
-                          const punched = record.slots?.[slot.key];
-                          return (
-                            <div
-                              key={slot.key}
-                              className="flex items-center gap-2 rounded-xl border border-gray-100 bg-gray-50/60 px-2.5 py-2"
-                            >
-                              {punched?.photo_url ? (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setViewPhoto({
-                                      url: punched.photo_url,
-                                      label: slot.label,
-                                      time: formatTime(punched.time),
-                                    })
-                                  }
-                                  className="cursor-zoom-in"
-                                  aria-label={`View ${slot.label} photo`}
-                                >
-                                  <img
-                                    src={punched.photo_url}
-                                    alt={`${slot.label} photo`}
-                                    className="h-8 w-8 shrink-0 rounded-lg object-cover ring-1 ring-gray-200"
-                                  />
-                                </button>
-                              ) : (
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-gray-300 ring-1 ring-gray-200">
-                                  <Camera size={13} />
-                                </div>
-                              )}
-                              <div className="min-w-0">
-                                <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
-                                  {slot.label}
-                                </p>
-                                <p className={`font-mono text-xs font-bold ${punched?.time ? "text-gray-700" : "text-gray-300"}`}>
-                                  {punched?.time ? formatTime(punched.time) : "—"}
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      {record.status === "checked" && (
-                        <div className="mt-3 flex items-center gap-2 rounded-xl bg-indigo-50 px-3 py-2.5 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-100">
-                          <CheckCircle2 size={14} /> Checked by {record.checked_by || "instructor"}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                <div className="hidden overflow-x-auto md:block">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-green-50 hover:bg-green-50">
-                        <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Date</TableHead>
-                        <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">AM In</TableHead>
-                        <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">AM Out</TableHead>
-                        <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">PM In</TableHead>
-                        <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">PM Out</TableHead>
-                        <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {records.map((record) => (
-                        <TableRow
-                          key={record.id}
-                          className="group border-b border-gray-50 transition-colors last:border-0 hover:bg-green-50/40"
-                        >
-                          <TableCell>
-                            <span className="text-sm font-bold text-gray-800">{formatDate(record.dtr_date)}</span>
-                          </TableCell>
-                          {SLOTS.map((slot) => {
-                            const punched = record.slots?.[slot.key];
-                            return (
-                              <TableCell key={slot.key}>
-                                {punched?.time ? (
-                                  <div className="flex items-center gap-2">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        setViewPhoto({
-                                          url: punched.photo_url,
-                                          label: slot.label,
-                                          time: formatTime(punched.time),
-                                        })
-                                      }
-                                      className="cursor-zoom-in"
-                                      aria-label={`View ${slot.label} photo`}
-                                    >
-                                      <img
-                                        src={punched.photo_url}
-                                        alt={`${slot.label} photo`}
-                                        className="h-8 w-8 shrink-0 rounded-lg object-cover ring-1 ring-gray-200"
-                                      />
-                                    </button>
-                                    <span className="font-mono text-xs font-bold text-gray-700">
-                                      {formatTime(punched.time)}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <span className="text-sm text-gray-300">—</span>
-                                )}
-                              </TableCell>
-                            );
-                          })}
-                          <TableCell>
-                            <StatusPill status={record.status} />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            )}
           </section>
         </div>
       )}

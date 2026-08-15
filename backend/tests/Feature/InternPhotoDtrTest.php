@@ -324,6 +324,34 @@ test('punch photos are re-encoded to webp and capped at 1080px', function () {
     expect($height <= 1080)->toBeTrue();
 });
 
+test('intern can filter photo dtrs by date range', function () {
+    Storage::fake('public');
+    $institute = dtrInstitute();
+    $program = dtrProgram($institute);
+    $intern = dtrIntern($institute, $program);
+    Intern::where('user_id', $intern->id)->update(['ojt_status' => 'ongoing']);
+
+    $this->travelTo(Carbon::parse('2026-08-03 08:00:00'));
+    $this->actingAs($intern, 'api')->postJson('/api/intern/photo-dtr/punch', ['slot' => 'am_in', 'photo' => dtrPhoto()])->assertOk();
+
+    $this->travelTo(Carbon::parse('2026-08-10 08:00:00'));
+    $this->actingAs($intern, 'api')->postJson('/api/intern/photo-dtr/punch', ['slot' => 'am_in', 'photo' => dtrPhoto()])->assertOk();
+
+    $this->travelTo(Carbon::parse('2026-08-20 08:00:00'));
+    $this->actingAs($intern, 'api')->postJson('/api/intern/photo-dtr/punch', ['slot' => 'am_in', 'photo' => dtrPhoto()])->assertOk();
+
+    $this->actingAs($intern, 'api')
+        ->getJson('/api/intern/photo-dtr?from=2026-08-05&to=2026-08-15')
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.dtr_date', '2026-08-10');
+
+    $this->actingAs($intern, 'api')
+        ->getJson('/api/intern/photo-dtr?from=2026-08-01&to=2026-08-31')
+        ->assertOk()
+        ->assertJsonCount(3, 'data');
+});
+
 test('intern can list their photo dtrs with today highlighted', function () {
     Storage::fake('public');
     $this->travelTo(Carbon::parse('2026-08-15 08:00:00'));

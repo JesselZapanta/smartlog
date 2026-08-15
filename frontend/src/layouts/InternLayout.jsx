@@ -1,4 +1,4 @@
-import { Camera, FileText, LayoutDashboard } from "lucide-react";
+import { Camera, ClipboardList, FileText, LayoutDashboard } from "lucide-react";
 import AppShell from "@/layouts/AppShell.jsx";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -10,6 +10,7 @@ const fullNav = [
   ...dashboardNav,
   { to: "/intern/requirements", label: "Requirements", icon: FileText },
   { to: "/intern/photo-dtr", label: "Photo DTR", icon: Camera },
+  { to: "/intern/dtr-logs", label: "DTR Logs", icon: ClipboardList },
 ];
 
 export default function InternLayout({ children }) {
