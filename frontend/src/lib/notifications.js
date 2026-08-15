@@ -1,4 +1,4 @@
-import { Bell, CheckCircle2, RefreshCw, XCircle, FileText } from "lucide-react";
+import { Bell, Building2, CheckCircle2, RefreshCw, Rocket, XCircle, FileText } from "lucide-react";
 
 export function routeFor(notification) {
   switch (notification.type) {
@@ -9,6 +9,9 @@ export function routeFor(notification) {
     case "registration_submitted":
     case "registration_resubmitted":
       return `/coordinator/registrations/${notification.data?.uuid || ""}`;
+    case "hte_assigned":
+    case "intern_deployed":
+      return "/intern/requirements";
     case "requirement_approved":
     case "requirement_rejected":
       return "/intern/requirements";
@@ -28,6 +31,10 @@ export function notificationIcon(type) {
     case "registration_submitted":
     case "registration_resubmitted":
       return RefreshCw;
+    case "hte_assigned":
+      return Building2;
+    case "intern_deployed":
+      return Rocket;
     case "requirement_approved":
       return CheckCircle2;
     case "requirement_rejected":
@@ -49,6 +56,10 @@ export function notificationStyles(type) {
       return "bg-sky-50 text-sky-600";
     case "registration_resubmitted":
       return "bg-amber-50 text-amber-600";
+    case "hte_assigned":
+      return "bg-green-50 text-green-700";
+    case "intern_deployed":
+      return "bg-green-50 text-green-700";
     case "requirement_approved":
       return "bg-green-50 text-green-700";
     case "requirement_rejected":

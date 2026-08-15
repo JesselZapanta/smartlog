@@ -11,6 +11,7 @@ use App\Models\Hte;
 use App\Models\Intern;
 use App\Models\Program;
 use App\Models\User;
+use App\Models\UserNotification;
 use App\Services\EmailVerificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -282,7 +283,8 @@ class HteController extends Controller
             'intern_ids.*' => ['integer', 'distinct'],
         ]);
 
-        $interns = Intern::where('institute_id', $hte->institute_id)
+        $interns = Intern::with('user')
+            ->where('institute_id', $hte->institute_id)
             ->where('academic_year_id', $data['academic_year_id'])
             ->where('status', 'approved')
             ->whereNull('assigned_hte')
@@ -291,6 +293,14 @@ class HteController extends Controller
 
         foreach ($interns as $intern) {
             $intern->forceFill(['assigned_hte' => $hte->id])->save();
+
+            UserNotification::notify(
+                $intern->user,
+                'hte_assigned',
+                'Assigned to an HTE',
+                "You have been assigned to {$hte->name} as your host training establishment.",
+                ['hte_id' => $hte->id, 'uuid' => $intern->user->uuid],
+            );
         }
 
         return response()->json([
