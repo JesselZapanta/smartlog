@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
@@ -15,6 +15,13 @@ import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -100,6 +107,23 @@ function ProgressPill({ submitted, total }) {
   );
 }
 
+function OjtStatusPill({ status, startDate }) {
+  if (status === "ongoing") {
+    return (
+      <Badge className="inline-flex items-center gap-1.5 rounded-full bg-green-50 font-semibold text-green-700 ring-1 ring-green-200">
+        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+        Ongoing{startDate ? ` · ${new Date(startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : ""}
+      </Badge>
+    );
+  }
+  return (
+    <Badge className="inline-flex items-center gap-1.5 rounded-full bg-gray-50 font-semibold text-gray-500 ring-1 ring-gray-200">
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      Pending
+    </Badge>
+  );
+}
+
 export default function CoordinatorInternRequirementsPage() {
   const [rows, setRows] = useState([]);
   const [meta, setMeta] = useState(null);
@@ -108,6 +132,24 @@ export default function CoordinatorInternRequirementsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [order, setOrder] = useState("desc");
   const [page, setPage] = useState(1);
+  const [academicYear, setAcademicYear] = useState("all");
+  const [terms, setTerms] = useState([]);
+  const defaultYearSet = useRef(false);
+
+  useEffect(() => {
+    api
+      .get("/academic-terms/options")
+      .then((res) => {
+        const list = res.data.data || [];
+        setTerms(list);
+        if (!defaultYearSet.current) {
+          defaultYearSet.current = true;
+          const active = list.find((t) => t.status === "active");
+          if (active) setAcademicYear(String(active.id));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -127,6 +169,7 @@ export default function CoordinatorInternRequirementsPage() {
         order,
       });
       if (debouncedSearch) params.set("search", debouncedSearch);
+      if (academicYear !== "all") params.set("academic_year_id", academicYear);
       const res = await api.get(`/coordinator/intern-requirements?${params.toString()}`);
       setRows(res.data.data);
       setMeta(res.data.meta);
@@ -135,7 +178,7 @@ export default function CoordinatorInternRequirementsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedSearch, order]);
+  }, [page, debouncedSearch, order, academicYear]);
 
   useEffect(() => {
     loadRows();
@@ -146,7 +189,12 @@ export default function CoordinatorInternRequirementsPage() {
     setPage(1);
   }
 
-  const hasFilters = Boolean(search);
+  function onAcademicYearChange(value) {
+    setAcademicYear(value);
+    setPage(1);
+  }
+
+  const hasFilters = Boolean(search) || academicYear !== "all";
 
   return (
     <CoordinatorLayout>
@@ -177,6 +225,19 @@ export default function CoordinatorInternRequirementsPage() {
             </button>
           )}
         </div>
+        <Select value={academicYear} onValueChange={onAcademicYearChange}>
+          <SelectTrigger className="data-[size=default]:h-11 w-full rounded-xl sm:w-52">
+            <SelectValue placeholder="All academic years" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All academic years</SelectItem>
+            {terms.map((term) => (
+              <SelectItem key={term.id} value={String(term.id)}>
+                {term.description}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Button
           variant="outline"
           className="h-11 rounded-xl md:hidden"
@@ -187,7 +248,16 @@ export default function CoordinatorInternRequirementsPage() {
           {order === "desc" ? "Newest first" : "Oldest first"}
         </Button>
         {hasFilters && (
-          <Button variant="ghost" className="h-11 rounded-xl text-gray-500 hover:text-gray-700" onClick={() => { setSearch(""); setPage(1); }}>
+          <Button
+            variant="ghost"
+            className="h-11 rounded-xl text-gray-500 hover:text-gray-700"
+            onClick={() => {
+              setSearch("");
+              const active = terms.find((t) => t.status === "active");
+              setAcademicYear(active ? String(active.id) : "all");
+              setPage(1);
+            }}
+          >
             <X size={14} /> Clear filters
           </Button>
         )}
@@ -218,6 +288,7 @@ export default function CoordinatorInternRequirementsPage() {
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">ID</TableHead>
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Intern</TableHead>
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Program</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">OJT Status</TableHead>
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Requirements</TableHead>
                     <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-green-700">
                       Actions
@@ -286,7 +357,10 @@ export default function CoordinatorInternRequirementsPage() {
                         <p className="truncate text-xs text-gray-400">{intern.email}</p>
                       </div>
                     </div>
-                    <ProgressPill submitted={intern.submitted} total={intern.total} />
+                    <div className="flex shrink-0 flex-col items-end gap-1.5">
+                      <ProgressPill submitted={intern.submitted} total={intern.total} />
+                      <OjtStatusPill status={intern.ojt_status} startDate={intern.start_date} />
+                    </div>
                   </div>
                   <div className="mt-2.5 text-xs text-gray-500">{intern.program || "—"}</div>
                   <div className="mt-3 flex gap-2 border-t border-gray-50 pt-3">
@@ -311,6 +385,7 @@ export default function CoordinatorInternRequirementsPage() {
                     <SortableHeader label="ID" column="id" sort="id" order={order} onSort={toggleOrder} />
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Intern</TableHead>
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Program</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">OJT Status</TableHead>
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Requirements</TableHead>
                     <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-green-700">
                       Actions
@@ -339,6 +414,9 @@ export default function CoordinatorInternRequirementsPage() {
                       </TableCell>
                       <TableCell>
                         <span className="text-sm text-gray-600">{intern.program || "—"}</span>
+                      </TableCell>
+                      <TableCell>
+                        <OjtStatusPill status={intern.ojt_status} startDate={intern.start_date} />
                       </TableCell>
                       <TableCell>
                         <ProgressPill submitted={intern.submitted} total={intern.total} />

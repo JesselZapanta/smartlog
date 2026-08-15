@@ -100,6 +100,7 @@ Route::middleware('auth:api')->group(function (): void {
         Route::post('/coordinator/intern-requirements/{user:uuid}/reject-all', [CoordinatorInternRequirementController::class, 'rejectAll'])->name('api.coordinator.intern-requirements.reject-all');
         Route::post('/coordinator/intern-requirements/{user:uuid}/{requirement}/approve', [CoordinatorInternRequirementController::class, 'approve'])->name('api.coordinator.intern-requirements.approve');
         Route::post('/coordinator/intern-requirements/{user:uuid}/{requirement}/reject', [CoordinatorInternRequirementController::class, 'reject'])->name('api.coordinator.intern-requirements.reject');
+        Route::post('/coordinator/intern-requirements/{user:uuid}/deploy', [CoordinatorInternRequirementController::class, 'deploy'])->name('api.coordinator.intern-requirements.deploy');
     });
 
     Route::middleware('role:admin')->group(function (): void {
