@@ -46,6 +46,12 @@ class InternRequirementController extends Controller
             ->where('institute_id', $instituteId)
             ->where('status', 'approved');
 
+        $academicYearId = $request->integer('academic_year_id');
+
+        if ($academicYearId > 0) {
+            $query->where('academic_year_id', $academicYearId);
+        }
+
         $search = $request->string('search')->trim()->toString();
 
         if ($search !== '') {
@@ -90,6 +96,8 @@ class InternRequirementController extends Controller
                 'email' => $intern->user->email,
                 'profile_picture' => $intern->user->profile_picture,
                 'program' => $intern->program?->name,
+                'ojt_status' => $intern->ojt_status,
+                'start_date' => $intern->start_date?->toDateString(),
                 'submitted' => $submitted,
                 'total' => $totalRequirements,
             ];
@@ -149,10 +157,80 @@ class InternRequirementController extends Controller
                     'email' => $intern->user->email,
                     'profile_picture' => $intern->user->profile_picture,
                     'program' => $intern->program?->name,
+                    'ojt_status' => $intern->ojt_status,
+                    'start_date' => $intern->start_date,
+                    'hte' => $intern->assignedHte?->name,
                 ],
                 'submitted' => $rows->filter(fn (array $row): bool => $row['submission'] !== null)->count(),
                 'total' => $rows->count(),
                 'requirements' => $rows->values()->all(),
+            ],
+        ]);
+    }
+
+    /**
+     * Deploy the intern once all active pre-deployment requirements are approved.
+     */
+    public function deploy(Request $request, User $user): JsonResponse
+    {
+        $instituteId = $this->instituteId($request);
+
+        $data = $request->validate([
+            'start_date' => ['nullable', 'date'],
+        ]);
+
+        $intern = $this->authorizeIntern($request, $user);
+
+        if ($intern->ojt_status === 'ongoing') {
+            throw ValidationException::withMessages([
+                'ojt_status' => ['This intern is already deployed.'],
+            ]);
+        }
+
+        $requirements = Requirement::where('institute_id', $instituteId)
+            ->where('is_active', true)
+            ->where('type', 'pre_deployment')
+            ->get();
+
+        if ($requirements->isEmpty()) {
+            throw ValidationException::withMessages([
+                'requirements' => ['No active pre-deployment requirements to complete.'],
+            ]);
+        }
+
+        $approvedCount = RequirementSubmission::where('user_id', $user->id)
+            ->whereIn('requirement_id', $requirements->pluck('id'))
+            ->where('status', 'approved')
+            ->count();
+
+        if ($approvedCount !== $requirements->count()) {
+            throw ValidationException::withMessages([
+                'requirements' => ['All pre-deployment requirements must be approved before deploying.'],
+            ]);
+        }
+
+        $startDate = $data['start_date'] ?? now()->toDateString();
+
+        $intern->forceFill([
+            'ojt_status' => 'ongoing',
+            'start_date' => $startDate,
+        ])->save();
+
+        $hteName = $intern->assignedHte?->name;
+
+        UserNotification::notify(
+            $user,
+            'intern_deployed',
+            'Officially deployed',
+            'You have been officially deployed'.($hteName ? " to {$hteName}" : '')." starting {$startDate}.",
+            ['uuid' => $user->uuid],
+        );
+
+        return response()->json([
+            'data' => [
+                'message' => $intern->user->full_name.' has been deployed.',
+                'ojt_status' => 'ongoing',
+                'start_date' => $startDate,
             ],
         ]);
     }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, ExternalLink, Loader2, ClipboardList, CheckCircle2, Clock3, Check, X, AlertTriangle } from "lucide-react";
+import { ArrowLeft, ExternalLink, Loader2, ClipboardList, CheckCircle2, Clock3, Check, X, AlertTriangle, Rocket } from "lucide-react";
 import { toast } from "sonner";
 import CoordinatorLayout from "@/layouts/CoordinatorLayout.jsx";
 import api from "@/lib/api";
@@ -77,6 +77,8 @@ export default function CoordinatorInternRequirementsDetailPage() {
   const [rejectAll, setRejectAll] = useState(false);
   const [reason, setReason] = useState("");
   const [rejecting, setRejecting] = useState(false);
+  const [deployOpen, setDeployOpen] = useState(false);
+  const [deploying, setDeploying] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -166,6 +168,23 @@ export default function CoordinatorInternRequirementsDetailPage() {
   }
 
   const complete = detail && detail.total > 0 && detail.submitted >= detail.total;
+  const allApproved =
+    detail && detail.total > 0 && detail.requirements.every((r) => r.submission?.status === "approved");
+  const deployed = detail?.intern?.ojt_status === "ongoing";
+
+  async function handleDeploy() {
+    setDeploying(true);
+    try {
+      await api.post(`/coordinator/intern-requirements/${uuid}/deploy`);
+      toast.success("Intern deployed", { description: `${detail?.intern?.full_name} was deployed.` });
+      setDeployOpen(false);
+      load();
+    } catch (err) {
+      toast.error("Deployment failed", { description: firstErrorMessage(err) });
+    } finally {
+      setDeploying(false);
+    }
+  }
 
   return (
     <CoordinatorLayout>
@@ -244,6 +263,21 @@ export default function CoordinatorInternRequirementsDetailPage() {
                     {detail.submitted}/{detail.total} submitted
                   </span>
                 </div>
+                {deployed ? (
+                  <div className="inline-flex items-center justify-center gap-2 rounded-2xl bg-green-50 px-4 py-3 ring-1 ring-green-100">
+                    <Rocket size={18} className="text-green-600" />
+                    <span className="text-sm font-semibold text-green-700">
+                      Deployed{detail.intern?.start_date ? ` since ${formatDate(detail.intern.start_date)}` : ""}
+                    </span>
+                  </div>
+                ) : allApproved ? (
+                  <Button
+                    className="h-11 rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700"
+                    onClick={() => setDeployOpen(true)}
+                  >
+                    <Rocket size={16} /> Deploy
+                  </Button>
+                ) : null}
                 {pendingCount > 0 && (
                   <div className="flex items-center gap-2">
                     <Button
@@ -435,6 +469,43 @@ export default function CoordinatorInternRequirementsDetailPage() {
               ) : (
                 <>
                   <X size={16} /> {rejectAll ? "Reject all" : "Reject requirement"}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deployOpen} onOpenChange={(open) => !open && !deploying && setDeployOpen(false)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Deploy {detail?.intern?.full_name}?</DialogTitle>
+            <DialogDescription>
+              All pre-deployment requirements are approved. Confirm to mark the intern as deployed
+              {detail?.intern?.hte ? ` to ${detail.intern.hte}` : ""} starting today, and update their record.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              variant="outline"
+              className="h-11 rounded-xl"
+              onClick={() => setDeployOpen(false)}
+              disabled={deploying}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="h-11 rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700"
+              disabled={deploying}
+              onClick={handleDeploy}
+            >
+              {deploying ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" /> Deploying…
+                </>
+              ) : (
+                <>
+                  <Rocket size={16} /> Confirm deployment
                 </>
               )}
             </Button>

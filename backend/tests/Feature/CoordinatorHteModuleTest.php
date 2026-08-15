@@ -7,6 +7,7 @@ use App\Models\Institute;
 use App\Models\Intern;
 use App\Models\Program;
 use App\Models\User;
+use App\Models\UserNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
@@ -427,6 +428,31 @@ test('coordinator can assign interns to an hte', function () {
         ->assertJsonPath('data.count', 2);
 
     expect(Intern::where('assigned_hte', $hte->hte->id)->count())->toBe(2);
+});
+
+test('assigning interns notifies each intern', function () {
+    $institute = coordinatorHteInstitute();
+    $program = coordinatorHteProgram($institute);
+    $coordinator = coordinatorHteCoordinator($institute);
+    $hte = coordinatorHteUser($institute, $program, ['name' => 'City Hall']);
+    $internA = coordinatorHteApprovedIntern($institute, $program, ['email' => 'a@smartlog.test']);
+    $internB = coordinatorHteApprovedIntern($institute, $program, ['email' => 'b@smartlog.test']);
+
+    $this->actingAs($coordinator, 'api')
+        ->postJson("/api/coordinator/htes/{$hte->uuid}/assign", [
+            'academic_year_id' => coordinatorHteAcademicYearId(),
+            'intern_ids' => [$internA->intern->id, $internB->intern->id],
+        ])
+        ->assertOk();
+
+    foreach ([$internA, $internB] as $intern) {
+        $notification = UserNotification::where('user_id', $intern->id)->first();
+        expect($notification)->not->toBeNull();
+        expect($notification->type)->toBe('hte_assigned');
+        expect($notification->title)->toBe('Assigned to an HTE');
+        expect($notification->message)->toContain('City Hall');
+        expect($notification->is_read)->toBeFalse();
+    }
 });
 
 test('only interns of the selected academic year are assignable', function () {
