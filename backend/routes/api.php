@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\Admin\RequirementController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\Intern\PhotoDtrController;
 use App\Http\Controllers\Api\Intern\RequirementController as InternRequirementController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OjtCoordinator\Htes\HteController as CoordinatorHteController;
@@ -67,6 +68,9 @@ Route::middleware('auth:api')->group(function (): void {
         Route::get('/intern/requirements', [InternRequirementController::class, 'index'])->name('api.intern.requirements.index');
         Route::post('/intern/requirements/{requirement}/submit', [InternRequirementController::class, 'submit'])->name('api.intern.requirements.submit');
         Route::delete('/intern/requirements/{requirement}', [InternRequirementController::class, 'destroy'])->name('api.intern.requirements.destroy');
+
+        Route::get('/intern/photo-dtr', [PhotoDtrController::class, 'index'])->name('api.intern.photo-dtr.index');
+        Route::post('/intern/photo-dtr/punch', [PhotoDtrController::class, 'punch'])->name('api.intern.photo-dtr.punch');
     });
 
     Route::middleware('role:ojt_coordinator')->group(function (): void {
