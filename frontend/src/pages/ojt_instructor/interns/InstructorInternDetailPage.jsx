@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import AdminLayout from "@/layouts/AdminLayout.jsx";
+import InstructorLayout from "@/layouts/InstructorLayout.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import PageLoader from "@/components/PageLoader";
 import InternDetailView from "@/components/InternDetailView.jsx";
 
-export default function InternDetailPage() {
+export default function InstructorInternDetailPage() {
   const { uuid } = useParams();
   const [intern, setIntern] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,7 +17,7 @@ export default function InternDetailPage() {
   const load = useCallback(() => {
     setLoading(true);
     api
-      .get(`/interns/${uuid}`)
+      .get(`/instructor/interns/${uuid}`)
       .then((res) => setIntern(res.data.data))
       .catch((err) => setError(firstErrorMessage(err)))
       .finally(() => setLoading(false));
@@ -28,15 +28,15 @@ export default function InternDetailPage() {
   }, [load]);
 
   return (
-    <AdminLayout>
+    <InstructorLayout>
       <div className="flex items-center gap-2">
         <Button
           asChild
           variant="ghost"
           className="h-11 rounded-xl text-gray-500 hover:bg-gray-100 hover:text-green-700"
         >
-          <Link to="/admin/interns">
-            <ArrowLeft size={16} /> Back to interns
+          <Link to="/instructor/interns">
+            <ArrowLeft size={16} /> Back to deployed interns
           </Link>
         </Button>
       </div>
@@ -47,7 +47,7 @@ export default function InternDetailPage() {
         <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center shadow-sm ring-1 ring-gray-100">
           <p className="text-sm text-red-600">{error}</p>
           <Button asChild variant="outline" className="mt-4 h-10 rounded-xl text-green-700">
-            <Link to="/admin/interns">Back to interns</Link>
+            <Link to="/instructor/interns">Back to deployed interns</Link>
           </Button>
         </div>
       ) : intern ? (
@@ -57,6 +57,6 @@ export default function InternDetailPage() {
           <Loader2 size={28} className="animate-spin text-green-600" />
         </div>
       )}
-    </AdminLayout>
+    </InstructorLayout>
   );
 }

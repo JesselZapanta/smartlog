@@ -34,6 +34,9 @@ class InternListResource extends JsonResource
                 0,
                 ($this->journals_count ?? 0) - ($this->journals_verified_count ?? 0) - ($this->journals_flagged_count ?? 0)
             ),
+            'journals_approved_count' => $this->journals_approved_count ?? 0,
+            'journals_rejected_count' => $this->journals_rejected_count ?? 0,
+            'journals_pending_count' => $this->journals_pending_count ?? 0,
             'created_at' => $this->created_at,
         ];
     }

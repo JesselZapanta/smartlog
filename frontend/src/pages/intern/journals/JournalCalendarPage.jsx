@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FileClock,
+  Flag,
   Loader2,
   Plus,
   X,
@@ -66,6 +67,10 @@ export default function JournalCalendarPage() {
   }, [loadJournals, loadDtr]);
 
   const entriesByDate = useMemo(() => new Map(entries.map((entry) => [entry.date, entry])), [entries]);
+  const statusByDate = useMemo(
+    () => new Map(entries.map((entry) => [entry.date, entry.status])),
+    [entries]
+  );
   const disabledDays = useMemo(() => {
     const matchers = [{ after: today }];
     if (dtrReady) matchers.push((date) => !dtrDates.has(dateKey(date)));
@@ -73,8 +78,16 @@ export default function JournalCalendarPage() {
   }, [today, dtrReady, dtrDates]);
 
   function JournalDayButton({ day, modifiers, ...props }) {
-    const hasEntry = entriesByDate.has(dateKey(day.date));
-    const hasDtr = dtrReady && dtrDates.has(dateKey(day.date));
+    const key = dateKey(day.date);
+    const hasEntry = entriesByDate.has(key);
+    const status = statusByDate.get(key);
+    const checked = status === "checked";
+    const verified = status === "verified";
+    const pending = status === "pending";
+    const flagged = status === "flagged";
+    const rejected = status === "rejected";
+    const problem = flagged || rejected;
+    const hasDtr = dtrReady && dtrDates.has(key);
     const outside = modifiers.outside;
     const isFutureDate = day.date > today;
     const missingDtr = dtrReady && !outside && !isFutureDate && !hasDtr;
@@ -87,11 +100,13 @@ export default function JournalCalendarPage() {
         modifiers={modifiers}
         className={cn(
           "rounded-2xl! transition-colors duration-150",
-          missingDtr
+          missingDtr || problem
             ? "bg-red-50/70 hover:bg-red-100!"
-            : hasEntry
-              ? "bg-green-50 hover:bg-green-100!"
-              : "hover:bg-green-50!",
+            : pending
+              ? "bg-amber-50/70 hover:bg-amber-100!"
+              : hasEntry
+                ? "bg-green-50 hover:bg-green-100!"
+                : "hover:bg-green-50!",
           modifiers.today && "font-bold",
           !selectable && "opacity-50"
         )}
@@ -102,11 +117,13 @@ export default function JournalCalendarPage() {
             "flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-sm font-bold leading-none sm:h-7 sm:min-w-7 sm:px-2 sm:text-base",
             modifiers.today
               ? "bg-green-600 text-white"
-              : missingDtr
+              : missingDtr || problem
                 ? "text-red-800"
-                : hasEntry
-                  ? "text-green-900"
-                  : "text-gray-900"
+                : pending
+                  ? "text-amber-800"
+                  : hasEntry
+                    ? "text-green-900"
+                    : "text-gray-900"
           )}
         >
           {format(day.date, "d")}
@@ -115,8 +132,16 @@ export default function JournalCalendarPage() {
           <div className="flex h-3 items-center justify-center">
             {missingDtr ? (
               <X size={12} strokeWidth={3} className="size-3 text-red-500" />
-            ) : hasEntry ? (
+            ) : rejected ? (
+              <X size={12} strokeWidth={3} className="size-3 text-red-500" />
+            ) : flagged ? (
+              <Flag size={12} strokeWidth={3} className="size-3 text-red-500" />
+            ) : checked ? (
               <Check size={12} strokeWidth={3.5} className="size-3 text-green-600" />
+            ) : verified ? (
+              <span className="size-1.5 rounded-full bg-green-500" />
+            ) : pending ? (
+              <span className="size-1.5 rounded-full bg-amber-500" />
             ) : (
               <span className="size-1.5 rounded-full bg-gray-300" />
             )}
@@ -218,7 +243,19 @@ export default function JournalCalendarPage() {
 
               <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] font-semibold text-gray-400">
                 <span className="inline-flex items-center gap-1">
-                  <Check size={12} strokeWidth={3.5} className="text-green-600" /> Journal entry
+                  <Check size={12} strokeWidth={3.5} className="text-green-600" /> Checked
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="size-1.5 rounded-full bg-green-500" /> Verified
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="size-1.5 rounded-full bg-amber-500" /> Pending
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <Flag size={12} strokeWidth={3} className="text-red-500" /> Flagged
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <X size={12} strokeWidth={3} className="text-red-500" /> Rejected
                 </span>
                 <span className="inline-flex items-center gap-1">
                   <X size={12} strokeWidth={3} className="text-red-500" /> No photo DTR — locked

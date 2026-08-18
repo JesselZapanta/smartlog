@@ -10,6 +10,7 @@ use App\Models\DailyJournal;
 use App\Models\JournalPhoto;
 use App\Models\PhotoDtr;
 use App\Models\User;
+use App\Models\UserNotification;
 use App\Services\ImageOptimizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -111,6 +112,18 @@ class DailyJournalController extends Controller
 
         $this->storePhotos($journal, $request->file('photos', []));
 
+        $hteUser = $user->intern->assignedHte?->user;
+
+        if ($hteUser) {
+            UserNotification::notify(
+                $hteUser,
+                'journal_submitted',
+                'New journal submitted',
+                $user->full_name.' submitted a journal for '.$request->input('date').'.',
+                ['uuid' => $user->uuid],
+            );
+        }
+
         return response()->json([
             'data' => new DailyJournalResource($journal->fresh()->load('photos')),
         ], 201);
@@ -136,6 +149,7 @@ class DailyJournalController extends Controller
     {
         $this->authorizeJournal($request, $journal);
         $this->authorizeIntern($request, 'editing your daily journal.');
+        $this->authorizeEditable($journal, 'edited');
 
         $journal->forceFill([
             'title' => $request->input('title'),
@@ -169,6 +183,7 @@ class DailyJournalController extends Controller
     public function destroy(Request $request, DailyJournal $journal): JsonResponse
     {
         $this->authorizeJournal($request, $journal);
+        $this->authorizeEditable($journal, 'deleted');
 
         foreach ($journal->photos as $photo) {
             Storage::disk('public')->delete($photo->photo);
@@ -179,6 +194,17 @@ class DailyJournalController extends Controller
         return response()->json([
             'data' => ['message' => 'Journal deleted successfully.'],
         ]);
+    }
+
+    /**
+     * Once a journal has been reviewed (verified/checked/flagged/rejected)
+     * the intern can no longer edit or delete it.
+     */
+    private function authorizeEditable(DailyJournal $journal, string $action): void
+    {
+        if (in_array($journal->status, ['verified', 'checked', 'flagged', 'rejected'], true)) {
+            abort(403, 'This entry has been reviewed and can no longer be '.$action.'.');
+        }
     }
 
     /**

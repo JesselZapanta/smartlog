@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { getDefaultClassNames } from "react-day-picker";
-import { ArrowLeft, BookOpenText, CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight, Clock3, Flag, Loader2 } from "lucide-react";
+import { ArrowLeft, BookOpenText, CalendarDays, Check, ChevronLeft, ChevronRight, Clock3, Flag, Loader2 } from "lucide-react";
 import HteLayout from "@/layouts/HteLayout.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
@@ -47,7 +47,7 @@ function getInitials(name) {
     .toUpperCase();
 }
 
-export default function HteInternRecordsDetailPage() {
+export default function HteInternMonitoringCalendarPage() {
   const { uuid } = useParams();
   const navigate = useNavigate();
   const today = useMemo(() => new Date(), []);
@@ -63,7 +63,7 @@ export default function HteInternRecordsDetailPage() {
       const month = format(monthDate, "yyyy-MM");
       const [internRes, recordsRes] = await Promise.all([
         api.get(`/hte/interns/${uuid}`),
-        api.get(`/hte/interns/${uuid}/records?month=${month}`),
+        api.get(`/hte/interns/${uuid}/monitoring?month=${month}`),
       ]);
       setIntern(internRes.data.data);
       setJournals(recordsRes.data.data || []);
@@ -79,8 +79,17 @@ export default function HteInternRecordsDetailPage() {
   }, [load]);
 
   const journalDateSet = useMemo(() => new Set(journals.map((entry) => entry.date)), [journals]);
+  const pendingDateSet = useMemo(
+    () => new Set(journals.filter((entry) => entry.status === "pending").map((entry) => entry.date)),
+    [journals]
+  );
   const flaggedDateSet = useMemo(
-    () => new Set(journals.filter((entry) => entry.status === "flagged").map((entry) => entry.date)),
+    () =>
+      new Set(
+        journals
+          .filter((entry) => entry.status === "flagged" || entry.status === "rejected")
+          .map((entry) => entry.date)
+      ),
     [journals]
   );
   const disabledDays = useMemo(
@@ -89,15 +98,17 @@ export default function HteInternRecordsDetailPage() {
   );
 
   const stats = useMemo(() => {
-    const verified = journals.filter((entry) => entry.status === "verified").length;
-    const flagged = journals.filter((entry) => entry.status === "flagged").length;
-    const unchecked = journals.length - verified - flagged;
-    return { total: journals.length, verified, unchecked, flagged };
+    const pending = journals.filter((entry) => entry.status === "pending").length;
+    const flagged = journals.filter(
+      (entry) => entry.status === "flagged" || entry.status === "rejected"
+    ).length;
+    return { total: journals.length, pending, flagged };
   }, [journals]);
 
   function DayButton({ day, modifiers, ...props }) {
     const key = dateKey(day.date);
     const hasJournal = journalDateSet.has(key);
+    const pending = pendingDateSet.has(key);
     const flagged = flaggedDateSet.has(key);
     const outside = modifiers.outside;
     const isFutureDate = day.date > today;
@@ -110,9 +121,11 @@ export default function HteInternRecordsDetailPage() {
           "rounded-2xl! transition-colors duration-150",
           flagged
             ? "bg-red-50/70 hover:bg-red-100!"
-            : hasJournal
-              ? "bg-green-50 hover:bg-green-100!"
-              : "hover:bg-green-50!",
+            : pending
+              ? "bg-amber-50/70 hover:bg-amber-100!"
+              : hasJournal
+                ? "bg-green-50 hover:bg-green-100!"
+                : "hover:bg-green-50!",
           modifiers.today && "font-bold",
           !selectable && "opacity-50"
         )}
@@ -125,9 +138,11 @@ export default function HteInternRecordsDetailPage() {
               ? "bg-green-600 text-white"
               : flagged
                 ? "text-red-800"
-                : hasJournal
-                  ? "text-green-900"
-                  : "text-gray-900"
+                : pending
+                  ? "text-amber-800"
+                  : hasJournal
+                    ? "text-green-900"
+                    : "text-gray-900"
           )}
         >
           {format(day.date, "d")}
@@ -136,6 +151,8 @@ export default function HteInternRecordsDetailPage() {
           <div className="flex h-3 items-center justify-center">
             {flagged ? (
               <Flag size={12} strokeWidth={3} className="size-3 text-red-500" />
+            ) : pending ? (
+              <span className="size-1.5 rounded-full bg-amber-500" />
             ) : hasJournal ? (
               <Check size={12} strokeWidth={3.5} className="size-3 text-green-600" />
             ) : null}
@@ -157,8 +174,8 @@ export default function HteInternRecordsDetailPage() {
           variant="ghost"
           className="h-11 rounded-xl text-gray-500 hover:bg-gray-100 hover:text-green-700"
         >
-          <Link to="/hte/records">
-            <ArrowLeft size={16} /> Back to intern records
+          <Link to="/hte/monitoring">
+            <ArrowLeft size={16} /> Back to intern monitoring
           </Link>
         </Button>
       </div>
@@ -169,7 +186,7 @@ export default function HteInternRecordsDetailPage() {
         <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center shadow-sm ring-1 ring-gray-100">
           <p className="text-sm text-red-600">{error}</p>
           <Button asChild variant="outline" className="mt-4 h-10 rounded-xl text-green-700">
-            <Link to="/hte/records">Back to intern records</Link>
+            <Link to="/hte/monitoring">Back to intern monitoring</Link>
           </Button>
         </div>
       ) : intern ? (
@@ -195,9 +212,8 @@ export default function HteInternRecordsDetailPage() {
 
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <StatCard icon={BookOpenText} label="Journals" value={stats.total} tone="green" />
-            <StatCard icon={CheckCircle2} label="Verified" value={stats.verified} tone="indigo" />
-            <StatCard icon={Clock3} label="Unchecked" value={stats.unchecked} tone="amber" />
-            <StatCard icon={Flag} label="Flagged" value={stats.flagged} tone="red" />
+            <StatCard icon={Clock3} label="Pending" value={stats.pending} tone="amber" />
+            <StatCard icon={Flag} label="Flag or rejected" value={stats.flagged} tone="red" />
           </div>
 
           <section className="overflow-hidden rounded-2xl border border-green-100 bg-white shadow-sm ring-1 ring-green-100">
@@ -238,7 +254,7 @@ export default function HteInternRecordsDetailPage() {
                 month={monthDate}
                 onMonthChange={setMonthDate}
                 onSelect={(date) => {
-                  if (date) navigate(`/hte/records/${uuid}/${dateKey(date)}`);
+                  if (date) navigate(`/hte/monitoring/${uuid}/${dateKey(date)}`);
                 }}
                 disabled={disabledDays}
                 components={{ DayButton }}
@@ -256,7 +272,10 @@ export default function HteInternRecordsDetailPage() {
                   <Check size={12} strokeWidth={3.5} className="text-green-600" /> Journal entry
                 </span>
                 <span className="inline-flex items-center gap-1">
-                  <Flag size={12} strokeWidth={3} className="text-red-500" /> Flagged — tap to view
+                  <span className="size-1.5 rounded-full bg-amber-500" /> Pending
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <Flag size={12} strokeWidth={3} className="text-red-500" /> Flag or rejected — tap to view
                 </span>
               </div>
             </div>

@@ -15,7 +15,7 @@ use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\Hte\InternController as HteInternController;
-use App\Http\Controllers\Api\Hte\InternRecordController as HteInternRecordController;
+use App\Http\Controllers\Api\Hte\InternMonitoringController as HteInternMonitoringController;
 use App\Http\Controllers\Api\Intern\DailyJournalController;
 use App\Http\Controllers\Api\Intern\PhotoDtrController;
 use App\Http\Controllers\Api\Intern\RequirementController as InternRequirementController;
@@ -25,6 +25,8 @@ use App\Http\Controllers\Api\OjtCoordinator\Interns\InternController as Coordina
 use App\Http\Controllers\Api\OjtCoordinator\RegistrationApprovalController;
 use App\Http\Controllers\Api\OjtCoordinator\Requirements\InternRequirementController as CoordinatorInternRequirementController;
 use App\Http\Controllers\Api\OjtCoordinator\Requirements\RequirementController as CoordinatorRequirementController;
+use App\Http\Controllers\Api\OjtInstructor\InternController as InstructorInternController;
+use App\Http\Controllers\Api\OjtInstructor\InternMonitoringController as InstructorInternMonitoringController;
 use App\Http\Controllers\Api\ProfileController;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
@@ -119,9 +121,17 @@ Route::middleware('auth:api')->group(function (): void {
     Route::middleware('role:hte')->group(function (): void {
         Route::get('/hte/interns', [HteInternController::class, 'index'])->name('api.hte.interns.index');
         Route::get('/hte/interns/{user:uuid}', [HteInternController::class, 'show'])->name('api.hte.interns.show');
-        Route::get('/hte/interns/{user:uuid}/records', [HteInternRecordController::class, 'index'])->name('api.hte.interns.records');
-        Route::post('/hte/interns/{user:uuid}/records/verify', [HteInternRecordController::class, 'verify'])->name('api.hte.interns.records.verify');
-        Route::post('/hte/interns/{user:uuid}/records/flag', [HteInternRecordController::class, 'flag'])->name('api.hte.interns.records.flag');
+        Route::get('/hte/interns/{user:uuid}/monitoring', [HteInternMonitoringController::class, 'index'])->name('api.hte.interns.monitoring');
+        Route::post('/hte/interns/{user:uuid}/monitoring/verify', [HteInternMonitoringController::class, 'verify'])->name('api.hte.interns.monitoring.verify');
+        Route::post('/hte/interns/{user:uuid}/monitoring/flag', [HteInternMonitoringController::class, 'flag'])->name('api.hte.interns.monitoring.flag');
+    });
+
+    Route::middleware('role:ojt_instructor')->group(function (): void {
+        Route::get('/instructor/interns', [InstructorInternController::class, 'index'])->name('api.instructor.interns.index');
+        Route::get('/instructor/interns/{user:uuid}', [InstructorInternController::class, 'show'])->name('api.instructor.interns.show');
+        Route::get('/instructor/interns/{user:uuid}/monitoring', [InstructorInternMonitoringController::class, 'index'])->name('api.instructor.interns.monitoring');
+        Route::post('/instructor/interns/{user:uuid}/monitoring/approve', [InstructorInternMonitoringController::class, 'approve'])->name('api.instructor.interns.monitoring.approve');
+        Route::post('/instructor/interns/{user:uuid}/monitoring/reject', [InstructorInternMonitoringController::class, 'reject'])->name('api.instructor.interns.monitoring.reject');
     });
 
     Route::middleware('role:admin')->group(function (): void {
