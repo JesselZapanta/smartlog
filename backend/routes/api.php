@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\Admin\RequirementController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\Intern\DailyJournalController;
 use App\Http\Controllers\Api\Intern\PhotoDtrController;
 use App\Http\Controllers\Api\Intern\RequirementController as InternRequirementController;
 use App\Http\Controllers\Api\NotificationController;
@@ -71,6 +72,12 @@ Route::middleware('auth:api')->group(function (): void {
 
         Route::get('/intern/photo-dtr', [PhotoDtrController::class, 'index'])->name('api.intern.photo-dtr.index');
         Route::post('/intern/photo-dtr/punch', [PhotoDtrController::class, 'punch'])->name('api.intern.photo-dtr.punch');
+
+        Route::get('/intern/journals', [DailyJournalController::class, 'index'])->name('api.intern.journals.index');
+        Route::post('/intern/journals', [DailyJournalController::class, 'store'])->name('api.intern.journals.store');
+        Route::get('/intern/journals/{journal}', [DailyJournalController::class, 'show'])->name('api.intern.journals.show');
+        Route::post('/intern/journals/{journal}', [DailyJournalController::class, 'update'])->name('api.intern.journals.update');
+        Route::delete('/intern/journals/{journal}', [DailyJournalController::class, 'destroy'])->name('api.intern.journals.destroy');
     });
 
     Route::middleware('role:ojt_coordinator')->group(function (): void {
