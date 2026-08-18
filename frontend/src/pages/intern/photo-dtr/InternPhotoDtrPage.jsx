@@ -18,7 +18,6 @@ import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { MAX_PHOTO_DIMENSION, downscaleImageFile } from "@/lib/image";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 
 const SLOTS = [
   { key: "am_in", label: "AM In" },
@@ -222,13 +221,8 @@ export default function InternPhotoDtrPage() {
       </div>
 
       {loading ? (
-        <div className="mt-6 space-y-4">
-          <Skeleton className="h-56 w-full rounded-2xl" />
-          <div className="space-y-2.5">
-            {Array.from({ length: 3 }).map((_, index) => (
-              <Skeleton key={index} className="h-16 w-full rounded-2xl" />
-            ))}
-          </div>
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 size={28} className="animate-spin text-green-600" />
         </div>
       ) : !deployed ? (
         <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-amber-100 bg-amber-50/60 p-8 text-center">

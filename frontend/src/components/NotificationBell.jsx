@@ -15,6 +15,28 @@ import { getEcho } from "@/lib/echo";
 import { notificationIcon, notificationStyles, routeFor, timeAgo } from "@/lib/notifications";
 import { useAuth } from "@/contexts/AuthContext";
 
+const CACHE_TTL = 15_000;
+
+const sharedCache = { at: 0, promise: null, cached: null };
+
+async function fetchNotifications(force = false) {
+  if (sharedCache.promise) return sharedCache.promise;
+  if (!force && sharedCache.cached && Date.now() - sharedCache.at < CACHE_TTL) {
+    return sharedCache.cached;
+  }
+  sharedCache.promise = api
+    .get("/notifications", { params: { per_page: 5 } })
+    .then((res) => {
+      sharedCache.at = Date.now();
+      sharedCache.cached = res;
+      return res;
+    })
+    .finally(() => {
+      sharedCache.promise = null;
+    });
+  return sharedCache.promise;
+}
+
 export default function NotificationBell() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -23,9 +45,9 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(true);
   const [marking, setMarking] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (force = false) => {
     try {
-      const res = await api.get("/notifications", { params: { per_page: 5 } });
+      const res = await fetchNotifications(force);
       setItems(res.data.data);
       setUnreadCount(res.data.meta.unread_count);
     } catch {
@@ -45,7 +67,7 @@ export default function NotificationBell() {
     if (!echo) return;
 
     const channel = echo.private(`user.${user.uuid}`);
-    channel.listen(".notification.pushed", load);
+    channel.listen(".notification.pushed", () => load(true));
 
     return () => {
       channel.stopListening(".notification.pushed");
@@ -54,7 +76,7 @@ export default function NotificationBell() {
   }, [user, load]);
 
   function handleOpen(open) {
-    if (open) load();
+    if (open) load(true);
   }
 
   async function handleClick(notification) {

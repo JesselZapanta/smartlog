@@ -16,7 +16,7 @@ import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import PageLoader from "@/components/PageLoader";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const PER_PAGE = 10;
@@ -268,11 +268,8 @@ export default function AssignInternsPage() {
           <ArrowLeft size={16} /> Back to Assigned Interns
         </Link>
 
-        {loadingHte ? (
-          <div className="mt-4 space-y-3">
-            <Skeleton className="h-24 w-full rounded-2xl" />
-            <Skeleton className="h-16 w-full rounded-2xl" />
-          </div>
+        {loadingHte || loadingAssigned || loading ? (
+          <PageLoader />
         ) : hte ? (
           <>
             <div className="mt-4 flex items-start gap-3.5 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm ring-1 ring-gray-100 sm:items-center sm:p-5">
@@ -320,13 +317,7 @@ export default function AssignInternsPage() {
                     )}
                   </div>
 
-                  {loadingAssigned ? (
-                    <div className="space-y-2.5">
-                      {Array.from({ length: 3 }).map((_, index) => (
-                        <Skeleton key={index} className="h-14 w-full rounded-xl" />
-                      ))}
-                    </div>
-                  ) : assigned.length === 0 ? (
+                  {assigned.length === 0 ? (
                     <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-gray-200 py-8 text-center">
                       <Users size={20} className="text-gray-300" />
                       <p className="text-sm font-semibold text-gray-500">No interns assigned yet</p>
@@ -375,13 +366,7 @@ export default function AssignInternsPage() {
                     />
                   </div>
 
-                  {loading ? (
-                    <div className="mt-3 space-y-2.5">
-                      {Array.from({ length: 4 }).map((_, index) => (
-                        <Skeleton key={index} className="h-14 w-full rounded-xl" />
-                      ))}
-                    </div>
-                  ) : interns.length === 0 ? (
+                  {interns.length === 0 ? (
                     <div className="mt-3 flex flex-col items-center gap-2 rounded-xl border border-dashed border-gray-200 py-8 text-center">
                       <Users size={20} className="text-gray-300" />
                       <p className="text-sm font-semibold text-gray-500">

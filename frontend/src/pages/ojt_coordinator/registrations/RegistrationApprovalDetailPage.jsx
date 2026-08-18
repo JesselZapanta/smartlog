@@ -22,7 +22,7 @@ import { firstErrorMessage } from "@/lib/errors";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Skeleton } from "@/components/ui/skeleton";
+import PageLoader from "@/components/PageLoader";
 import StatusChip from "@/components/StatusChip.jsx";
 import {
   Dialog,
@@ -150,23 +150,7 @@ export default function RegistrationApprovalDetailPage() {
       </div>
 
       {loading ? (
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm ring-1 ring-gray-100">
-            <div className="flex items-center gap-3">
-              <Skeleton className="h-14 w-14 rounded-full" />
-              <div className="space-y-2">
-                <Skeleton className="h-5 w-48" />
-                <Skeleton className="h-3 w-64" />
-              </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <Skeleton className="h-48 rounded-2xl" />
-            <Skeleton className="h-48 rounded-2xl" />
-            <Skeleton className="h-48 rounded-2xl" />
-            <Skeleton className="h-48 rounded-2xl" />
-          </div>
-        </div>
+        <PageLoader />
       ) : error ? (
         <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center shadow-sm ring-1 ring-gray-100">
           <p className="text-sm text-red-600">{error}</p>

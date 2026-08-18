@@ -6,7 +6,6 @@ import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { Badge } from "@/components/ui/badge";
 import { DatePicker } from "@/components/ui/date-picker";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -226,10 +225,8 @@ export default function InternDtrLogsPage() {
       </div>
 
       {loading ? (
-        <div className="mt-3 space-y-2.5">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="h-16 w-full rounded-2xl" />
-          ))}
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 size={28} className="animate-spin text-green-600" />
         </div>
       ) : records.length === 0 ? (
         <div className="mt-3 flex flex-col items-center gap-2 rounded-2xl border border-dashed border-gray-200 py-10 text-center">

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Search, X, ArrowUp, ArrowDown, ChevronsUpDown, UserCheck, Users, Building2 } from "lucide-react";
+import { Search, X, ArrowUp, ArrowDown, ChevronsUpDown, UserCheck, Users, Building2, Loader2 } from "lucide-react";
 import CoordinatorLayout from "@/layouts/CoordinatorLayout.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
+import PageLoader from "@/components/PageLoader";
 import {
   Pagination,
   PaginationContent,
@@ -245,26 +245,14 @@ export default function CoordinatorHteAssignmentsPage() {
       <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ring-1 ring-gray-100">
         {loading ? (
           <>
-            <div className="space-y-2.5 p-4 md:hidden">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <div key={index} className="rounded-2xl border border-gray-100 p-4 ring-1 ring-gray-100">
-                  <div className="flex items-center gap-2.5">
-                    <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
-                    <div className="min-w-0 flex-1">
-                      <Skeleton className="h-4 w-32" />
-                      <Skeleton className="mt-1.5 h-3 w-40" />
-                    </div>
-                    <Skeleton className="h-6 w-20 shrink-0 rounded-full" />
-                  </div>
-                  <Skeleton className="mt-3 h-10 w-full rounded-xl" />
-                </div>
-              ))}
+            <div className="md:hidden">
+              <PageLoader />
             </div>
             <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-green-50 hover:bg-green-50">
-                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">ID</TableHead>
+                    <SortableHeader label="ID" column="id" sort="id" order={order} onSort={toggleOrder} />
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">HTE</TableHead>
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Program</TableHead>
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Interns</TableHead>
@@ -274,33 +262,11 @@ export default function CoordinatorHteAssignmentsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {Array.from({ length: 5 }).map((_, index) => (
-                    <TableRow key={index} className="border-b border-gray-50 last:border-0">
-                      <TableCell>
-                        <Skeleton className="h-4 w-10" />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Skeleton className="h-9 w-9 rounded-full" />
-                          <div className="space-y-1.5">
-                            <Skeleton className="h-4 w-36" />
-                            <Skeleton className="h-3 w-48" />
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton className="h-4 w-36" />
-                      </TableCell>
-                      <TableCell>
-                        <Skeleton className="h-6 w-24 rounded-full" />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex justify-end">
-                          <Skeleton className="h-10 w-10 rounded-xl" />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-64">
+                      <Loader2 size={28} className="mx-auto animate-spin text-green-600" />
+                    </TableCell>
+                  </TableRow>
                 </TableBody>
               </Table>
             </div>

@@ -26,7 +26,6 @@ import { downscaleImageFile } from "@/lib/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
@@ -379,10 +378,8 @@ export default function JournalFormPage() {
       </div>
 
       {loading ? (
-        <div className="mt-6 space-y-4">
-          <Skeleton className="h-12 w-full rounded-xl" />
-          <Skeleton className="h-48 w-full rounded-2xl" />
-          <Skeleton className="h-40 w-full rounded-2xl" />
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 size={28} className="animate-spin text-green-600" />
         </div>
       ) : !validDate || isFuture ? (
         <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-gray-100 bg-white p-10 text-center shadow-sm ring-1 ring-gray-100">
