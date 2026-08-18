@@ -18,6 +18,7 @@ import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import ProgramFormDialog from "@/pages/admin/programs/ProgramFormDialog.jsx";
 import { statusLabel, statusOptions, statusTone, toActiveValue } from "@/pages/admin/programs/constants.js";
+import PageLoader from "@/components/PageLoader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -36,7 +37,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -317,64 +317,33 @@ export default function ProgramListPage() {
 
       <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ring-1 ring-gray-100">
         {loading ? (
-          <div className="space-y-2.5 p-4 md:hidden">
-            {Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} className="rounded-2xl border border-gray-100 p-4 ring-1 ring-gray-100">
-                <div className="flex items-center justify-between">
-                  <Skeleton className="h-7 w-16 rounded-lg" />
-                  <Skeleton className="h-6 w-20 rounded-full" />
-                </div>
-                <Skeleton className="mt-3 h-4 w-3/4" />
-                <Skeleton className="mt-2 h-3 w-1/2" />
-                <div className="mt-3 flex gap-2 border-t border-gray-50 pt-3">
-                  <Skeleton className="h-10 flex-1 rounded-xl" />
-                  <Skeleton className="h-10 flex-1 rounded-xl" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : null}
-
-        {loading ? (
-          <div className="hidden overflow-x-auto md:block">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-green-50 hover:bg-green-50">
-                  <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">ID</TableHead>
-                  <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Program</TableHead>
-                  <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Institute</TableHead>
-                  <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Status</TableHead>
-                  <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-green-700">
-                    Actions
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <TableRow key={index} className="border-b border-gray-50 last:border-0">
-                    <TableCell>
-                      <Skeleton className="h-4 w-10" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-56" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-40" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-6 w-20 rounded-full" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-1">
-                        <Skeleton className="h-10 w-10 rounded-xl" />
-                        <Skeleton className="h-10 w-10 rounded-xl" />
-                      </div>
+          <>
+            <div className="md:hidden">
+              <PageLoader />
+            </div>
+            <div className="hidden overflow-x-auto md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-green-50 hover:bg-green-50">
+                    <SortableHeader label="ID" column="id" sort="id" order={order} onSort={toggleOrder} />
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Program</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Institute</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Status</TableHead>
+                    <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-green-700">
+                      Actions
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-64">
+                      <Loader2 size={28} className="mx-auto animate-spin text-green-600" />
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableBody>
+              </Table>
+            </div>
+          </>
         ) : null}
 
         {!loading && programs.length === 0 && (

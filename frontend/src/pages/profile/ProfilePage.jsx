@@ -62,7 +62,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Skeleton } from "@/components/ui/skeleton";
+import PageLoader from "@/components/PageLoader";
 
 const layoutByRole = {
   admin: AdminLayout,
@@ -570,26 +570,7 @@ export default function ProfilePage() {
       </div>
 
       {loading || !profile ? (
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm ring-1 ring-gray-100">
-            <div className="flex items-center gap-4">
-              <Skeleton className="h-20 w-20 shrink-0 rounded-full sm:h-24 sm:w-24" />
-              <div className="min-w-0 flex-1 space-y-2">
-                <Skeleton className="h-6 w-48" />
-                <Skeleton className="h-4 w-64" />
-                <Skeleton className="h-3 w-40" />
-              </div>
-            </div>
-          </div>
-          <div className="rounded-2xl border border-gray-100 bg-white p-2 shadow-sm ring-1 ring-gray-100">
-            <div className="flex gap-2">
-              <Skeleton className="h-10 flex-1 rounded-lg" />
-              <Skeleton className="h-10 flex-1 rounded-lg" />
-              <Skeleton className="hidden h-10 flex-1 rounded-lg sm:block" />
-            </div>
-          </div>
-          <Skeleton className="h-64 w-full rounded-2xl" />
-        </div>
+        <PageLoader />
       ) : (
         <>
           <div className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm ring-1 ring-gray-100 sm:p-4">

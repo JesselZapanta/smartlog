@@ -47,6 +47,7 @@ import {
 import InternDetailsStep from "@/pages/admin/users/InternDetailsStep.jsx";
 import HteDetailsStep from "@/pages/admin/users/HteDetailsStep.jsx";
 import CoordinatorDetailsStep from "@/pages/admin/users/CoordinatorDetailsStep.jsx";
+import PageLoader from "@/components/PageLoader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -54,7 +55,6 @@ import {
   Card,
   CardContent,
 } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Form,
   FormControl,
@@ -900,15 +900,7 @@ export default function UserFormPage() {
           </div>
 
         {loading ? (
-          <Card className="mt-4 rounded-2xl border border-gray-100 bg-white shadow-sm ring-gray-100 sm:mt-5">
-            <CardContent className="space-y-4 p-5 sm:p-6">
-              <div className="grid gap-4 sm:grid-cols-2">
-                {Array.from({ length: 6 }).map((_, index) => (
-                  <Skeleton key={index} className="h-11 w-full rounded-xl" />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <PageLoader />
         ) : (
           <Card className="mt-4 rounded-2xl border border-gray-100 bg-white shadow-sm ring-gray-100 sm:mt-5">
             <div className="border-b border-gray-100 px-5 py-4 sm:px-6">

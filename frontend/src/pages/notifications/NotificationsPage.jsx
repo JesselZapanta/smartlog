@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, CheckCheck, Inbox, Loader2 } from "lucide-react";
+import PageLoader from "@/components/PageLoader";
 import { Button } from "@/components/ui/button";
 import {
   Pagination,
@@ -11,7 +12,6 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Skeleton } from "@/components/ui/skeleton";
 import api from "@/lib/api";
 import { getEcho } from "@/lib/echo";
 import { formatNotificationDate, notificationIcon, notificationStyles, routeFor } from "@/lib/notifications";
@@ -164,17 +164,7 @@ export default function NotificationsPage() {
 
         <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ring-1 ring-gray-100">
           {loading ? (
-            <div className="space-y-3 p-4 sm:p-5">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <Skeleton className="h-9 w-9 shrink-0 rounded-lg" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-4 w-40" />
-                    <Skeleton className="h-3 w-full" />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <PageLoader />
           ) : rows.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-16 text-sm text-gray-400">
               <Inbox size={28} className="text-gray-300" />

@@ -4,13 +4,13 @@ import { format } from "date-fns";
 import { getDefaultClassNames } from "react-day-picker";
 import { toast } from "sonner";
 import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   CalendarDays,
   Check,
   ChevronLeft,
   ChevronRight,
   FileClock,
+  Loader2,
   Plus,
   X,
 } from "lucide-react";
@@ -30,21 +30,16 @@ export default function JournalCalendarPage() {
   const [monthDate, setMonthDate] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [entries, setEntries] = useState([]);
   const [dtrDates, setDtrDates] = useState(() => new Set());
+  const [dtrReady, setDtrReady] = useState(false);
   const [deployed, setDeployed] = useState(true);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  const loadJournals = useCallback(async () => {
     setLoading(true);
     try {
-      const month = format(monthDate, "yyyy-MM");
-      const monthEnd = toYMD(new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0));
-      const [journalsRes, dtrRes] = await Promise.all([
-        api.get(`/intern/journals?month=${month}`),
-        api.get(`/intern/photo-dtr?from=${month}-01&to=${monthEnd}`),
-      ]);
-      setEntries(journalsRes.data.data || []);
-      setDeployed(Boolean(journalsRes.data.deployed));
-      setDtrDates(new Set((dtrRes.data.data || []).map((record) => record.dtr_date)));
+      const res = await api.get(`/intern/journals?month=${format(monthDate, "yyyy-MM")}`);
+      setEntries(res.data.data || []);
+      setDeployed(Boolean(res.data.deployed));
     } catch (err) {
       toast.error("Failed to load journals", { description: firstErrorMessage(err) });
     } finally {
@@ -52,23 +47,40 @@ export default function JournalCalendarPage() {
     }
   }, [monthDate]);
 
+  const loadDtr = useCallback(async () => {
+    try {
+      const month = format(monthDate, "yyyy-MM");
+      const monthEnd = toYMD(new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0));
+      const res = await api.get(`/intern/photo-dtr?from=${month}-01&to=${monthEnd}`);
+      setDtrDates(new Set((res.data.data || []).map((record) => record.dtr_date)));
+    } catch {
+      // DTR markers are optional — the calendar still renders, just without locks/markers
+    } finally {
+      setDtrReady(true);
+    }
+  }, [monthDate]);
+
   useEffect(() => {
-    load();
-  }, [load]);
+    loadJournals();
+    loadDtr();
+  }, [loadJournals, loadDtr]);
 
   const entriesByDate = useMemo(() => new Map(entries.map((entry) => [entry.date, entry])), [entries]);
-  const disabledDays = useMemo(
-    () => [{ after: today }, (date) => !dtrDates.has(dateKey(date))],
-    [today, dtrDates]
-  );
+  const disabledDays = useMemo(() => {
+    const matchers = [{ after: today }];
+    if (dtrReady) matchers.push((date) => !dtrDates.has(dateKey(date)));
+    return matchers;
+  }, [today, dtrReady, dtrDates]);
 
   function JournalDayButton({ day, modifiers, ...props }) {
     const hasEntry = entriesByDate.has(dateKey(day.date));
-    const hasDtr = dtrDates.has(dateKey(day.date));
+    const hasDtr = dtrReady && dtrDates.has(dateKey(day.date));
     const outside = modifiers.outside;
     const isFutureDate = day.date > today;
-    const missingDtr = !outside && !isFutureDate && !hasDtr;
-    const selectable = !outside && !isFutureDate && hasDtr;
+    const missingDtr = dtrReady && !outside && !isFutureDate && !hasDtr;
+    const selectable = dtrReady
+      ? !outside && !isFutureDate && hasDtr
+      : !outside && !isFutureDate;
     return (
       <CalendarDayButton
         day={day}
@@ -137,13 +149,8 @@ export default function JournalCalendarPage() {
       </div>
 
       {loading ? (
-        <div className="mt-6 space-y-4">
-          <Skeleton className="h-96 w-full rounded-2xl" />
-          <div className="space-y-2.5">
-            {Array.from({ length: 2 }).map((_, index) => (
-              <Skeleton key={index} className="h-16 w-full rounded-2xl" />
-            ))}
-          </div>
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 size={28} className="animate-spin text-green-600" />
         </div>
       ) : !deployed ? (
         <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-amber-100 bg-amber-50/60 p-8 text-center">

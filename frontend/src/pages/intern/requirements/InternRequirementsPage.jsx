@@ -6,7 +6,6 @@ import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { typeLabel, typeTone } from "@/pages/admin/requirements/constants.js";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
@@ -142,17 +141,8 @@ export default function InternRequirementsPage() {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm ring-1 ring-gray-100">
-              <div className="flex items-center justify-between">
-                <Skeleton className="h-6 w-32 rounded-lg" />
-                <Skeleton className="h-6 w-28 rounded-full" />
-              </div>
-              <Skeleton className="mt-3 h-3 w-3/4" />
-              <Skeleton className="mt-4 h-11 w-full rounded-xl" />
-            </div>
-          ))}
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 size={28} className="animate-spin text-green-600" />
         </div>
       ) : !hte ? (
         <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-white py-12 text-center shadow-sm ring-1 ring-gray-100">
