@@ -25,6 +25,15 @@ class InternListResource extends JsonResource
             'program' => $this->program?->name,
             'academic_year' => $this->academicYear?->description,
             'status' => $this->status,
+            'ojt_status' => $this->ojt_status,
+            'start_date' => $this->start_date?->toDateString(),
+            'journals_count' => $this->journals_count ?? 0,
+            'journals_verified_count' => $this->journals_verified_count ?? 0,
+            'journals_flagged_count' => $this->journals_flagged_count ?? 0,
+            'journals_unchecked_count' => max(
+                0,
+                ($this->journals_count ?? 0) - ($this->journals_verified_count ?? 0) - ($this->journals_flagged_count ?? 0)
+            ),
             'created_at' => $this->created_at,
         ];
     }

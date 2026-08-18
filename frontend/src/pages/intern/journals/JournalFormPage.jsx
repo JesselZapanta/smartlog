@@ -15,6 +15,7 @@ import {
   Loader2,
   RefreshCw,
   Save,
+  ShieldCheck,
   Trash2,
   Upload,
   X,
@@ -79,10 +80,17 @@ function DtrTile({ label, value, mono = false, strong = false }) {
 }
 
 function StatusBadge({ status }) {
-  if (status === "approved") {
+  if (status === "approved" || status === "verified") {
     return (
       <Badge className="inline-flex items-center gap-1.5 rounded-full bg-green-50 font-semibold text-green-700 ring-1 ring-green-200">
-        <CheckCircle2 size={12} /> Approved
+        <CheckCircle2 size={12} /> {status === "verified" ? "Verified" : "Approved"}
+      </Badge>
+    );
+  }
+  if (status === "checked") {
+    return (
+      <Badge className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 font-semibold text-indigo-700 ring-1 ring-indigo-200">
+        <ShieldCheck size={12} /> Checked
       </Badge>
     );
   }

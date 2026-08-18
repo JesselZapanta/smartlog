@@ -26,6 +26,11 @@ import CoordinatorInternRequirementsPage from "@/pages/ojt_coordinator/requireme
 import CoordinatorInternRequirementsDetailPage from "@/pages/ojt_coordinator/requirements/CoordinatorInternRequirementsDetailPage.jsx";
 import InstructorDashboard from "@/pages/ojt_instructor/InstructorDashboard.jsx";
 import HteDashboard from "@/pages/hte/HteDashboard.jsx";
+import HteAssignedInternsPage from "@/pages/hte/interns/HteAssignedInternsPage.jsx";
+import HteAssignedInternDetailPage from "@/pages/hte/interns/HteAssignedInternDetailPage.jsx";
+import HteInternRecordsPage from "@/pages/hte/records/HteInternRecordsPage.jsx";
+import HteInternRecordsDetailPage from "@/pages/hte/records/HteInternRecordsDetailPage.jsx";
+import HteInternRecordsDayPage from "@/pages/hte/records/HteInternRecordsDayPage.jsx";
 import ProfilePage from "@/pages/profile/ProfilePage.jsx";
 import NotificationsPage from "@/pages/notifications/NotificationsPage.jsx";
 import UserListPage from "@/pages/admin/users/UserListPage.jsx";
@@ -237,6 +242,46 @@ function App() {
         element={
           <ProtectedRoute roles={["hte"]}>
             <HteDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/hte/interns"
+        element={
+          <ProtectedRoute roles={["hte"]}>
+            <HteAssignedInternsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/hte/interns/:uuid"
+        element={
+          <ProtectedRoute roles={["hte"]}>
+            <HteAssignedInternDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/hte/records"
+        element={
+          <ProtectedRoute roles={["hte"]}>
+            <HteInternRecordsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/hte/records/:uuid"
+        element={
+          <ProtectedRoute roles={["hte"]}>
+            <HteInternRecordsDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/hte/records/:uuid/:date"
+        element={
+          <ProtectedRoute roles={["hte"]}>
+            <HteInternRecordsDayPage />
           </ProtectedRoute>
         }
       />
