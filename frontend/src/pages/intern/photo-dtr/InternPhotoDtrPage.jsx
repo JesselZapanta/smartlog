@@ -16,6 +16,7 @@ import {
 import InternLayout from "@/layouts/InternLayout.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
+import { MAX_PHOTO_DIMENSION, downscaleImageFile } from "@/lib/image";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -25,33 +26,6 @@ const SLOTS = [
   { key: "pm_in", label: "PM In" },
   { key: "pm_out", label: "PM Out" },
 ];
-
-const MAX_PHOTO_DIMENSION = 1080;
-
-async function downscaleImageFile(file) {
-  if (!file || !file.type.startsWith("image/")) return file;
-  const url = URL.createObjectURL(file);
-  try {
-    const image = await new Promise((resolve, reject) => {
-      const el = new Image();
-      el.onload = () => resolve(el);
-      el.onerror = () => reject(new Error("Could not load image"));
-      el.src = url;
-    });
-    const scale = Math.min(1, MAX_PHOTO_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
-    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
-    canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
-    if (!blob) return file;
-    return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
-  } catch {
-    return file;
-  } finally {
-    URL.revokeObjectURL(url);
-  }
-}
 
 function formatTime(value) {
   if (!value) return "—";

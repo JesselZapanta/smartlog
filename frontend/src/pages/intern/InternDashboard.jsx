@@ -33,7 +33,7 @@ import { formatDate } from "@/lib/dates";
 
 const modules = [
   { icon: Camera, title: "Photo DTR", description: "Time in and out with photo capture", tone: "bg-green-50 text-green-700" },
-  { icon: NotebookPen, title: "Daily Journal", description: "Document your daily tasks and learnings", tone: "bg-emerald-50 text-emerald-700" },
+  { icon: NotebookPen, title: "Daily Journal", description: "Document your daily tasks and learnings", tone: "bg-emerald-50 text-emerald-700", to: "/intern/journals" },
   { icon: FolderUp, title: "Requirements", description: "Submit pre and post-deployment documents", tone: "bg-teal-50 text-teal-700" },
   { icon: ClipboardCheck, title: "HTE Evaluation", description: "Evaluate your host training establishment", tone: "bg-blue-50 text-blue-700" },
 ];
@@ -193,8 +193,8 @@ export default function InternDashboard() {
           </section>
 
           <section className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-3">
-            {modules.map(({ icon: Icon, title, description, tone }) => (
-              <Card key={title} className="rounded-2xl border-gray-200 shadow-sm">
+            {modules.map(({ icon: Icon, title, description, tone, to }) => {
+              const inner = (
                 <div className="flex items-start gap-3 p-4 sm:p-5">
                   <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ring-1 ${tone} ring-current/10`}>
                     <Icon size={20} />
@@ -202,15 +202,26 @@ export default function InternDashboard() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <h3 className="font-heading text-base font-bold text-gray-900">{title}</h3>
-                      <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-600">
-                        Soon
-                      </span>
+                      {to ? (
+                        <span className="rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-green-600">
+                          Open
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-600">
+                          Soon
+                        </span>
+                      )}
                     </div>
                     <p className="mt-1 text-sm text-gray-500">{description}</p>
                   </div>
                 </div>
-              </Card>
-            ))}
+              );
+              return (
+                <Card key={title} className="rounded-2xl border-gray-200 shadow-sm">
+                  {to ? <Link to={to}>{inner}</Link> : inner}
+                </Card>
+              );
+            })}
           </section>
 
           <SectionCard title="Account" subtitle="Your contact information" action={<ShieldCheck size={18} className="text-gray-300" />}>
