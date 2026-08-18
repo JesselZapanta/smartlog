@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Loader2,
   Building2,
@@ -22,7 +23,7 @@ import { firstErrorMessage } from "@/lib/errors";
 import { formatDate } from "@/lib/dates";
 
 const modules = [
-  { icon: Users, title: "Monitor Interns", description: "View interns assigned to your establishment", tone: "bg-green-50 text-green-700" },
+  { icon: Users, title: "Monitor Interns", description: "View interns assigned to your establishment", tone: "bg-green-50 text-green-700", to: "/hte/interns" },
   { icon: Camera, title: "Verify DTR", description: "Confirm photo attendance entries", tone: "bg-emerald-50 text-emerald-700" },
   { icon: ClipboardCheck, title: "Intern Evaluation", description: "Evaluate intern performance", tone: "bg-teal-50 text-teal-700" },
   { icon: MessageSquare, title: "Feedback & Concerns", description: "Send concerns to the practicum instructor", tone: "bg-blue-50 text-blue-700" },
@@ -121,8 +122,8 @@ export default function HteDashboard() {
           </section>
 
           <section className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-4">
-            {modules.map(({ icon: Icon, title, description, tone }) => (
-              <Card key={title} className="rounded-2xl border-gray-200 shadow-sm">
+            {modules.map(({ icon: Icon, title, description, tone, to }) => {
+              const inner = (
                 <div className="flex items-start gap-3 p-4 sm:p-5">
                   <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ring-1 ${tone} ring-current/10`}>
                     <Icon size={20} />
@@ -130,15 +131,26 @@ export default function HteDashboard() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <h3 className="font-heading text-base font-bold text-gray-900">{title}</h3>
-                      <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-600">
-                        Soon
-                      </span>
+                      {to ? (
+                        <span className="rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-green-600">
+                          Open
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-600">
+                          Soon
+                        </span>
+                      )}
                     </div>
                     <p className="mt-1 text-sm text-gray-500">{description}</p>
                   </div>
                 </div>
-              </Card>
-            ))}
+              );
+              return (
+                <Card key={title} className="rounded-2xl border-gray-200 shadow-sm">
+                  {to ? <Link to={to}>{inner}</Link> : inner}
+                </Card>
+              );
+            })}
           </section>
         </>
       )}

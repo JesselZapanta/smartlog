@@ -17,7 +17,7 @@ return new class extends Migration
             $table->date('date')->index();
             $table->string('title');
             $table->text('journal');
-            $table->enum('status', ['pending', 'approved', 'flagged'])->default('pending')->index();
+            $table->enum('status', ['pending', 'verified', 'checked', 'flagged'])->default('pending')->index();
             $table->text('remarks')->nullable();
             $table->timestamps();
 

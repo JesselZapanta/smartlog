@@ -14,6 +14,8 @@ use App\Http\Controllers\Api\Admin\RequirementController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\Hte\InternController as HteInternController;
+use App\Http\Controllers\Api\Hte\InternRecordController as HteInternRecordController;
 use App\Http\Controllers\Api\Intern\DailyJournalController;
 use App\Http\Controllers\Api\Intern\PhotoDtrController;
 use App\Http\Controllers\Api\Intern\RequirementController as InternRequirementController;
@@ -112,6 +114,14 @@ Route::middleware('auth:api')->group(function (): void {
         Route::post('/coordinator/intern-requirements/{user:uuid}/{requirement}/approve', [CoordinatorInternRequirementController::class, 'approve'])->name('api.coordinator.intern-requirements.approve');
         Route::post('/coordinator/intern-requirements/{user:uuid}/{requirement}/reject', [CoordinatorInternRequirementController::class, 'reject'])->name('api.coordinator.intern-requirements.reject');
         Route::post('/coordinator/intern-requirements/{user:uuid}/deploy', [CoordinatorInternRequirementController::class, 'deploy'])->name('api.coordinator.intern-requirements.deploy');
+    });
+
+    Route::middleware('role:hte')->group(function (): void {
+        Route::get('/hte/interns', [HteInternController::class, 'index'])->name('api.hte.interns.index');
+        Route::get('/hte/interns/{user:uuid}', [HteInternController::class, 'show'])->name('api.hte.interns.show');
+        Route::get('/hte/interns/{user:uuid}/records', [HteInternRecordController::class, 'index'])->name('api.hte.interns.records');
+        Route::post('/hte/interns/{user:uuid}/records/verify', [HteInternRecordController::class, 'verify'])->name('api.hte.interns.records.verify');
+        Route::post('/hte/interns/{user:uuid}/records/flag', [HteInternRecordController::class, 'flag'])->name('api.hte.interns.records.flag');
     });
 
     Route::middleware('role:admin')->group(function (): void {

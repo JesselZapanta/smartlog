@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Intern extends Model
 {
@@ -41,6 +42,16 @@ class Intern extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function journals(): HasMany
+    {
+        return $this->hasMany(DailyJournal::class);
+    }
+
+    public function photoDtrs(): HasMany
+    {
+        return $this->hasMany(PhotoDtr::class);
     }
 
     public function reviewer(): BelongsTo
