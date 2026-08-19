@@ -24,6 +24,8 @@ class InternDetailResource extends JsonResource
             'contact_number' => $this->user->contact_number,
             'profile_picture' => $this->user->profile_picture,
             'institute' => $this->institute?->name,
+            'required_hours' => $this->requiredHours(),
+            'earned_minutes' => $this->earnedMinutes(),
             'program' => $this->program?->name,
             'academic_year' => $this->academicYear?->description,
             'practicum_instructor' => $this->practicum_instructor,

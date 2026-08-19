@@ -40,6 +40,7 @@ class DailyJournalController extends Controller
 
         $payload = [
             'deployed' => $deployed,
+            'ojt_status' => $intern->ojt_status,
             'start_date' => $intern->start_date?->toDateString(),
         ];
 

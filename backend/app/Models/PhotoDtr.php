@@ -59,4 +59,29 @@ class PhotoDtr extends Model
     {
         return $this->belongsTo(User::class, 'checked_by');
     }
+
+    public function computedMinutes(): int
+    {
+        $total = 0;
+        foreach ([['am_in_time', 'am_out_time'], ['pm_in_time', 'pm_out_time']] as [$in, $out]) {
+            $start = $this->toMinutes($this->{$in});
+            $end = $this->toMinutes($this->{$out});
+            if ($start !== null && $end !== null && $end > $start) {
+                $total += $end - $start;
+            }
+        }
+
+        return $total;
+    }
+
+    private function toMinutes(?string $time): ?int
+    {
+        if (! $time) {
+            return null;
+        }
+
+        [$hours, $minutes] = array_map('intval', explode(':', $time));
+
+        return $hours * 60 + $minutes;
+    }
 }

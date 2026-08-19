@@ -4,6 +4,7 @@ use App\Models\AcademicTerm;
 use App\Models\DailyJournal;
 use App\Models\Institute;
 use App\Models\Intern;
+use App\Models\OjtHour;
 use App\Models\PhotoDtr;
 use App\Models\Program;
 use App\Models\User;
@@ -97,6 +98,24 @@ test('instructor approve and reject notify the intern', function () {
     expect(UserNotification::where('user_id', $intern->id)->where('type', 'journal_rejected')->count())->toBe(1);
 });
 
+test('instructor intern detail includes required and earned ojt hours', function () {
+    $institute = instructorRecordInstitute();
+    OjtHour::create(['institute_id' => $institute->id, 'hours' => 300]);
+    $program = instructorRecordProgram($institute);
+    $instructor = User::factory()->create(['role' => 'ojt_instructor']);
+    $intern = instructorRecordIntern($institute, $program);
+
+    $checked = instructorRecordDtr($intern, '2026-08-15');
+    $checked->forceFill(['status' => 'checked'])->save();
+    instructorRecordDtr($intern, '2026-08-16');
+
+    $this->actingAs($instructor, 'api')
+        ->getJson("/api/instructor/interns/{$intern->uuid}")
+        ->assertOk()
+        ->assertJsonPath('data.required_hours', 300)
+        ->assertJsonPath('data.earned_minutes', 480);
+});
+
 test('instructor can view a deployed interns records for a month', function () {
     $institute = instructorRecordInstitute();
     $program = instructorRecordProgram($institute);
@@ -185,6 +204,18 @@ test('instructor can reject a record that was already flagged by the hte', funct
         ->assertJsonPath('data.remarks', 'Final rejection.');
 
     expect(DailyJournal::first()->status)->toBe('rejected');
+});
+
+test('instructor can view records of an intern who completed their hours', function () {
+    $institute = instructorRecordInstitute();
+    $program = instructorRecordProgram($institute);
+    $instructor = User::factory()->create(['role' => 'ojt_instructor']);
+    $intern = instructorRecordIntern($institute, $program);
+    Intern::where('user_id', $intern->id)->update(['ojt_status' => 'hours_completed']);
+
+    $this->actingAs($instructor, 'api')
+        ->getJson("/api/instructor/interns/{$intern->uuid}/monitoring?month=2026-08")
+        ->assertOk();
 });
 
 test('instructor cannot view records of a non-deployed intern', function () {

@@ -48,6 +48,7 @@ function formatDate(value) {
 export default function InternPhotoDtrPage() {
   const [today, setToday] = useState(null);
   const [deployed, setDeployed] = useState(false);
+  const [ojtStatus, setOjtStatus] = useState("");
   const [loading, setLoading] = useState(true);
   const [punchingSlot, setPunchingSlot] = useState(null);
   const [now, setNow] = useState(new Date());
@@ -84,6 +85,7 @@ export default function InternPhotoDtrPage() {
       const res = await api.get("/intern/photo-dtr");
       setToday(res.data.today || null);
       setDeployed(Boolean(res.data.deployed));
+      setOjtStatus(res.data.ojt_status || "");
     } catch (err) {
       toast.error("Failed to load DTR", { description: firstErrorMessage(err) });
     } finally {
@@ -225,16 +227,39 @@ export default function InternPhotoDtrPage() {
           <Loader2 size={28} className="animate-spin text-green-600" />
         </div>
       ) : !deployed ? (
-        <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-amber-100 bg-amber-50/60 p-8 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
-            <FileClock size={20} />
+        ojtStatus === "hours_completed" ? (
+          <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-8 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600">
+              <FileClock size={20} />
+            </div>
+            <p className="text-sm font-semibold text-indigo-800">Hours completed</p>
+            <p className="max-w-sm text-xs text-indigo-700/80">
+              You have completed your required OJT hours. Your records are now being reviewed by your HTE and
+              instructor.
+            </p>
           </div>
-          <p className="text-sm font-semibold text-amber-800">Not deployed yet</p>
-          <p className="max-w-sm text-xs text-amber-700/80">
-            You can start recording your photo DTR once the coordinator deploys you to your host training
-            establishment.
-          </p>
-        </div>
+        ) : ojtStatus === "completed" ? (
+          <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-blue-100 bg-blue-50/60 p-8 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
+              <FileClock size={20} />
+            </div>
+            <p className="text-sm font-semibold text-blue-800">OJT completed</p>
+            <p className="max-w-sm text-xs text-blue-700/80">
+              Congratulations! You have completed your OJT.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-amber-100 bg-amber-50/60 p-8 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+              <FileClock size={20} />
+            </div>
+            <p className="text-sm font-semibold text-amber-800">Not deployed yet</p>
+            <p className="max-w-sm text-xs text-amber-700/80">
+              You can start recording your photo DTR once the coordinator deploys you to your host training
+              establishment.
+            </p>
+          </div>
+        )
       ) : (
         <div className="mt-6 space-y-6">
           <section className="overflow-hidden rounded-2xl border border-green-100 bg-white shadow-sm ring-1 ring-green-100">

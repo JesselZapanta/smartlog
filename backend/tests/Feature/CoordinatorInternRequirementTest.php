@@ -397,6 +397,26 @@ test('coordinator cannot deploy an already deployed intern', function () {
         ->assertJsonValidationErrors('ojt_status');
 });
 
+test('coordinator cannot deploy an intern who completed their hours', function () {
+    $institute = irInstitute();
+    $program = irProgram($institute);
+    $coordinator = irCoordinator($institute);
+    $intern = irIntern($institute, $program, ['email' => 'intern@smartlog.test']);
+    $requirement = irRequirement($institute);
+    irSubmit($intern, $requirement);
+    RequirementSubmission::query()->update(['status' => 'approved']);
+    Intern::where('user_id', $intern->id)->update(['ojt_status' => 'hours_completed']);
+
+    $this->actingAs($coordinator, 'api')
+        ->postJson("/api/coordinator/intern-requirements/{$intern->uuid}/deploy", [
+            'start_date' => '2026-08-17',
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('ojt_status');
+
+    expect(Intern::where('user_id', $intern->id)->first()->ojt_status)->toBe('hours_completed');
+});
+
 test('deploy defaults the start date to today', function () {
     $institute = irInstitute();
     $program = irProgram($institute);

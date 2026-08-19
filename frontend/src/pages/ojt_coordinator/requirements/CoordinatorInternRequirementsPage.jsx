@@ -117,6 +117,22 @@ function OjtStatusPill({ status, startDate }) {
       </Badge>
     );
   }
+  if (status === "hours_completed") {
+    return (
+      <Badge className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 font-semibold text-indigo-700 ring-1 ring-indigo-200">
+        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+        Hours completed
+      </Badge>
+    );
+  }
+  if (status === "completed") {
+    return (
+      <Badge className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 font-semibold text-blue-700 ring-1 ring-blue-200">
+        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+        Completed
+      </Badge>
+    );
+  }
   return (
     <Badge className="inline-flex items-center gap-1.5 rounded-full bg-gray-50 font-semibold text-gray-500 ring-1 ring-gray-200">
       <span className="h-1.5 w-1.5 rounded-full bg-current" />

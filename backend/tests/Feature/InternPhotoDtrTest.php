@@ -300,6 +300,20 @@ test('undepoloyed intern cannot punch', function () {
     expect(PhotoDtr::count())->toBe(0);
 });
 
+test('intern who completed their hours cannot punch', function () {
+    Storage::fake('public');
+    $institute = dtrInstitute();
+    $program = dtrProgram($institute);
+    $intern = dtrIntern($institute, $program);
+    Intern::where('user_id', $intern->id)->update(['ojt_status' => 'hours_completed']);
+
+    $this->actingAs($intern, 'api')
+        ->postJson('/api/intern/photo-dtr/punch', ['slot' => 'am_in', 'photo' => dtrPhoto()])
+        ->assertForbidden();
+
+    expect(PhotoDtr::count())->toBe(0);
+});
+
 test('punch photos are re-encoded to webp and capped at 1080px', function () {
     Storage::fake('public');
     $this->travelTo(Carbon::parse('2026-08-15 08:00:00'));
