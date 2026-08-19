@@ -170,6 +170,7 @@ export default function HteInternMonitoringDayPage() {
   const prevDay = shiftDate(dateParam, -1);
   const nextDay = shiftDate(dateParam, 1);
   const isToday = dateParam === todayKey;
+  const canReview = intern?.ojt_status === "ongoing";
 
   function goToDay(ymd) {
     navigate(`/hte/monitoring/${uuid}/${ymd}`);
@@ -449,46 +450,50 @@ export default function HteInternMonitoringDayPage() {
               )}
             </div>
 
-            <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm ring-1 ring-gray-100 sm:p-5">
-              <div className="flex items-center gap-2">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-700 ring-1 ring-green-100">
-                  <ShieldCheck size={18} />
+{canReview && (
+              <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm ring-1 ring-gray-100 sm:p-5">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-700 ring-1 ring-green-100">
+                    <ShieldCheck size={18} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Review journals</p>
+                    <p className="font-heading text-base font-bold text-gray-800">{formatDate(dateParam)}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Review journals</p>
-                  <p className="font-heading text-base font-bold text-gray-800">{formatDate(dateParam)}</p>
-                </div>
-              </div>
 
-              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={openVerifyDialog}
-                  disabled={
-                    ((!dtr || dtr.status === "verified") && (!journal || journal.status === "verified")) ||
-                    Boolean(reviewing)
-                  }
-                  className="h-11 w-full rounded-xl border-green-200 text-sm font-semibold text-green-700 hover:bg-green-50 sm:w-auto"
-                >
-                  <ShieldCheck size={16} /> Verify journals…
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={openFlagDialog}
-                  disabled={
-                    (!dtr || dtr.status === "flagged") && (!journal || journal.status === "flagged")
-                  }
-                  className="h-11 w-full rounded-xl border-red-200 text-sm font-semibold text-red-600 hover:bg-red-50 sm:w-auto"
-                >
-                  <Flag size={16} /> Flag journals…
-                </Button>
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={openVerifyDialog}
+                    disabled={
+                      ((!dtr || dtr.status === "verified") && (!journal || journal.status === "verified")) ||
+                      Boolean(reviewing)
+                    }
+                    className="h-11 w-full rounded-xl border-green-200 text-sm font-semibold text-green-700 hover:bg-green-50 sm:w-auto"
+                  >
+                    <ShieldCheck size={16} /> Verify journals…
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={openFlagDialog}
+                    disabled={
+                      (!dtr || dtr.status === "flagged") && (!journal || journal.status === "flagged")
+                    }
+                    className="h-11 w-full rounded-xl border-red-200 text-sm font-semibold text-red-600 hover:bg-red-50 sm:w-auto"
+                  >
+                    <Flag size={16} /> Flag journals…
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
           </section>
 
-          <Dialog open={verifyOpen} onOpenChange={setVerifyOpen}>
+          {canReview && (
+            <>
+              <Dialog open={verifyOpen} onOpenChange={setVerifyOpen}>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Verify journals</DialogTitle>
@@ -606,7 +611,9 @@ export default function HteInternMonitoringDayPage() {
                 </Button>
               </DialogFooter>
             </DialogContent>
-          </Dialog>
+</Dialog>
+            </>
+          )}
         </>
       ) : (
         <div className="flex items-center justify-center py-16">

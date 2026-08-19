@@ -110,7 +110,7 @@ test('hte can list their assigned interns with search and academic year filter',
         ->assertJsonCount(2, 'data');
 });
 
-test('hte list only includes deployed interns', function () {
+test('hte list only includes deployed, hours completed and completed interns', function () {
     $institute = hteInternInstitute();
     $program = hteInternProgram($institute);
     $hte = hteInternHte($institute, $program);
@@ -124,8 +124,8 @@ test('hte list only includes deployed interns', function () {
     $this->actingAs($hte, 'api')
         ->getJson('/api/hte/interns')
         ->assertOk()
-        ->assertJsonCount(2, 'data')
-        ->assertJsonPath('meta.total', 2);
+        ->assertJsonCount(3, 'data')
+        ->assertJsonPath('meta.total', 3);
 });
 
 test('hte can view one of their assigned interns', function () {
