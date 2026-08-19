@@ -122,7 +122,6 @@ export default function JournalFormPage() {
   const todayKey = format(new Date(), "yyyy-MM-dd");
 
   const [entry, setEntry] = useState(null);
-  const [deployed, setDeployed] = useState(true);
   const [ojtStatus, setOjtStatus] = useState("");
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
@@ -149,6 +148,7 @@ export default function JournalFormPage() {
 
   const validDate = DATE_PATTERN.test(dateParam || "");
   const isFuture = validDate && dateParam > todayKey;
+  const readOnly = ojtStatus === "hours_completed";
   const locked = Boolean(entry && ["verified", "checked", "flagged", "rejected"].includes(entry.status));
   const lockedLabel = {
     verified: "Verified",
@@ -164,7 +164,6 @@ export default function JournalFormPage() {
         api.get(`/intern/journals?date=${dateParam}`),
         api.get(`/intern/photo-dtr?from=${dateParam}&to=${dateParam}`),
       ]);
-      setDeployed(Boolean(res.data.deployed));
       setOjtStatus(res.data.ojt_status || "");
       const found = res.data.data;
       setEntry(found);
@@ -379,6 +378,68 @@ export default function JournalFormPage() {
   const dtrShortDate = validDate ? format(new Date(`${dateParam}T00:00:00`), "MMM d, yyyy") : "";
   const dtrDuration = dtr ? computeDuration(dtr.slots) : null;
 
+  const dtrCard = (
+    <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ring-1 ring-gray-100">
+      <div className="flex items-center gap-3 border-b border-gray-100 bg-gray-50/60 px-4 py-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-700 ring-1 ring-green-100">
+          <Clock3 size={18} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Photo DTR — read only</p>
+          <p className="truncate font-heading text-base font-bold text-gray-800">{dtrShortDate}</p>
+        </div>
+        {!dtr && (
+          <span className="shrink-0 rounded-full bg-red-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-red-600 ring-1 ring-red-200">
+            No DTR
+          </span>
+        )}
+      </div>
+
+      <dl className="grid grid-cols-2 gap-px bg-gray-100 sm:hidden">
+        <DtrTile label="Date" value={dtrShortDate} strong />
+        <DtrTile label="AM In" value={formatTime(dtr?.slots?.am_in?.time)} mono />
+        <DtrTile label="AM Out" value={formatTime(dtr?.slots?.am_out?.time)} mono />
+        <DtrTile label="PM In" value={formatTime(dtr?.slots?.pm_in?.time)} mono />
+        <DtrTile label="PM Out" value={formatTime(dtr?.slots?.pm_out?.time)} mono />
+        <DtrTile label="Hours" value={dtrDuration ? String(dtrDuration.hours) : "—"} mono />
+        <DtrTile label="Minutes" value={dtrDuration ? String(dtrDuration.minutes) : "—"} mono />
+      </dl>
+
+      <div className="hidden overflow-x-auto sm:block">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-100 bg-gray-50/70 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              <th className="px-4 py-2.5">Date</th>
+              <th className="px-4 py-2.5">AM In</th>
+              <th className="px-4 py-2.5">AM Out</th>
+              <th className="px-4 py-2.5">PM In</th>
+              <th className="px-4 py-2.5">PM Out</th>
+              <th className="px-4 py-2.5">Hours</th>
+              <th className="px-4 py-2.5">Minutes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="text-gray-800">
+              <td className="px-4 py-3 font-semibold">{dtrShortDate}</td>
+              <td className="px-4 py-3 font-mono">{formatTime(dtr?.slots?.am_in?.time)}</td>
+              <td className="px-4 py-3 font-mono">{formatTime(dtr?.slots?.am_out?.time)}</td>
+              <td className="px-4 py-3 font-mono">{formatTime(dtr?.slots?.pm_in?.time)}</td>
+              <td className="px-4 py-3 font-mono">{formatTime(dtr?.slots?.pm_out?.time)}</td>
+              <td className="px-4 py-3 font-mono">{dtrDuration ? dtrDuration.hours : "—"}</td>
+              <td className="px-4 py-3 font-mono">{dtrDuration ? dtrDuration.minutes : "—"}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {!dtr && (
+        <p className="border-t border-red-100 bg-red-50/50 px-4 py-2.5 text-xs font-semibold text-red-600">
+          No photo DTR record for this date.
+        </p>
+      )}
+    </section>
+  );
+
   return (
     <InternLayout>
       <div className="flex items-center gap-3">
@@ -391,7 +452,7 @@ export default function JournalFormPage() {
         </Link>
         <div className="min-w-0">
           <h1 className="font-heading text-xl font-bold text-green-950 sm:text-2xl">
-            {entry ? "Edit journal" : "New journal"}
+            {readOnly ? "Journal entry" : entry ? "Edit journal" : "New journal"}
           </h1>
           <p className="flex items-center gap-1.5 truncate text-sm text-gray-500">
             <CalendarDays size={13} className="shrink-0" />
@@ -424,40 +485,92 @@ export default function JournalFormPage() {
             <Link to="/intern/journals">Back to calendar</Link>
           </Button>
         </div>
-      ) : !deployed ? (
-        ojtStatus === "hours_completed" ? (
-          <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-8 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600">
-              <FileClock size={20} />
+      ) : ojtStatus === "hours_completed" ? (
+        <div className="mt-6 space-y-5">
+          <div className="flex items-start gap-2.5 rounded-xl bg-indigo-50 p-3.5 ring-1 ring-indigo-100">
+            <FileClock size={16} className="mt-0.5 shrink-0 text-indigo-600" />
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-wide text-indigo-700">
+                Hours completed — read only
+              </p>
+              <p className="mt-0.5 text-sm text-indigo-800">
+                You have completed your required OJT hours. Your records are now being reviewed by your HTE and
+                instructor.
+              </p>
             </div>
-            <p className="text-sm font-semibold text-indigo-800">Hours completed</p>
-            <p className="max-w-sm text-xs text-indigo-700/80">
-              You have completed your required OJT hours. Your records are now being reviewed by your HTE and
-              instructor.
-            </p>
           </div>
-        ) : ojtStatus === "completed" ? (
-          <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-blue-100 bg-blue-50/60 p-8 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
-              <FileClock size={20} />
+
+          {dtrCard}
+
+          {!entry ? (
+            <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-white py-12 text-center shadow-sm ring-1 ring-gray-100">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-gray-400">
+                <FileClock size={20} />
+              </div>
+              <p className="text-sm font-semibold text-gray-700">No journal entry for this date</p>
+              <p className="max-w-xs text-xs text-gray-400">
+                You can no longer write entries — your OJT hours are complete and your records are under review.
+              </p>
+              <Button asChild className="mt-3 h-11 rounded-xl bg-green-600 font-semibold hover:bg-green-700">
+                <Link to="/intern/journals">Back to calendar</Link>
+              </Button>
             </div>
-            <p className="text-sm font-semibold text-blue-800">OJT completed</p>
-            <p className="max-w-sm text-xs text-blue-700/80">
-              Congratulations! You have completed your OJT.
-            </p>
+          ) : (
+            <>
+              <div className="flex items-center justify-end">
+                <StatusBadge status={entry.status} />
+              </div>
+
+              <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm ring-1 ring-gray-100 sm:p-5">
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Title</p>
+                <p className="mt-1.5 font-heading text-base font-bold text-gray-800">{entry.title}</p>
+                <p className="mt-4 text-xs font-bold uppercase tracking-wider text-gray-400">Journal</p>
+                <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{entry.journal}</p>
+              </div>
+
+              {entry.photos?.length > 0 && (
+                <section className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm ring-1 ring-gray-100 sm:p-5">
+                  <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Photos</p>
+                  <ul className="mt-4 grid grid-cols-3 gap-2.5">
+                    {entry.photos.map((photo) => (
+                      <li key={photo.id} className="relative aspect-square">
+                        <button
+                          type="button"
+                          onClick={() => setViewPhoto(photo.photo_url)}
+                          aria-label="View photo"
+                          className="block h-full w-full cursor-zoom-in overflow-hidden rounded-xl ring-2 ring-gray-100"
+                        >
+                          <img src={photo.photo_url} alt="Journal" className="h-full w-full object-cover" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+            </>
+          )}
+        </div>
+      ) : ojtStatus === "completed" ? (
+        <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-blue-100 bg-blue-50/60 p-8 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
+            <FileClock size={20} />
           </div>
-        ) : (
-          <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-amber-100 bg-amber-50/60 p-8 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
-              <FileClock size={20} />
-            </div>
-            <p className="text-sm font-semibold text-amber-800">Not deployed yet</p>
-            <p className="max-w-sm text-xs text-amber-700/80">
-              You can start writing your daily journal once the coordinator deploys you to your host training
-              establishment.
-            </p>
+          <p className="text-sm font-semibold text-blue-800">OJT completed</p>
+          <p className="max-w-sm text-xs text-blue-700/80">
+            Congratulations! You have completed your OJT.
+          </p>
+        </div>
+      ) : ojtStatus === "pending" || ojtStatus === "" ? (
+        <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-amber-100 bg-amber-50/60 p-8 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+            <FileClock size={20} />
           </div>
-        )
+          <p className="text-sm font-semibold text-amber-800">Not deployed yet</p>
+          <p className="max-w-sm text-xs text-amber-700/80">
+            You can start writing your daily journal once the coordinator deploys you to your host training
+            establishment.
+          </p>
+        </div>
       ) : !dtr && !entry ? (
         <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-gray-100 bg-white p-10 text-center shadow-sm ring-1 ring-gray-100">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-500">
@@ -503,65 +616,7 @@ export default function JournalFormPage() {
             </div>
           )}
 
-          <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ring-1 ring-gray-100">
-            <div className="flex items-center gap-3 border-b border-gray-100 bg-gray-50/60 px-4 py-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-700 ring-1 ring-green-100">
-                <Clock3 size={18} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Photo DTR — read only</p>
-                <p className="truncate font-heading text-base font-bold text-gray-800">{dtrShortDate}</p>
-              </div>
-              {!dtr && (
-                <span className="shrink-0 rounded-full bg-red-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-red-600 ring-1 ring-red-200">
-                  No DTR
-                </span>
-              )}
-            </div>
-
-            <dl className="grid grid-cols-2 gap-px bg-gray-100 sm:hidden">
-              <DtrTile label="Date" value={dtrShortDate} strong />
-              <DtrTile label="AM In" value={formatTime(dtr?.slots?.am_in?.time)} mono />
-              <DtrTile label="AM Out" value={formatTime(dtr?.slots?.am_out?.time)} mono />
-              <DtrTile label="PM In" value={formatTime(dtr?.slots?.pm_in?.time)} mono />
-              <DtrTile label="PM Out" value={formatTime(dtr?.slots?.pm_out?.time)} mono />
-              <DtrTile label="Hours" value={dtrDuration ? String(dtrDuration.hours) : "—"} mono />
-              <DtrTile label="Minutes" value={dtrDuration ? String(dtrDuration.minutes) : "—"} mono />
-            </dl>
-
-            <div className="hidden overflow-x-auto sm:block">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100 bg-gray-50/70 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                    <th className="px-4 py-2.5">Date</th>
-                    <th className="px-4 py-2.5">AM In</th>
-                    <th className="px-4 py-2.5">AM Out</th>
-                    <th className="px-4 py-2.5">PM In</th>
-                    <th className="px-4 py-2.5">PM Out</th>
-                    <th className="px-4 py-2.5">Hours</th>
-                    <th className="px-4 py-2.5">Minutes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="text-gray-800">
-                    <td className="px-4 py-3 font-semibold">{dtrShortDate}</td>
-                    <td className="px-4 py-3 font-mono">{formatTime(dtr?.slots?.am_in?.time)}</td>
-                    <td className="px-4 py-3 font-mono">{formatTime(dtr?.slots?.am_out?.time)}</td>
-                    <td className="px-4 py-3 font-mono">{formatTime(dtr?.slots?.pm_in?.time)}</td>
-                    <td className="px-4 py-3 font-mono">{formatTime(dtr?.slots?.pm_out?.time)}</td>
-                    <td className="px-4 py-3 font-mono">{dtrDuration ? dtrDuration.hours : "—"}</td>
-                    <td className="px-4 py-3 font-mono">{dtrDuration ? dtrDuration.minutes : "—"}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            {!dtr && (
-              <p className="border-t border-red-100 bg-red-50/50 px-4 py-2.5 text-xs font-semibold text-red-600">
-                No photo DTR record for this date.
-              </p>
-            )}
-          </section>
+          {dtrCard}
 
           <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm ring-1 ring-gray-100 sm:p-5">
             <label htmlFor="journal-title" className="text-xs font-bold uppercase tracking-wider text-gray-400">

@@ -177,7 +177,7 @@ class InternMonitoringController extends Controller
     {
         $intern = $user->intern;
 
-        if (! $intern || ! in_array($intern->ojt_status, ['ongoing', 'hours_completed'], true)) {
+        if (! $intern || ! in_array($intern->ojt_status, ['ongoing', 'hours_completed', 'completed'], true)) {
             abort(404, 'This intern is not deployed.');
         }
 

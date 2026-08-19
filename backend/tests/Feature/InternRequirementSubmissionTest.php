@@ -152,6 +152,53 @@ test('intern only sees pre-deployment requirements (not yet deployed)', function
         ->assertJsonPath('data.0.name', 'Med Cert');
 });
 
+test('intern still sees only pre-deployment requirements while hours are ongoing', function () {
+    $institute = internReqInstitute();
+    $program = internReqProgram($institute);
+    $intern = internReqUser($institute, $program);
+    $intern->intern->forceFill(['ojt_status' => 'ongoing'])->save();
+    internReqRequirement($institute, ['name' => 'Med Cert', 'type' => 'pre_deployment']);
+    internReqRequirement($institute, ['name' => 'Case Study', 'type' => 'post_deployment']);
+
+    $response = $this->actingAs($intern, 'api')
+        ->getJson('/api/intern/requirements')
+        ->assertOk()
+        ->assertJsonCount(1, 'data');
+
+    expect(collect($response->json('data'))->pluck('type')->all())->toBe(['pre_deployment']);
+});
+
+test('intern sees post-deployment requirements once hours are completed', function () {
+    $institute = internReqInstitute();
+    $program = internReqProgram($institute);
+    $intern = internReqUser($institute, $program);
+    $intern->intern->forceFill(['ojt_status' => 'hours_completed'])->save();
+    internReqRequirement($institute, ['name' => 'Med Cert', 'type' => 'pre_deployment']);
+    internReqRequirement($institute, ['name' => 'Case Study', 'type' => 'post_deployment']);
+
+    $response = $this->actingAs($intern, 'api')
+        ->getJson('/api/intern/requirements')
+        ->assertOk()
+        ->assertJsonCount(2, 'data');
+
+    expect(collect($response->json('data'))->pluck('type')->sort()->values()->all())
+        ->toBe(['post_deployment', 'pre_deployment']);
+});
+
+test('intern with completed status also sees post-deployment requirements', function () {
+    $institute = internReqInstitute();
+    $program = internReqProgram($institute);
+    $intern = internReqUser($institute, $program);
+    $intern->intern->forceFill(['ojt_status' => 'completed'])->save();
+    internReqRequirement($institute, ['name' => 'Med Cert', 'type' => 'pre_deployment']);
+    internReqRequirement($institute, ['name' => 'Case Study', 'type' => 'post_deployment']);
+
+    $this->actingAs($intern, 'api')
+        ->getJson('/api/intern/requirements')
+        ->assertOk()
+        ->assertJsonCount(2, 'data');
+});
+
 test('intern can submit a pdf for an active requirement of their institute', function () {
     Storage::fake('public');
     $institute = internReqInstitute();

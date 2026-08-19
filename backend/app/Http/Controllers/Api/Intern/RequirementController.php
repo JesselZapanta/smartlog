@@ -55,9 +55,14 @@ class RequirementController extends Controller
 
         $instituteId = $intern->institute_id;
 
+        $canSeePostDeployment = in_array($intern->ojt_status, ['hours_completed', 'completed'], true);
+
         $requirements = Requirement::where('institute_id', $instituteId)
             ->where('is_active', true)
-            ->where('type', 'pre_deployment')
+            ->where(function ($query) use ($canSeePostDeployment): void {
+                $query->where('type', 'pre_deployment')
+                    ->when($canSeePostDeployment, fn ($query) => $query->orWhere('type', 'post_deployment'));
+            })
             ->orderBy('type')
             ->orderBy('name')
             ->get();

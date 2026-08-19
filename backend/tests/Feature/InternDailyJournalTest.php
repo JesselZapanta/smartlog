@@ -464,6 +464,39 @@ test('intern who completed their hours cannot create a journal', function () {
     expect(DailyJournal::count())->toBe(0);
 });
 
+test('intern who completed their hours can still view their journals read only', function () {
+    Storage::fake('public');
+    $institute = journalInstitute();
+    $program = journalProgram($institute);
+    $intern = journalIntern($institute, $program);
+    Intern::where('user_id', $intern->id)->update(['ojt_status' => 'ongoing']);
+    journalDtr($intern, '2026-08-15');
+
+    $this->actingAs($intern, 'api')
+        ->postJson('/api/intern/journals', journalPayload('2026-08-15'))
+        ->assertCreated();
+
+    Intern::where('user_id', $intern->id)->update(['ojt_status' => 'hours_completed']);
+    $intern->unsetRelation('intern');
+
+    $this->actingAs($intern, 'api')
+        ->getJson('/api/intern/journals?month=2026-08')
+        ->assertOk()
+        ->assertJsonPath('ojt_status', 'hours_completed')
+        ->assertJsonCount(1, 'data');
+
+    $journal = DailyJournal::first();
+
+    $this->actingAs($intern, 'api')
+        ->getJson("/api/intern/journals/{$journal->id}")
+        ->assertOk()
+        ->assertJsonPath('data.id', $journal->id);
+
+    $this->actingAs($intern, 'api')
+        ->postJson("/api/intern/journals/{$journal->id}", journalPayload('2026-08-15', ['title' => 'Changed']))
+        ->assertForbidden();
+});
+
 test('journal module is intern only', function () {
     $admin = User::factory()->create(['role' => 'admin']);
 
