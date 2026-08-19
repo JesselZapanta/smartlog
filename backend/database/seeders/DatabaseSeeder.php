@@ -20,6 +20,8 @@ class DatabaseSeeder extends Seeder
             ProgramSeeder::class,
             RequirementSeeder::class,
             OjtHourSeeder::class,
+            EvaluationCriterionSeeder::class,
+            EvaluationHteCriterionSeeder::class,
             UserSeeder::class,
         ]);
     }

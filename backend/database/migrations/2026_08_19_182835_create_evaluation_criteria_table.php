@@ -13,9 +13,10 @@ return new class extends Migration
     {
         Schema::create('evaluation_criteria', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('institute_id')->constrained()->cascadeOnDelete();
             $table->enum('category', ['personal_characteristics', 'work_characteristics', 'job_knowledge']);
-            $table->string('indicator');
-            $table->string('rating');
+            $table->text('indicator');
+            $table->enum('type', ['intern', 'hte'])->default('intern');
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
         });

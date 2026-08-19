@@ -24,6 +24,7 @@ import AssignInternsPage from "@/pages/ojt_coordinator/hte-assignments/AssignInt
 import CoordinatorRequirementListPage from "@/pages/ojt_coordinator/requirements/CoordinatorRequirementListPage.jsx";
 import CoordinatorInternRequirementsPage from "@/pages/ojt_coordinator/requirements/CoordinatorInternRequirementsPage.jsx";
 import CoordinatorInternRequirementsDetailPage from "@/pages/ojt_coordinator/requirements/CoordinatorInternRequirementsDetailPage.jsx";
+import EvaluationListPage from "@/pages/ojt_coordinator/evaluations/EvaluationListPage.jsx";
 import InstructorDashboard from "@/pages/ojt_instructor/InstructorDashboard.jsx";
 import InstructorDeployedInternsPage from "@/pages/ojt_instructor/interns/InstructorDeployedInternsPage.jsx";
 import InstructorInternDetailPage from "@/pages/ojt_instructor/interns/InstructorInternDetailPage.jsx";
@@ -231,6 +232,14 @@ function App() {
         element={
           <ProtectedRoute roles={["ojt_coordinator"]}>
             <CoordinatorInternRequirementsDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coordinator/evaluations"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <EvaluationListPage />
           </ProtectedRoute>
         }
       />
