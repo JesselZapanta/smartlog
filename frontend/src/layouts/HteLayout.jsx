@@ -1,10 +1,11 @@
-import { BookOpenText, LayoutDashboard, Users } from "lucide-react";
+import { BookOpenText, ClipboardCheck, LayoutDashboard, Users } from "lucide-react";
 import AppShell from "@/layouts/AppShell.jsx";
 
 const navItems = [
   { to: "/hte", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/hte/interns", label: "Assigned Interns", icon: Users },
   { to: "/hte/monitoring", label: "Intern Monitoring", icon: BookOpenText },
+  { to: "/hte/evaluations", label: "Evaluate Interns", icon: ClipboardCheck },
 ];
 
 export default function HteLayout({ children }) {

@@ -37,6 +37,8 @@ import HteAssignedInternDetailPage from "@/pages/hte/interns/HteAssignedInternDe
 import HteInternMonitoringPage from "@/pages/hte/monitoring/HteInternMonitoringPage.jsx";
 import HteInternMonitoringCalendarPage from "@/pages/hte/monitoring/HteInternMonitoringCalendarPage.jsx";
 import HteInternMonitoringDayPage from "@/pages/hte/monitoring/HteInternMonitoringDayPage.jsx";
+import HteEvaluateInternListPage from "@/pages/hte/evaluations/HteEvaluateInternListPage.jsx";
+import HteEvaluateInternFormPage from "@/pages/hte/evaluations/HteEvaluateInternFormPage.jsx";
 import ProfilePage from "@/pages/profile/ProfilePage.jsx";
 import NotificationsPage from "@/pages/notifications/NotificationsPage.jsx";
 import UserListPage from "@/pages/admin/users/UserListPage.jsx";
@@ -336,6 +338,22 @@ function App() {
         element={
           <ProtectedRoute roles={["hte"]}>
             <HteInternMonitoringDayPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/hte/evaluations"
+        element={
+          <ProtectedRoute roles={["hte"]}>
+            <HteEvaluateInternListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/hte/evaluations/:uuid"
+        element={
+          <ProtectedRoute roles={["hte"]}>
+            <HteEvaluateInternFormPage />
           </ProtectedRoute>
         }
       />
