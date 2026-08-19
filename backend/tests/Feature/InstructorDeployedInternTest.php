@@ -44,7 +44,7 @@ function instructorInternRecord(Institute $institute, Program $program, array $a
     return $user;
 }
 
-test('instructor sees only deployed interns', function () {
+test('instructor sees deployed, hours completed and completed interns', function () {
     $institute = instructorInternInstitute();
     $program = instructorInternProgram($institute);
     $instructor = User::factory()->create(['role' => 'ojt_instructor']);
@@ -57,8 +57,8 @@ test('instructor sees only deployed interns', function () {
     $this->actingAs($instructor, 'api')
         ->getJson('/api/instructor/interns')
         ->assertOk()
-        ->assertJsonCount(2, 'data')
-        ->assertJsonPath('meta.total', 2);
+        ->assertJsonCount(3, 'data')
+        ->assertJsonPath('meta.total', 3);
 });
 
 test('instructor can search and filter deployed interns by academic year', function () {
@@ -124,6 +124,18 @@ test('instructor can view an intern who completed their hours', function () {
         ->getJson("/api/instructor/interns/{$intern->uuid}")
         ->assertOk()
         ->assertJsonPath('data.ojt_status', 'hours_completed');
+});
+
+test('instructor can view a completed intern detail', function () {
+    $institute = instructorInternInstitute();
+    $program = instructorInternProgram($institute);
+    $instructor = User::factory()->create(['role' => 'ojt_instructor']);
+    $intern = instructorInternRecord($institute, $program, [], ['ojt_status' => 'completed']);
+
+    $this->actingAs($instructor, 'api')
+        ->getJson("/api/instructor/interns/{$intern->uuid}")
+        ->assertOk()
+        ->assertJsonPath('data.ojt_status', 'completed');
 });
 
 test('instructor cannot view a non-deployed intern', function () {

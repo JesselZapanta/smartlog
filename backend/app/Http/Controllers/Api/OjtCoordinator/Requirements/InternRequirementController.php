@@ -37,10 +37,15 @@ class InternRequirementController extends Controller
             ]);
         }
 
-        $totalRequirements = Requirement::where('institute_id', $instituteId)
+        $requirementsByType = Requirement::where('institute_id', $instituteId)
             ->where('is_active', true)
-            ->where('type', 'pre_deployment')
-            ->count();
+            ->get()
+            ->groupBy('type');
+
+        $preRequirementIds = $requirementsByType->get('pre_deployment', collect())->pluck('id');
+        $postRequirementIds = $requirementsByType->get('post_deployment', collect())->pluck('id');
+        $totalPreRequirements = $preRequirementIds->count();
+        $totalPostRequirements = $postRequirementIds->count();
 
         $query = Intern::with(['user', 'institute', 'program'])
             ->where('institute_id', $instituteId)
@@ -82,12 +87,21 @@ class InternRequirementController extends Controller
             'user_id',
             collect($interns->items())->pluck('user_id')
         )
-            ->selectRaw('user_id, count(*) as total')
+            ->whereIn('requirement_id', $preRequirementIds->merge($postRequirementIds))
+            ->get(['user_id', 'requirement_id'])
             ->groupBy('user_id')
-            ->pluck('total', 'user_id');
+            ->map(function ($rows) use ($preRequirementIds, $postRequirementIds): array {
+                return [
+                    'pre' => $rows->filter(fn ($row): bool => $preRequirementIds->contains($row->requirement_id))->count(),
+                    'post' => $rows->filter(fn ($row): bool => $postRequirementIds->contains($row->requirement_id))->count(),
+                ];
+            });
 
-        $rows = collect($interns->items())->map(function (Intern $intern) use ($submissionCounts, $totalRequirements): array {
-            $submitted = (int) ($submissionCounts[$intern->user_id] ?? 0);
+        $rows = collect($interns->items())->map(function (Intern $intern) use ($submissionCounts, $totalPreRequirements, $totalPostRequirements): array {
+            $canSeePostDeployment = in_array($intern->ojt_status, ['hours_completed', 'completed'], true);
+            $counts = $submissionCounts[$intern->user_id] ?? ['pre' => 0, 'post' => 0];
+            $submitted = $counts['pre'] + ($canSeePostDeployment ? $counts['post'] : 0);
+            $total = $totalPreRequirements + ($canSeePostDeployment ? $totalPostRequirements : 0);
 
             return [
                 'id' => $intern->id,
@@ -99,7 +113,7 @@ class InternRequirementController extends Controller
                 'ojt_status' => $intern->ojt_status,
                 'start_date' => $intern->start_date?->toDateString(),
                 'submitted' => $submitted,
-                'total' => $totalRequirements,
+                'total' => $total,
             ];
         })->values()->all();
 
@@ -124,9 +138,14 @@ class InternRequirementController extends Controller
         $instituteId = $this->instituteId($request);
         $intern = $this->authorizeIntern($request, $user);
 
+        $canSeePostDeployment = in_array($intern->ojt_status, ['hours_completed', 'completed'], true);
+
         $requirements = Requirement::where('institute_id', $instituteId)
             ->where('is_active', true)
-            ->where('type', 'pre_deployment')
+            ->where(function (Builder $query) use ($canSeePostDeployment): void {
+                $query->where('type', 'pre_deployment')
+                    ->when($canSeePostDeployment, fn (Builder $query) => $query->orWhere('type', 'post_deployment'));
+            })
             ->orderBy('type')
             ->orderBy('name')
             ->get();
@@ -149,6 +168,12 @@ class InternRequirementController extends Controller
             ];
         });
 
+        $submitted = $rows
+            ->filter(fn (array $row): bool => $row['type'] === 'pre_deployment' && $row['submission'] !== null)
+            ->count();
+
+        $total = $rows->filter(fn (array $row): bool => $row['type'] === 'pre_deployment')->count();
+
         return response()->json([
             'data' => [
                 'intern' => [
@@ -158,11 +183,13 @@ class InternRequirementController extends Controller
                     'profile_picture' => $intern->user->profile_picture,
                     'program' => $intern->program?->name,
                     'ojt_status' => $intern->ojt_status,
-                    'start_date' => $intern->start_date,
+                    'start_date' => $intern->start_date?->toDateString(),
+                    'end_date' => $intern->end_date?->toDateString(),
+                    'earned_minutes' => $intern->earnedMinutes(),
                     'hte' => $intern->assignedHte?->name,
                 ],
-                'submitted' => $rows->filter(fn (array $row): bool => $row['submission'] !== null)->count(),
-                'total' => $rows->count(),
+                'submitted' => $submitted,
+                'total' => $total,
                 'requirements' => $rows->values()->all(),
             ],
         ]);
@@ -231,6 +258,59 @@ class InternRequirementController extends Controller
                 'message' => $intern->user->full_name.' has been deployed.',
                 'ojt_status' => 'ongoing',
                 'start_date' => $startDate,
+            ],
+        ]);
+    }
+
+    /**
+     * Mark the intern as completed once all active requirements are approved.
+     */
+    public function markCompleted(Request $request, User $user): JsonResponse
+    {
+        $instituteId = $this->instituteId($request);
+        $intern = $this->authorizeIntern($request, $user);
+
+        if ($intern->ojt_status === 'completed') {
+            throw ValidationException::withMessages([
+                'ojt_status' => ['This intern has already been marked as completed.'],
+            ]);
+        }
+
+        $requirements = Requirement::where('institute_id', $instituteId)
+            ->where('is_active', true)
+            ->get();
+
+        if ($requirements->isEmpty()) {
+            throw ValidationException::withMessages([
+                'requirements' => ['No active requirements to complete.'],
+            ]);
+        }
+
+        $approvedCount = RequirementSubmission::where('user_id', $user->id)
+            ->whereIn('requirement_id', $requirements->pluck('id'))
+            ->where('status', 'approved')
+            ->count();
+
+        if ($approvedCount !== $requirements->count()) {
+            throw ValidationException::withMessages([
+                'requirements' => ['All requirements must be approved before marking the intern as completed.'],
+            ]);
+        }
+
+        $intern->forceFill(['ojt_status' => 'completed'])->save();
+
+        UserNotification::notify(
+            $user,
+            'ojt_completed',
+            'OJT completed',
+            'Congratulations! You have completed your OJT.',
+            ['uuid' => $user->uuid],
+        );
+
+        return response()->json([
+            'data' => [
+                'message' => $intern->user->full_name.' has been marked as completed.',
+                'ojt_status' => 'completed',
             ],
         ]);
     }

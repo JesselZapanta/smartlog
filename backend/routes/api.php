@@ -119,6 +119,7 @@ Route::middleware('auth:api')->group(function (): void {
         Route::post('/coordinator/intern-requirements/{user:uuid}/{requirement}/approve', [CoordinatorInternRequirementController::class, 'approve'])->name('api.coordinator.intern-requirements.approve');
         Route::post('/coordinator/intern-requirements/{user:uuid}/{requirement}/reject', [CoordinatorInternRequirementController::class, 'reject'])->name('api.coordinator.intern-requirements.reject');
         Route::post('/coordinator/intern-requirements/{user:uuid}/deploy', [CoordinatorInternRequirementController::class, 'deploy'])->name('api.coordinator.intern-requirements.deploy');
+        Route::post('/coordinator/intern-requirements/{user:uuid}/mark-completed', [CoordinatorInternRequirementController::class, 'markCompleted'])->name('api.coordinator.intern-requirements.mark-completed');
     });
 
     Route::middleware('role:hte')->group(function (): void {

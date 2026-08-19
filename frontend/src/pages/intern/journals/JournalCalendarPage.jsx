@@ -32,7 +32,6 @@ export default function JournalCalendarPage() {
   const [entries, setEntries] = useState([]);
   const [dtrDates, setDtrDates] = useState(() => new Set());
   const [dtrReady, setDtrReady] = useState(false);
-  const [deployed, setDeployed] = useState(true);
   const [ojtStatus, setOjtStatus] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -41,7 +40,6 @@ export default function JournalCalendarPage() {
     try {
       const res = await api.get(`/intern/journals?month=${format(monthDate, "yyyy-MM")}`);
       setEntries(res.data.data || []);
-      setDeployed(Boolean(res.data.deployed));
       setOjtStatus(res.data.ojt_status || "");
     } catch (err) {
       toast.error("Failed to load journals", { description: firstErrorMessage(err) });
@@ -156,142 +154,154 @@ export default function JournalCalendarPage() {
   const prevMonth = () => setMonthDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
   const nextMonth = () => setMonthDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
   const canGoNext = monthDate.getFullYear() < today.getFullYear() || monthDate.getMonth() < today.getMonth();
+  const readOnly = ojtStatus === "hours_completed";
+
+  const calendarSection = (
+    <section className="overflow-hidden rounded-2xl border border-green-100 bg-white shadow-sm ring-1 ring-green-100">
+      <div className="flex items-center gap-3 border-b border-green-100/70 bg-gradient-to-r from-green-700 to-green-500 px-4 py-3 sm:px-5">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-white/30">
+          <CalendarDays size={18} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-green-100">Journal calendar</p>
+          <p className="truncate font-heading text-base font-bold text-white sm:text-lg">
+            {format(monthDate, "MMMM yyyy")}
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={prevMonth}
+            aria-label="Previous month"
+            className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-white/30 transition-colors hover:bg-white/25 active:scale-95"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={nextMonth}
+            disabled={!canGoNext}
+            aria-label="Next month"
+            className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-white/30 transition-colors hover:bg-white/25 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      </div>
+
+      <div className="p-3 sm:p-5">
+        <Calendar
+          mode="single"
+          month={monthDate}
+          onMonthChange={setMonthDate}
+          disabled={disabledDays}
+          components={{ DayButton: JournalDayButton }}
+          classNames={{
+            weekday: cn(
+              "flex-1 rounded-(--cell-radius) select-none text-[10px] font-bold uppercase tracking-wider text-green-700/60",
+              getDefaultClassNames().weekday
+            ),
+          }}
+          onSelect={(date) => {
+            if (date) navigate(`/intern/journals/${dateKey(date)}`);
+          }}
+          className="mx-auto w-full max-w-xl [--cell-size:--spacing(11)] md:[--cell-size:--spacing(14)] [--cell-radius:var(--radius-xl)]"
+        />
+
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] font-semibold text-gray-400">
+          <span className="inline-flex items-center gap-1">
+            <Check size={12} strokeWidth={3.5} className="text-green-600" /> Checked
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="size-1.5 rounded-full bg-green-500" /> Verified
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="size-1.5 rounded-full bg-amber-500" /> Pending
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Flag size={12} strokeWidth={3} className="text-red-500" /> Flagged
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <X size={12} strokeWidth={3} className="text-red-500" /> Rejected
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <X size={12} strokeWidth={3} className="text-red-500" /> No photo DTR — locked
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="size-1.5 rounded-full bg-gray-300" /> Attended, no entry
+          </span>
+        </div>
+      </div>
+    </section>
+  );
 
   return (
     <InternLayout>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-heading text-2xl font-bold text-green-950 sm:text-3xl">Daily Journal</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Tap a date with a photo DTR record to write or review your journal entry.
-          </p>
+          {readOnly ? (
+            <p className="mt-1 text-sm text-gray-500">Review your past journal entries — read only.</p>
+          ) : (
+            <p className="mt-1 text-sm text-gray-500">
+              Tap a date with a photo DTR record to write or review your journal entry.
+            </p>
+          )}
         </div>
-        <button
-          type="button"
-          onClick={() => navigate(`/intern/journals/${dateKey(today)}`)}
-          className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-green-600 px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-700 active:scale-95"
-        >
-          <Plus size={16} /> Today&apos;s entry
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={() => navigate(`/intern/journals/${dateKey(today)}`)}
+            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-green-600 px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-700 active:scale-95"
+          >
+            <Plus size={16} /> Today&apos;s entry
+          </button>
+        )}
       </div>
 
       {loading ? (
         <div className="flex h-64 items-center justify-center">
           <Loader2 size={28} className="animate-spin text-green-600" />
         </div>
-      ) : !deployed ? (
-        ojtStatus === "hours_completed" ? (
-          <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-8 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600">
-              <FileClock size={20} />
-            </div>
-            <p className="text-sm font-semibold text-indigo-800">Hours completed</p>
-            <p className="max-w-sm text-xs text-indigo-700/80">
-              You have completed your required OJT hours. Your records are now being reviewed by your HTE and
-              instructor.
-            </p>
+      ) : ojtStatus === "completed" ? (
+        <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-blue-100 bg-blue-50/60 p-8 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
+            <FileClock size={20} />
           </div>
-        ) : ojtStatus === "completed" ? (
-          <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-blue-100 bg-blue-50/60 p-8 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
-              <FileClock size={20} />
-            </div>
-            <p className="text-sm font-semibold text-blue-800">OJT completed</p>
-            <p className="max-w-sm text-xs text-blue-700/80">
-              Congratulations! You have completed your OJT.
-            </p>
-          </div>
-        ) : (
-          <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-amber-100 bg-amber-50/60 p-8 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
-              <FileClock size={20} />
-            </div>
-            <p className="text-sm font-semibold text-amber-800">Not deployed yet</p>
-            <p className="max-w-sm text-xs text-amber-700/80">
-              You can start writing your daily journal once the coordinator deploys you to your host training
-              establishment.
-            </p>
-          </div>
-        )
-      ) : (
-        <div className="mt-6 space-y-5">
-          <section className="overflow-hidden rounded-2xl border border-green-100 bg-white shadow-sm ring-1 ring-green-100">
-            <div className="flex items-center gap-3 border-b border-green-100/70 bg-gradient-to-r from-green-700 to-green-500 px-4 py-3 sm:px-5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-white/30">
-                <CalendarDays size={18} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-green-100">Journal calendar</p>
-                <p className="truncate font-heading text-base font-bold text-white sm:text-lg">
-                  {format(monthDate, "MMMM yyyy")}
-                </p>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={prevMonth}
-                  aria-label="Previous month"
-                  className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-white/30 transition-colors hover:bg-white/25 active:scale-95"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                <button
-                  type="button"
-                  onClick={nextMonth}
-                  disabled={!canGoNext}
-                  aria-label="Next month"
-                  className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-white/30 transition-colors hover:bg-white/25 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <ChevronRight size={18} />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-3 sm:p-5">
-              <Calendar
-                mode="single"
-                month={monthDate}
-                onMonthChange={setMonthDate}
-                disabled={disabledDays}
-                components={{ DayButton: JournalDayButton }}
-                classNames={{
-                  weekday: cn(
-                    "flex-1 rounded-(--cell-radius) select-none text-[10px] font-bold uppercase tracking-wider text-green-700/60",
-                    getDefaultClassNames().weekday
-                  ),
-                }}
-                onSelect={(date) => {
-                  if (date) navigate(`/intern/journals/${dateKey(date)}`);
-                }}
-                className="mx-auto w-full max-w-xl [--cell-size:--spacing(11)] md:[--cell-size:--spacing(14)] [--cell-radius:var(--radius-xl)]"
-              />
-
-              <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] font-semibold text-gray-400">
-                <span className="inline-flex items-center gap-1">
-                  <Check size={12} strokeWidth={3.5} className="text-green-600" /> Checked
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="size-1.5 rounded-full bg-green-500" /> Verified
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="size-1.5 rounded-full bg-amber-500" /> Pending
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <Flag size={12} strokeWidth={3} className="text-red-500" /> Flagged
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <X size={12} strokeWidth={3} className="text-red-500" /> Rejected
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <X size={12} strokeWidth={3} className="text-red-500" /> No photo DTR — locked
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="size-1.5 rounded-full bg-gray-300" /> Attended, no entry
-                </span>
-              </div>
-            </div>
-          </section>
+          <p className="text-sm font-semibold text-blue-800">OJT completed</p>
+          <p className="max-w-sm text-xs text-blue-700/80">
+            Congratulations! You have completed your OJT.
+          </p>
         </div>
+      ) : ojtStatus === "hours_completed" ? (
+        <div className="mt-6 space-y-5">
+          <div className="flex items-start gap-2.5 rounded-xl bg-indigo-50 p-3.5 ring-1 ring-indigo-100">
+            <FileClock size={16} className="mt-0.5 shrink-0 text-indigo-600" />
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-wide text-indigo-700">
+                Hours completed — read only
+              </p>
+              <p className="mt-0.5 text-sm text-indigo-800">
+                You have completed your required OJT hours. Your records are now being reviewed by your HTE and
+                instructor.
+              </p>
+            </div>
+          </div>
+          {calendarSection}
+        </div>
+      ) : ojtStatus === "pending" || ojtStatus === "" ? (
+        <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-amber-100 bg-amber-50/60 p-8 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+            <FileClock size={20} />
+          </div>
+          <p className="text-sm font-semibold text-amber-800">Not deployed yet</p>
+          <p className="max-w-sm text-xs text-amber-700/80">
+            You can start writing your daily journal once the coordinator deploys you to your host training
+            establishment.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-6 space-y-5">{calendarSection}</div>
       )}
     </InternLayout>
   );

@@ -218,12 +218,24 @@ test('instructor can view records of an intern who completed their hours', funct
         ->assertOk();
 });
 
-test('instructor cannot view records of a non-deployed intern', function () {
+test('instructor can view records of a completed intern', function () {
     $institute = instructorRecordInstitute();
     $program = instructorRecordProgram($institute);
     $instructor = User::factory()->create(['role' => 'ojt_instructor']);
     $intern = instructorRecordIntern($institute, $program);
     Intern::where('user_id', $intern->id)->update(['ojt_status' => 'completed']);
+
+    $this->actingAs($instructor, 'api')
+        ->getJson("/api/instructor/interns/{$intern->uuid}/monitoring?month=2026-08")
+        ->assertOk();
+});
+
+test('instructor cannot view records of a non-deployed intern', function () {
+    $institute = instructorRecordInstitute();
+    $program = instructorRecordProgram($institute);
+    $instructor = User::factory()->create(['role' => 'ojt_instructor']);
+    $intern = instructorRecordIntern($institute, $program);
+    Intern::where('user_id', $intern->id)->update(['ojt_status' => 'pending']);
 
     $this->actingAs($instructor, 'api')
         ->getJson("/api/instructor/interns/{$intern->uuid}/monitoring?month=2026-08")

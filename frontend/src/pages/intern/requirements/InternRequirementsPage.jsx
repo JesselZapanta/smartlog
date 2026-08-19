@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Building2, ClipboardList, FileText, GraduationCap, Landmark, Mail, Upload, UserRound, X, Loader2, CheckCircle2, ExternalLink, AlertTriangle, Clock3 } from "lucide-react";
+import { Building2, ClipboardCheck, ClipboardList, FileText, GraduationCap, Landmark, Mail, Upload, UserRound, X, Loader2, CheckCircle2, ExternalLink, AlertTriangle, Clock3 } from "lucide-react";
 import InternLayout from "@/layouts/InternLayout.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { typeLabel, typeTone } from "@/pages/admin/requirements/constants.js";
 import { Badge } from "@/components/ui/badge";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
@@ -56,6 +57,137 @@ function StatusPill({ status }) {
     <Badge className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 font-semibold text-amber-700 ring-1 ring-amber-200">
       <Clock3 size={12} /> Pending
     </Badge>
+  );
+}
+
+function StatusTags({ title, approved, pending, rejected }) {
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm ring-1 ring-gray-100">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{title}</p>
+      <div className="mt-2.5 grid grid-cols-3 gap-1.5">
+        <div className="flex min-w-0 items-center justify-center gap-1.5 rounded-xl bg-green-50 px-1.5 py-2 ring-1 ring-green-100">
+          <CheckCircle2 size={13} className="shrink-0 text-green-600" />
+          <span className="text-sm font-bold text-green-700">{approved}</span>
+          <span className="truncate text-[11px] font-semibold text-green-700/70">Approved</span>
+        </div>
+        <div className="flex min-w-0 items-center justify-center gap-1.5 rounded-xl bg-amber-50 px-1.5 py-2 ring-1 ring-amber-100">
+          <Clock3 size={13} className="shrink-0 text-amber-500" />
+          <span className="text-sm font-bold text-amber-700">{pending}</span>
+          <span className="truncate text-[11px] font-semibold text-amber-700/70">Pending</span>
+        </div>
+        <div className="flex min-w-0 items-center justify-center gap-1.5 rounded-xl bg-red-50 px-1.5 py-2 ring-1 ring-red-100">
+          <AlertTriangle size={13} className="shrink-0 text-red-600" />
+          <span className="text-sm font-bold text-red-700">{rejected}</span>
+          <span className="truncate text-[11px] font-semibold text-red-700/70">Rejected</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RequirementCard({ requirement, submittingId, removingId, onFile, onRemove }) {
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm ring-1 ring-gray-100">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-heading text-sm font-bold text-green-950">{requirement.name}</p>
+          {requirement.description && (
+            <p className="mt-1 text-xs text-gray-500">{requirement.description}</p>
+          )}
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <TypePill type={requirement.type} />
+          {requirement.submission && <StatusPill status={requirement.submission.status} />}
+        </div>
+      </div>
+
+      {requirement.submission?.status === "rejected" && requirement.submission.rejection_reason && (
+        <div className="mt-3 flex items-start gap-2 rounded-xl bg-red-50 p-3 ring-1 ring-red-100">
+          <AlertTriangle size={15} className="mt-0.5 shrink-0 text-red-600" />
+          <div className="min-w-0">
+            <p className="text-xs font-bold uppercase tracking-wide text-red-700">Rejection reason</p>
+            <p className="mt-0.5 text-sm text-red-800">{requirement.submission.rejection_reason}</p>
+          </div>
+        </div>
+      )}
+
+      <div className="mt-4 border-t border-gray-50 pt-4">
+        {requirement.submission ? (
+          <div className="flex min-h-11 items-center justify-between gap-2 rounded-xl border border-green-200 bg-green-50 px-3 py-2">
+            <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-green-800">
+              <FileText size={16} className="shrink-0" />
+              <span className="truncate">
+                {requirement.submission.status === "rejected"
+                  ? "Submitted (needs resubmit)"
+                  : `Submitted ${formatDate(requirement.submission.submitted_at)}`}
+              </span>
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+              <a
+                href={requirement.submission.file_url}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Open submitted PDF"
+                className="-my-2 flex h-11 w-11 items-center justify-center rounded-lg text-green-700 transition-colors hover:bg-green-100"
+              >
+                <ExternalLink size={16} />
+              </a>
+              {requirement.submission.status !== "approved" && (
+                <button
+                  type="button"
+                  onClick={() => onRemove(requirement)}
+                  disabled={removingId === requirement.id}
+                  aria-label="Remove submission"
+                  className="-my-2 flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-green-100 hover:text-red-600 disabled:opacity-50"
+                >
+                  {removingId === requirement.id ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <X size={16} />
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-gray-400">Not yet submitted</p>
+        )}
+
+        <label
+          htmlFor={`req-file-${requirement.id}`}
+          className={`mt-3 flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-3 text-sm font-semibold transition-colors ${
+            requirement.submission?.status === "approved"
+              ? "cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400"
+              : "border-gray-300 bg-white text-gray-600 hover:border-green-500 hover:bg-green-50 hover:text-green-700"
+          }`}
+        >
+          {submittingId === requirement.id ? (
+            <>
+              <Loader2 size={16} className="animate-spin" /> Uploading…
+            </>
+          ) : (
+            <>
+              <Upload size={16} />
+              {requirement.submission?.status === "approved"
+                ? "Approved"
+                : requirement.submission?.status === "rejected"
+                  ? "Resubmit PDF"
+                  : requirement.submission
+                    ? "Replace PDF"
+                    : "Upload PDF"}
+            </>
+          )}
+        </label>
+        <input
+          id={`req-file-${requirement.id}`}
+          type="file"
+          accept="application/pdf,.pdf"
+          className="hidden"
+          disabled={submittingId === requirement.id || requirement.submission?.status === "approved"}
+          onChange={(event) => onFile(event, requirement)}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -127,7 +259,16 @@ export default function InternRequirementsPage() {
     }
   }
 
-  const submittedCount = requirements.filter((r) => r.submission).length;
+  const preRequirements = requirements.filter((r) => r.type === "pre_deployment");
+  const postRequirements = requirements.filter((r) => r.type === "post_deployment");
+  const preSubmitted = preRequirements.filter((r) => r.submission).length;
+  const postSubmitted = postRequirements.filter((r) => r.submission).length;
+  const preApproved = preRequirements.filter((r) => r.submission?.status === "approved").length;
+  const prePending = preRequirements.filter((r) => r.submission?.status === "pending").length;
+  const preRejected = preRequirements.filter((r) => r.submission?.status === "rejected").length;
+  const postApproved = postRequirements.filter((r) => r.submission?.status === "approved").length;
+  const postPending = postRequirements.filter((r) => r.submission?.status === "pending").length;
+  const postRejected = postRequirements.filter((r) => r.submission?.status === "rejected").length;
 
   return (
     <InternLayout>
@@ -187,115 +328,114 @@ export default function InternRequirementsPage() {
             </div>
           </div>
 
-          <p className="mt-4 text-xs font-bold uppercase tracking-wider text-gray-400">
-            Pre-deployment requirements — {submittedCount} / {requirements.length} submitted
-          </p>
-
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {requirements.map((requirement) => (
-            <div key={requirement.id} className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm ring-1 ring-gray-100">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-heading text-sm font-bold text-green-950">{requirement.name}</p>
-                  {requirement.description && (
-                    <p className="mt-1 text-xs text-gray-500">{requirement.description}</p>
-                  )}
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-1.5">
-                  <TypePill type={requirement.type} />
-                  {requirement.submission && <StatusPill status={requirement.submission.status} />}
-                </div>
-              </div>
-
-              {requirement.submission?.status === "rejected" && requirement.submission.rejection_reason && (
-                <div className="mt-3 flex items-start gap-2 rounded-xl bg-red-50 p-3 ring-1 ring-red-100">
-                  <AlertTriangle size={15} className="mt-0.5 shrink-0 text-red-600" />
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold uppercase tracking-wide text-red-700">Rejection reason</p>
-                    <p className="mt-0.5 text-sm text-red-800">{requirement.submission.rejection_reason}</p>
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-4 border-t border-gray-50 pt-4">
-                {requirement.submission ? (
-                  <div className="flex min-h-11 items-center justify-between gap-2 rounded-xl border border-green-200 bg-green-50 px-3 py-2">
-                    <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-green-800">
-                      <FileText size={16} className="shrink-0" />
-                      <span className="truncate">
-                        {requirement.submission.status === "rejected"
-                          ? "Submitted (needs resubmit)"
-                          : `Submitted ${formatDate(requirement.submission.submitted_at)}`}
-                      </span>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-1">
-                      <a
-                        href={requirement.submission.file_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        aria-label="Open submitted PDF"
-                        className="-my-2 flex h-11 w-11 items-center justify-center rounded-lg text-green-700 transition-colors hover:bg-green-100"
-                      >
-                        <ExternalLink size={16} />
-                      </a>
-                      {requirement.submission.status !== "approved" && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemove(requirement)}
-                          disabled={removingId === requirement.id}
-                          aria-label="Remove submission"
-                          className="-my-2 flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-green-100 hover:text-red-600 disabled:opacity-50"
-                        >
-                          {removingId === requirement.id ? (
-                            <Loader2 size={16} className="animate-spin" />
-                          ) : (
-                            <X size={16} />
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-xs text-gray-400">Not yet submitted</p>
-                )}
-
-                <label
-                  htmlFor={`req-file-${requirement.id}`}
-                  className={`mt-3 flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-3 text-sm font-semibold transition-colors ${
-                    requirement.submission?.status === "approved"
-                      ? "cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400"
-                      : "border-gray-300 bg-white text-gray-600 hover:border-green-500 hover:bg-green-50 hover:text-green-700"
-                  }`}
-                >
-                  {submittingId === requirement.id ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" /> Uploading…
-                    </>
-                  ) : (
-                    <>
-                      <Upload size={16} />
-                      {requirement.submission?.status === "approved"
-                        ? "Approved"
-                        : requirement.submission?.status === "rejected"
-                          ? "Resubmit PDF"
-                          : requirement.submission
-                            ? "Replace PDF"
-                            : "Upload PDF"}
-                    </>
-                  )}
-                </label>
-                <input
-                  id={`req-file-${requirement.id}`}
-                  type="file"
-                  accept="application/pdf,.pdf"
-                  className="hidden"
-                  disabled={submittingId === requirement.id || requirement.submission?.status === "approved"}
-                  onChange={(event) => handleFile(event, requirement)}
-                />
-              </div>
-            </div>
-          ))}
+          <div
+            className={`mt-4 grid grid-cols-1 gap-2 ${
+              postRequirements.length > 0 ? "sm:grid-cols-2" : "sm:max-w-md"
+            } sm:gap-3`}
+          >
+            <StatusTags
+              title="Pre-deployment"
+              approved={preApproved}
+              pending={prePending}
+              rejected={preRejected}
+            />
+            {postRequirements.length > 0 && (
+              <StatusTags
+                title="Post-deployment"
+                approved={postApproved}
+                pending={postPending}
+                rejected={postRejected}
+              />
+            )}
           </div>
+
+          <Accordion
+            type="single"
+            collapsible
+            className="mt-4 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ring-1 ring-gray-100"
+          >
+            <AccordionItem value="pre-deployment" className="border-b-0">
+              <AccordionTrigger className="px-4 hover:no-underline sm:px-5">
+                <span className="flex flex-1 items-center justify-between gap-3">
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-700 ring-1 ring-green-100">
+                      <ClipboardList size={16} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                        Pre-deployment
+                      </span>
+                      <span className="block truncate font-heading text-sm font-bold text-green-950 sm:text-base">
+                        Requirements
+                      </span>
+                    </span>
+                  </span>
+                  <Badge className="shrink-0 rounded-full bg-green-50 font-semibold text-green-700 ring-1 ring-green-200">
+                    {preSubmitted} / {preRequirements.length} submitted
+                  </Badge>
+                </span>
+              </AccordionTrigger>
+              <AccordionContent className="border-t border-gray-100 px-4 sm:px-5">
+                <div className="grid grid-cols-1 gap-4 pt-4 lg:grid-cols-2">
+                  {preRequirements.map((requirement) => (
+                    <RequirementCard
+                      key={requirement.id}
+                      requirement={requirement}
+                      submittingId={submittingId}
+                      removingId={removingId}
+                      onFile={handleFile}
+                      onRemove={handleRemove}
+                    />
+                  ))}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+
+          {postRequirements.length > 0 && (
+            <Accordion
+              type="single"
+              collapsible
+              className="mt-4 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ring-1 ring-gray-100"
+            >
+              <AccordionItem value="post-deployment" className="border-b-0">
+                <AccordionTrigger className="px-4 hover:no-underline sm:px-5">
+                  <span className="flex flex-1 items-center justify-between gap-3">
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100">
+                        <ClipboardCheck size={16} />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                          Post-deployment
+                        </span>
+                        <span className="block truncate font-heading text-sm font-bold text-green-950 sm:text-base">
+                          Requirements
+                        </span>
+                      </span>
+                    </span>
+                    <Badge className="shrink-0 rounded-full bg-indigo-50 font-semibold text-indigo-700 ring-1 ring-indigo-200">
+                      {postSubmitted} / {postRequirements.length} submitted
+                    </Badge>
+                  </span>
+                </AccordionTrigger>
+                <AccordionContent className="border-t border-gray-100 px-4 sm:px-5">
+                  <div className="grid grid-cols-1 gap-4 pt-4 lg:grid-cols-2">
+                    {postRequirements.map((requirement) => (
+                      <RequirementCard
+                        key={requirement.id}
+                        requirement={requirement}
+                        submittingId={submittingId}
+                        removingId={removingId}
+                        onFile={handleFile}
+                        onRemove={handleRemove}
+                      />
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          )}
         </>
       )}
     </InternLayout>

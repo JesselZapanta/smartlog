@@ -4,6 +4,7 @@ use App\Models\AcademicTerm;
 use App\Models\Coordinator;
 use App\Models\Institute;
 use App\Models\Intern;
+use App\Models\PhotoDtr;
 use App\Models\Program;
 use App\Models\Requirement;
 use App\Models\RequirementSubmission;
@@ -98,6 +99,33 @@ test('coordinator sees interns with submitted/total requirement counts', functio
         ->assertJsonPath('data.0.total', 2);
 });
 
+test('list counts post-deployment submissions only once hours are completed', function () {
+    $institute = irInstitute();
+    $program = irProgram($institute);
+    $coordinator = irCoordinator($institute);
+    $completed = irIntern($institute, $program, ['email' => 'completed@smartlog.test']);
+    Intern::where('user_id', $completed->id)->update(['ojt_status' => 'hours_completed']);
+    $pending = irIntern($institute, $program, ['email' => 'pending@smartlog.test']);
+
+    $pre = irRequirement($institute, ['name' => 'Med Cert', 'type' => 'pre_deployment']);
+    $pre2 = irRequirement($institute, ['name' => 'MOA', 'type' => 'pre_deployment']);
+    $post = irRequirement($institute, ['name' => 'Clearance', 'type' => 'post_deployment']);
+    irRequirement($institute, ['name' => 'Inactive pre', 'type' => 'pre_deployment', 'is_active' => false]);
+
+    irSubmit($completed, $pre);
+    irSubmit($completed, $pre2);
+    irSubmit($completed, $post);
+    irSubmit($pending, $pre);
+
+    $this->actingAs($coordinator, 'api')
+        ->getJson('/api/coordinator/intern-requirements')
+        ->assertOk()
+        ->assertJsonPath('data.0.submitted', 1)
+        ->assertJsonPath('data.0.total', 2)
+        ->assertJsonPath('data.1.submitted', 3)
+        ->assertJsonPath('data.1.total', 3);
+});
+
 test('list shows ojt status as ongoing once the intern is deployed', function () {
     $institute = irInstitute();
     $program = irProgram($institute);
@@ -162,11 +190,33 @@ test('coordinator can view an interns requirement submissions', function () {
     $r1 = irRequirement($institute, ['name' => 'Med Cert']);
     $r2 = irRequirement($institute, ['name' => 'MOA']);
     irSubmit($intern, $r1);
+    Intern::where('user_id', $intern->id)->update(['end_date' => '2026-12-20']);
+
+    $checked = PhotoDtr::create([
+        'intern_id' => $intern->intern->id,
+        'dtr_date' => '2026-08-15',
+        'am_in_time' => '08:00:00',
+        'am_out_time' => '12:00:00',
+        'pm_in_time' => '13:00:00',
+        'pm_out_time' => '17:00:00',
+        'status' => 'checked',
+    ]);
+    $pending = PhotoDtr::create([
+        'intern_id' => $intern->intern->id,
+        'dtr_date' => '2026-08-16',
+        'am_in_time' => '08:00:00',
+        'am_out_time' => '12:00:00',
+        'pm_in_time' => '13:00:00',
+        'pm_out_time' => '17:00:00',
+        'status' => 'pending',
+    ]);
 
     $this->actingAs($coordinator, 'api')
         ->getJson("/api/coordinator/intern-requirements/{$intern->uuid}")
         ->assertOk()
         ->assertJsonPath('data.intern.full_name', $intern->full_name)
+        ->assertJsonPath('data.intern.end_date', '2026-12-20')
+        ->assertJsonPath('data.intern.earned_minutes', 480)
         ->assertJsonPath('data.submitted', 1)
         ->assertJsonPath('data.total', 2)
         ->assertJsonCount(2, 'data.requirements')
@@ -178,6 +228,43 @@ test('coordinator can view an interns requirement submissions', function () {
             ],
         ])
         ->assertJsonPath('data.requirements.1.submission.id', RequirementSubmission::first()->id);
+});
+
+test('coordinator detail hides post-deployment requirements until hours are completed', function () {
+    $institute = irInstitute();
+    $program = irProgram($institute);
+    $coordinator = irCoordinator($institute);
+    $intern = irIntern($institute, $program, ['email' => 'intern@smartlog.test']);
+    Intern::where('user_id', $intern->id)->update(['ojt_status' => 'ongoing']);
+    irRequirement($institute, ['name' => 'Med Cert', 'type' => 'pre_deployment']);
+    irRequirement($institute, ['name' => 'Clearance', 'type' => 'post_deployment']);
+
+    $this->actingAs($coordinator, 'api')
+        ->getJson("/api/coordinator/intern-requirements/{$intern->uuid}")
+        ->assertOk()
+        ->assertJsonCount(1, 'data.requirements')
+        ->assertJsonPath('data.requirements.0.type', 'pre_deployment');
+});
+
+test('coordinator detail shows post-deployment requirements once hours are completed', function () {
+    $institute = irInstitute();
+    $program = irProgram($institute);
+    $coordinator = irCoordinator($institute);
+    $intern = irIntern($institute, $program, ['email' => 'intern@smartlog.test']);
+    Intern::where('user_id', $intern->id)->update(['ojt_status' => 'hours_completed']);
+    irRequirement($institute, ['name' => 'Med Cert', 'type' => 'pre_deployment']);
+    irRequirement($institute, ['name' => 'Clearance', 'type' => 'post_deployment']);
+    irSubmit($intern, irRequirement($institute, ['name' => 'Case Study', 'type' => 'post_deployment']));
+
+    $response = $this->actingAs($coordinator, 'api')
+        ->getJson("/api/coordinator/intern-requirements/{$intern->uuid}")
+        ->assertOk()
+        ->assertJsonCount(3, 'data.requirements')
+        ->assertJsonPath('data.submitted', 0)
+        ->assertJsonPath('data.total', 1);
+
+    $types = collect($response->json('data.requirements'))->pluck('type')->sort()->values()->all();
+    expect($types)->toBe(['post_deployment', 'post_deployment', 'pre_deployment']);
 });
 
 test('coordinator cannot view intern requirements from another institute', function () {
@@ -432,4 +519,65 @@ test('deploy defaults the start date to today', function () {
         ->assertJsonPath('data.start_date', now()->toDateString());
 
     expect(Intern::where('user_id', $intern->id)->first()->start_date->format('Y-m-d'))->toBe(now()->toDateString());
+});
+
+test('coordinator can mark an intern as completed once all requirements are approved', function () {
+    $institute = irInstitute();
+    $program = irProgram($institute);
+    $coordinator = irCoordinator($institute);
+    $intern = irIntern($institute, $program, ['email' => 'intern@smartlog.test']);
+    $pre = irRequirement($institute, ['name' => 'Med Cert', 'type' => 'pre_deployment']);
+    $post = irRequirement($institute, ['name' => 'Clearance', 'type' => 'post_deployment']);
+    irSubmit($intern, $pre);
+    irSubmit($intern, $post);
+    RequirementSubmission::query()->update(['status' => 'approved']);
+    Intern::where('user_id', $intern->id)->update(['ojt_status' => 'ongoing']);
+
+    $this->actingAs($coordinator, 'api')
+        ->postJson("/api/coordinator/intern-requirements/{$intern->uuid}/mark-completed")
+        ->assertOk()
+        ->assertJsonPath('data.ojt_status', 'completed');
+
+    expect(Intern::where('user_id', $intern->id)->first()->ojt_status)->toBe('completed');
+
+    $notification = UserNotification::where('user_id', $intern->id)->first();
+    expect($notification->type)->toBe('ojt_completed');
+});
+
+test('coordinator cannot mark an intern completed before all requirements are approved', function () {
+    $institute = irInstitute();
+    $program = irProgram($institute);
+    $coordinator = irCoordinator($institute);
+    $intern = irIntern($institute, $program, ['email' => 'intern@smartlog.test']);
+    $r1 = irRequirement($institute, ['name' => 'Med Cert']);
+    $r2 = irRequirement($institute, ['name' => 'MOA']);
+    irSubmit($intern, $r1);
+    irSubmit($intern, $r2);
+    RequirementSubmission::first()->update(['status' => 'approved']);
+    Intern::where('user_id', $intern->id)->update(['ojt_status' => 'ongoing']);
+
+    $this->actingAs($coordinator, 'api')
+        ->postJson("/api/coordinator/intern-requirements/{$intern->uuid}/mark-completed")
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('requirements');
+
+    expect(Intern::where('user_id', $intern->id)->first()->ojt_status)->toBe('ongoing');
+});
+
+test('coordinator cannot mark an already completed intern as completed', function () {
+    $institute = irInstitute();
+    $program = irProgram($institute);
+    $coordinator = irCoordinator($institute);
+    $intern = irIntern($institute, $program, ['email' => 'intern@smartlog.test']);
+    $requirement = irRequirement($institute);
+    irSubmit($intern, $requirement);
+    RequirementSubmission::query()->update(['status' => 'approved']);
+    Intern::where('user_id', $intern->id)->update(['ojt_status' => 'completed']);
+
+    $this->actingAs($coordinator, 'api')
+        ->postJson("/api/coordinator/intern-requirements/{$intern->uuid}/mark-completed")
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('ojt_status');
+
+    expect(Intern::where('user_id', $intern->id)->first()->ojt_status)->toBe('completed');
 });
