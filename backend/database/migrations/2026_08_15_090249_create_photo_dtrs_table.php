@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('pm_in_photo')->nullable();
             $table->time('pm_out_time')->nullable();
             $table->string('pm_out_photo')->nullable();
-            $table->enum('status', ['pending', 'verified', 'checked', 'flagged'])->default('pending')->index();
+            $table->enum('status', ['pending', 'verified', 'checked', 'flagged', 'rejected'])->default('pending')->index();
             $table->foreignId('verified_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('verified_at')->nullable();
             $table->foreignId('checked_by')->nullable()->constrained('users')->nullOnDelete();

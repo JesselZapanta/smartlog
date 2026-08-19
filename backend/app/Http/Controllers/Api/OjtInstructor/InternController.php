@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\Hte;
+namespace App\Http\Controllers\Api\OjtInstructor;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Intern\InternDetailResource;
@@ -14,35 +14,18 @@ use Illuminate\Http\Request;
 class InternController extends Controller
 {
     /**
-     * The interns assigned to the authenticated HTE, paginated with
-     * search / academic year / sort support.
+     * View-only list of deployed interns with server-side search, filters,
+     * sorting and pagination.
      */
     public function index(Request $request): JsonResponse
     {
-        $hte = $request->user()->hte;
-
-        if (! $hte) {
-            return response()->json([
-                'data' => [],
-                'meta' => [
-                    'current_page' => 1,
-                    'last_page' => 1,
-                    'per_page' => 10,
-                    'total' => 0,
-                    'from' => null,
-                    'to' => null,
-                ],
-            ]);
-        }
-
         $query = Intern::with(['user', 'institute', 'program', 'academicYear'])
-            ->where('assigned_hte', $hte->id)
             ->where('ojt_status', 'ongoing')
             ->withCount([
                 'journals',
                 'journals as journals_verified_count' => fn (Builder $builder) => $builder->where('status', 'verified'),
-                'journals as journals_flagged_count' => fn (Builder $builder) => $builder->whereIn('status', ['flagged', 'rejected']),
-                'journals as journals_pending_count' => fn (Builder $builder) => $builder->where('status', 'pending'),
+                'journals as journals_approved_count' => fn (Builder $builder) => $builder->where('status', 'checked'),
+                'journals as journals_rejected_count' => fn (Builder $builder) => $builder->whereIn('status', ['flagged', 'rejected']),
             ]);
 
         $search = $request->string('search')->trim()->toString();
@@ -91,40 +74,28 @@ class InternController extends Controller
     }
 
     /**
-     * View a single intern assigned to the authenticated HTE.
+     * View-only detail for a deployed intern.
      */
-    public function show(Request $request, User $user): JsonResponse
+    public function show(User $user): JsonResponse
     {
-        $intern = $this->authorizeIntern($request, $user);
+        $intern = $user->intern;
 
-        $intern->loadMissing(['user.location', 'program', 'institute', 'academicYear', 'reviewer']);
+        if (! $intern || $intern->ojt_status !== 'ongoing') {
+            abort(404, 'This intern is not deployed.');
+        }
+
+        $intern->loadMissing([
+            'user.location',
+            'program',
+            'institute',
+            'academicYear',
+            'reviewer',
+            'assignedHte.institute',
+            'assignedHte.program',
+        ]);
 
         return response()->json([
             'data' => new InternDetailResource($intern),
         ]);
-    }
-
-    /**
-     * Ensure the intern is assigned to the authenticated HTE.
-     */
-    private function authorizeIntern(Request $request, User $user): Intern
-    {
-        $hte = $request->user()->hte;
-
-        if (! $hte) {
-            abort(403, 'Your account is not linked to an HTE profile.');
-        }
-
-        $intern = $user->intern;
-
-        if (! $intern) {
-            abort(404, 'This user has no intern record.');
-        }
-
-        if ($intern->assigned_hte !== $hte->id) {
-            abort(403, 'This intern is not assigned to your establishment.');
-        }
-
-        return $intern;
     }
 }

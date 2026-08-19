@@ -1,4 +1,4 @@
-import { Bell, Building2, CheckCircle2, RefreshCw, Rocket, XCircle, FileText } from "lucide-react";
+import { Bell, Building2, CheckCircle2, RefreshCw, Rocket, XCircle, FileText, Flag } from "lucide-react";
 
 export function routeFor(notification) {
   switch (notification.type) {
@@ -17,6 +17,14 @@ export function routeFor(notification) {
       return "/intern/requirements";
     case "requirement_submitted":
       return `/coordinator/intern-requirements/${notification.data?.uuid || ""}`;
+    case "journal_submitted":
+      return `/hte/monitoring/${notification.data?.uuid || ""}`;
+    case "journal_verified":
+    case "journal_flagged":
+      return `/instructor/monitoring/${notification.data?.uuid || ""}`;
+    case "journal_approved":
+    case "journal_rejected":
+      return `/intern/journals/${notification.data?.date || ""}`;
     default:
       return null;
   }
@@ -36,11 +44,17 @@ export function notificationIcon(type) {
     case "intern_deployed":
       return Rocket;
     case "requirement_approved":
+    case "journal_approved":
+    case "journal_verified":
       return CheckCircle2;
     case "requirement_rejected":
+    case "journal_rejected":
       return XCircle;
     case "requirement_submitted":
+    case "journal_submitted":
       return FileText;
+    case "journal_flagged":
+      return Flag;
     default:
       return Bell;
   }
@@ -66,6 +80,14 @@ export function notificationStyles(type) {
       return "bg-red-50 text-red-600";
     case "requirement_submitted":
       return "bg-sky-50 text-sky-600";
+    case "journal_submitted":
+      return "bg-sky-50 text-sky-600";
+    case "journal_verified":
+    case "journal_approved":
+      return "bg-green-50 text-green-700";
+    case "journal_flagged":
+    case "journal_rejected":
+      return "bg-red-50 text-red-600";
     default:
       return "bg-gray-50 text-gray-500";
   }

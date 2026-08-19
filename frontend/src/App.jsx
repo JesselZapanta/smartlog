@@ -25,12 +25,17 @@ import CoordinatorRequirementListPage from "@/pages/ojt_coordinator/requirements
 import CoordinatorInternRequirementsPage from "@/pages/ojt_coordinator/requirements/CoordinatorInternRequirementsPage.jsx";
 import CoordinatorInternRequirementsDetailPage from "@/pages/ojt_coordinator/requirements/CoordinatorInternRequirementsDetailPage.jsx";
 import InstructorDashboard from "@/pages/ojt_instructor/InstructorDashboard.jsx";
+import InstructorDeployedInternsPage from "@/pages/ojt_instructor/interns/InstructorDeployedInternsPage.jsx";
+import InstructorInternDetailPage from "@/pages/ojt_instructor/interns/InstructorInternDetailPage.jsx";
+import InstructorInternMonitoringPage from "@/pages/ojt_instructor/monitoring/InstructorInternMonitoringPage.jsx";
+import InstructorInternMonitoringCalendarPage from "@/pages/ojt_instructor/monitoring/InstructorInternMonitoringCalendarPage.jsx";
+import InstructorInternMonitoringDayPage from "@/pages/ojt_instructor/monitoring/InstructorInternMonitoringDayPage.jsx";
 import HteDashboard from "@/pages/hte/HteDashboard.jsx";
 import HteAssignedInternsPage from "@/pages/hte/interns/HteAssignedInternsPage.jsx";
 import HteAssignedInternDetailPage from "@/pages/hte/interns/HteAssignedInternDetailPage.jsx";
-import HteInternRecordsPage from "@/pages/hte/records/HteInternRecordsPage.jsx";
-import HteInternRecordsDetailPage from "@/pages/hte/records/HteInternRecordsDetailPage.jsx";
-import HteInternRecordsDayPage from "@/pages/hte/records/HteInternRecordsDayPage.jsx";
+import HteInternMonitoringPage from "@/pages/hte/monitoring/HteInternMonitoringPage.jsx";
+import HteInternMonitoringCalendarPage from "@/pages/hte/monitoring/HteInternMonitoringCalendarPage.jsx";
+import HteInternMonitoringDayPage from "@/pages/hte/monitoring/HteInternMonitoringDayPage.jsx";
 import ProfilePage from "@/pages/profile/ProfilePage.jsx";
 import NotificationsPage from "@/pages/notifications/NotificationsPage.jsx";
 import UserListPage from "@/pages/admin/users/UserListPage.jsx";
@@ -238,6 +243,46 @@ function App() {
         }
       />
       <Route
+        path="/instructor/interns"
+        element={
+          <ProtectedRoute roles={["ojt_instructor"]}>
+            <InstructorDeployedInternsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/interns/:uuid"
+        element={
+          <ProtectedRoute roles={["ojt_instructor"]}>
+            <InstructorInternDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/monitoring"
+        element={
+          <ProtectedRoute roles={["ojt_instructor"]}>
+            <InstructorInternMonitoringPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/monitoring/:uuid"
+        element={
+          <ProtectedRoute roles={["ojt_instructor"]}>
+            <InstructorInternMonitoringCalendarPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/monitoring/:uuid/:date"
+        element={
+          <ProtectedRoute roles={["ojt_instructor"]}>
+            <InstructorInternMonitoringDayPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/hte"
         element={
           <ProtectedRoute roles={["hte"]}>
@@ -262,26 +307,26 @@ function App() {
         }
       />
       <Route
-        path="/hte/records"
+        path="/hte/monitoring"
         element={
           <ProtectedRoute roles={["hte"]}>
-            <HteInternRecordsPage />
+            <HteInternMonitoringPage />
           </ProtectedRoute>
         }
       />
       <Route
-        path="/hte/records/:uuid"
+        path="/hte/monitoring/:uuid"
         element={
           <ProtectedRoute roles={["hte"]}>
-            <HteInternRecordsDetailPage />
+            <HteInternMonitoringCalendarPage />
           </ProtectedRoute>
         }
       />
       <Route
-        path="/hte/records/:uuid/:date"
+        path="/hte/monitoring/:uuid/:date"
         element={
           <ProtectedRoute roles={["hte"]}>
-            <HteInternRecordsDayPage />
+            <HteInternMonitoringDayPage />
           </ProtectedRoute>
         }
       />

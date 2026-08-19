@@ -8,6 +8,7 @@ use App\Models\Intern;
 use App\Models\PhotoDtr;
 use App\Models\Program;
 use App\Models\User;
+use App\Models\UserNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -103,6 +104,35 @@ test('hte intern list includes journal stats', function () {
         ->assertJsonPath('data.0.journals_unchecked_count', 1);
 });
 
+test('hte verify and flag notify the instructors', function () {
+    $institute = hteRecordInstitute();
+    $program = hteRecordProgram($institute);
+    $hte = hteRecordHte($institute, $program);
+    $instructor = User::factory()->create(['role' => 'ojt_instructor']);
+    $intern = hteRecordIntern($institute, $program, $hte->hte->id);
+
+    hteRecordJournal($intern, '2026-08-15');
+
+    $this->actingAs($hte, 'api')
+        ->postJson("/api/hte/interns/{$intern->uuid}/monitoring/verify", [
+            'type' => 'journal',
+            'date' => '2026-08-15',
+        ])
+        ->assertOk();
+
+    expect(UserNotification::where('user_id', $instructor->id)->where('type', 'journal_verified')->count())->toBe(1);
+
+    $this->actingAs($hte, 'api')
+        ->postJson("/api/hte/interns/{$intern->uuid}/monitoring/flag", [
+            'type' => 'journal',
+            'date' => '2026-08-15',
+            'remarks' => 'Please fix this.',
+        ])
+        ->assertOk();
+
+    expect(UserNotification::where('user_id', $instructor->id)->where('type', 'journal_flagged')->count())->toBe(1);
+});
+
 test('hte can view an assigned interns dtr and journal records for a month', function () {
     $institute = hteRecordInstitute();
     $program = hteRecordProgram($institute);
@@ -113,7 +143,7 @@ test('hte can view an assigned interns dtr and journal records for a month', fun
     hteRecordJournal($intern, '2026-08-15');
 
     $this->actingAs($hte, 'api')
-        ->getJson("/api/hte/interns/{$intern->uuid}/records?month=2026-08")
+        ->getJson("/api/hte/interns/{$intern->uuid}/monitoring?month=2026-08")
         ->assertOk()
         ->assertJsonCount(1, 'data')
         ->assertJsonCount(1, 'dtr')
@@ -132,7 +162,7 @@ test('hte can view an assigned interns records for a specific date', function ()
     hteRecordDtr($intern, '2026-08-16');
 
     $this->actingAs($hte, 'api')
-        ->getJson("/api/hte/interns/{$intern->uuid}/records?date=2026-08-16")
+        ->getJson("/api/hte/interns/{$intern->uuid}/monitoring?date=2026-08-16")
         ->assertOk()
         ->assertJsonPath('data', null)
         ->assertJsonPath('dtr.dtr_date', '2026-08-16');
@@ -148,7 +178,7 @@ test('hte can verify a journal and a photo dtr record', function () {
     hteRecordJournal($intern, '2026-08-15');
 
     $this->actingAs($hte, 'api')
-        ->postJson("/api/hte/interns/{$intern->uuid}/records/verify", [
+        ->postJson("/api/hte/interns/{$intern->uuid}/monitoring/verify", [
             'type' => 'journal',
             'date' => '2026-08-15',
         ])
@@ -156,7 +186,7 @@ test('hte can verify a journal and a photo dtr record', function () {
         ->assertJsonPath('data.status', 'verified');
 
     $this->actingAs($hte, 'api')
-        ->postJson("/api/hte/interns/{$intern->uuid}/records/verify", [
+        ->postJson("/api/hte/interns/{$intern->uuid}/monitoring/verify", [
             'type' => 'dtr',
             'date' => '2026-08-15',
         ])
@@ -178,7 +208,7 @@ test('hte can flag a record with remarks', function () {
     hteRecordJournal($intern, '2026-08-15');
 
     $this->actingAs($hte, 'api')
-        ->postJson("/api/hte/interns/{$intern->uuid}/records/flag", [
+        ->postJson("/api/hte/interns/{$intern->uuid}/monitoring/flag", [
             'type' => 'dtr',
             'date' => '2026-08-15',
             'remarks' => 'Missing afternoon punch photo.',
@@ -200,7 +230,7 @@ test('flagging requires remarks', function () {
     hteRecordJournal($intern, '2026-08-15');
 
     $this->actingAs($hte, 'api')
-        ->postJson("/api/hte/interns/{$intern->uuid}/records/flag", [
+        ->postJson("/api/hte/interns/{$intern->uuid}/monitoring/flag", [
             'type' => 'journal',
             'date' => '2026-08-15',
         ])
@@ -216,7 +246,7 @@ test('hte cannot verify records of another establishment intern', function () {
     $intern = hteRecordIntern($institute, $program, $otherHte->hte->id);
 
     $this->actingAs($hte, 'api')
-        ->postJson("/api/hte/interns/{$intern->uuid}/records/verify", [
+        ->postJson("/api/hte/interns/{$intern->uuid}/monitoring/verify", [
             'type' => 'journal',
             'date' => '2026-08-15',
         ])
@@ -231,6 +261,6 @@ test('hte cannot view records of another establishment intern', function () {
     $intern = hteRecordIntern($institute, $program, $otherHte->hte->id);
 
     $this->actingAs($hte, 'api')
-        ->getJson("/api/hte/interns/{$intern->uuid}/records?month=2026-08")
+        ->getJson("/api/hte/interns/{$intern->uuid}/monitoring?month=2026-08")
         ->assertForbidden();
 });

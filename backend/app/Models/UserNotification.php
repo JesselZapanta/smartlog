@@ -72,6 +72,22 @@ class UserNotification extends Model
     }
 
     /**
+     * Notify every OJT instructor.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public static function notifyInstructors(string $type, string $title, string $message, array $data = []): int
+    {
+        $instructors = User::where('role', 'ojt_instructor')->get();
+
+        foreach ($instructors as $instructor) {
+            self::notify($instructor, $type, $title, $message, $data);
+        }
+
+        return $instructors->count();
+    }
+
+    /**
      * Notify every OJT coordinator assigned to the given institute.
      *
      * @param  array<string, mixed>  $data

@@ -9,10 +9,11 @@ use App\Models\DailyJournal;
 use App\Models\Intern;
 use App\Models\PhotoDtr;
 use App\Models\User;
+use App\Models\UserNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class InternRecordController extends Controller
+class InternMonitoringController extends Controller
 {
     /**
      * An assigned intern's journals and photo DTR records, scoped to a month
@@ -78,6 +79,14 @@ class InternRecordController extends Controller
 
             $journal->forceFill(['status' => 'verified'])->save();
 
+            UserNotification::notifyInstructors(
+                'journal_verified',
+                'Journal verified',
+                $user->full_name.'’s journal for '.$data['date'].' was verified by '
+                    .($request->user()->hte?->name ?? 'the HTE').'.',
+                ['uuid' => $user->uuid],
+            );
+
             return response()->json([
                 'data' => new DailyJournalResource($journal->fresh()->load('photos')),
             ]);
@@ -92,6 +101,14 @@ class InternRecordController extends Controller
             'verified_by' => $request->user()->id,
             'verified_at' => now(),
         ])->save();
+
+        UserNotification::notifyInstructors(
+            'journal_verified',
+            'DTR verified',
+            $user->full_name.'’s DTR for '.$data['date'].' was verified by '
+                .($request->user()->hte?->name ?? 'the HTE').'.',
+            ['uuid' => $user->uuid],
+        );
 
         return response()->json([
             'data' => new PhotoDtrResource($dtr->fresh()->load(['verifier', 'checker'])),
@@ -121,6 +138,14 @@ class InternRecordController extends Controller
                 'remarks' => $data['remarks'],
             ])->save();
 
+            UserNotification::notifyInstructors(
+                'journal_flagged',
+                'Journal flagged',
+                $user->full_name.'’s journal for '.$data['date'].' was flagged by '
+                    .($request->user()->hte?->name ?? 'the HTE').'.',
+                ['uuid' => $user->uuid],
+            );
+
             return response()->json([
                 'data' => new DailyJournalResource($journal->fresh()->load('photos')),
             ]);
@@ -134,6 +159,14 @@ class InternRecordController extends Controller
             'status' => 'flagged',
             'remarks' => $data['remarks'],
         ])->save();
+
+        UserNotification::notifyInstructors(
+            'journal_flagged',
+            'DTR flagged',
+            $user->full_name.'’s DTR for '.$data['date'].' was flagged by '
+                .($request->user()->hte?->name ?? 'the HTE').'.',
+            ['uuid' => $user->uuid],
+        );
 
         return response()->json([
             'data' => new PhotoDtrResource($dtr->fresh()->load(['verifier', 'checker'])),

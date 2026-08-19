@@ -13,6 +13,7 @@ import {
   Flag,
   ImagePlus,
   Loader2,
+  Lock,
   RefreshCw,
   Save,
   ShieldCheck,
@@ -101,6 +102,13 @@ function StatusBadge({ status }) {
       </Badge>
     );
   }
+  if (status === "rejected") {
+    return (
+      <Badge className="inline-flex items-center gap-1.5 rounded-full bg-red-50 font-semibold text-red-700 ring-1 ring-red-200">
+        <X size={12} /> Rejected
+      </Badge>
+    );
+  }
   return (
     <Badge className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 font-semibold text-amber-700 ring-1 ring-amber-200">
       <FileClock size={12} /> Pending
@@ -140,6 +148,13 @@ export default function JournalFormPage() {
 
   const validDate = DATE_PATTERN.test(dateParam || "");
   const isFuture = validDate && dateParam > todayKey;
+  const locked = Boolean(entry && ["verified", "checked", "flagged", "rejected"].includes(entry.status));
+  const lockedLabel = {
+    verified: "Verified",
+    checked: "Approved",
+    flagged: "Flagged",
+    rejected: "Rejected",
+  }[entry?.status];
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -308,8 +323,10 @@ export default function JournalFormPage() {
   const photoSlotsLeft = MAX_PHOTOS - existingPhotos.length + removedIds.size - newPhotos.length;
 
   async function handleSave() {
-    if (!title.trim() || !journal.trim()) {
-      toast.error("Missing details", { description: "Add a title and journal content before saving." });
+    if (locked || !title.trim() || !journal.trim()) {
+      if (!locked) {
+        toast.error("Missing details", { description: "Add a title and journal content before saving." });
+      }
       return;
     }
     setSaving(true);
@@ -336,6 +353,7 @@ export default function JournalFormPage() {
   }
 
   function handleDelete() {
+    if (locked) return;
     if (!deleteArmed) {
       setDeleteArmed(true);
       window.setTimeout(() => setDeleteArmed(false), 3000);
@@ -439,11 +457,22 @@ export default function JournalFormPage() {
               </p>
             </div>
           )}
-          {entry?.status === "flagged" && entry.remarks && (
-            <div className="flex items-start gap-2.5 rounded-xl bg-red-50 p-3.5 ring-1 ring-red-100">
-              <Flag size={16} className="mt-0.5 shrink-0 text-red-600" />
+          {locked && (
+            <div className="flex items-start gap-2.5 rounded-xl bg-amber-50 p-3.5 ring-1 ring-amber-100">
+              <Lock size={16} className="mt-0.5 shrink-0 text-amber-600" />
               <div className="min-w-0">
-                <p className="text-xs font-bold uppercase tracking-wide text-red-700">Supervisor feedback</p>
+                <p className="text-xs font-bold uppercase tracking-wide text-amber-700">Entry locked</p>
+                <p className="mt-0.5 text-sm text-amber-800">
+                  This entry has been {lockedLabel.toLowerCase()}. You can no longer edit or delete it.
+                </p>
+              </div>
+            </div>
+          )}
+          {entry?.status === "rejected" && entry.remarks && (
+            <div className="flex items-start gap-2.5 rounded-xl bg-red-50 p-3.5 ring-1 ring-red-100">
+              <X size={16} className="mt-0.5 shrink-0 text-red-600" />
+              <div className="min-w-0">
+                <p className="text-xs font-bold uppercase tracking-wide text-red-700">Rejection reason</p>
                 <p className="mt-0.5 text-sm text-red-800">{entry.remarks}</p>
               </div>
             </div>
@@ -519,6 +548,7 @@ export default function JournalFormPage() {
               onChange={(event) => setTitle(event.target.value)}
               placeholder="e.g. First day of OJT — inventory system orientation"
               maxLength={255}
+              disabled={locked}
               className="mt-1.5 h-12 rounded-xl text-sm font-medium"
             />
             <label htmlFor="journal-content" className="mt-4 block text-xs font-bold uppercase tracking-wider text-gray-400">
@@ -530,6 +560,7 @@ export default function JournalFormPage() {
               onChange={(event) => setJournal(event.target.value)}
               placeholder="What did you do today? What did you learn?"
               rows={8}
+              disabled={locked}
               className="mt-1.5 rounded-xl text-sm leading-relaxed"
             />
           </div>
@@ -544,7 +575,7 @@ export default function JournalFormPage() {
                     : "Photo limit reached (6 max)"}
                 </p>
               </div>
-              {photoSlotsLeft > 0 && (
+              {!locked && photoSlotsLeft > 0 && (
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -599,6 +630,7 @@ export default function JournalFormPage() {
                             return next;
                           });
                         }}
+                        disabled={locked}
                         aria-label={removed ? "Keep photo" : "Remove photo"}
                         className={cn(
                           "absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full shadow-sm transition-colors",
@@ -628,6 +660,7 @@ export default function JournalFormPage() {
                         URL.revokeObjectURL(photo.url);
                         setNewPhotos((prev) => prev.filter((item) => item !== photo));
                       }}
+                      disabled={locked}
                       aria-label="Remove photo"
                       className="absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white shadow-sm transition-colors hover:bg-red-600"
                     >
@@ -638,7 +671,7 @@ export default function JournalFormPage() {
               </ul>
             )}
 
-            {existingPhotos.length === 0 && newPhotos.length === 0 && (
+            {!locked && existingPhotos.length === 0 && newPhotos.length === 0 && (
               <button
                 type="button"
                 onClick={openCamera}
@@ -654,7 +687,7 @@ export default function JournalFormPage() {
             <Button
               type="button"
               onClick={handleSave}
-              disabled={saving || photoSlotsLeft < 0}
+              disabled={saving || photoSlotsLeft < 0 || locked}
               className="h-11 w-full rounded-xl bg-green-600 px-6 text-sm font-semibold shadow-sm hover:bg-green-700 active:scale-[0.99] sm:w-auto"
             >
               {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
@@ -664,7 +697,7 @@ export default function JournalFormPage() {
               <Button
                 type="button"
                 onClick={handleDelete}
-                disabled={deleting || saving}
+                disabled={deleting || saving || locked}
                 variant={deleteArmed ? "destructive" : "outline"}
                 className={cn(
                   "h-11 w-full rounded-xl px-6 text-sm font-semibold sm:w-auto",

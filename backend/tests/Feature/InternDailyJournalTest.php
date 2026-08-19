@@ -2,12 +2,14 @@
 
 use App\Models\AcademicTerm;
 use App\Models\DailyJournal;
+use App\Models\Hte;
 use App\Models\Institute;
 use App\Models\Intern;
 use App\Models\JournalPhoto;
 use App\Models\PhotoDtr;
 use App\Models\Program;
 use App\Models\User;
+use App\Models\UserNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -67,6 +69,86 @@ function journalDeploy(User $user): void
 {
     Intern::where('user_id', $user->id)->update(['ojt_status' => 'ongoing']);
 }
+
+test('submitting a journal notifies the assigned hte', function () {
+    Storage::fake('public');
+    $institute = journalInstitute();
+    $program = journalProgram($institute);
+    $intern = journalIntern($institute, $program);
+
+    $hteUser = User::factory()->create(['role' => 'hte']);
+    $hte = Hte::create([
+        'user_id' => $hteUser->id,
+        'name' => 'City Hall',
+        'institute_id' => $institute->id,
+        'program_id' => $program->id,
+        'status' => 'active',
+    ]);
+    Intern::where('user_id', $intern->id)->update([
+        'ojt_status' => 'ongoing',
+        'assigned_hte' => $hte->id,
+    ]);
+    journalDtr($intern, '2026-08-15');
+
+    $this->actingAs($intern, 'api')
+        ->postJson('/api/intern/journals', journalPayload('2026-08-15'))
+        ->assertCreated();
+
+    $notification = UserNotification::where('user_id', $hteUser->id)->first();
+
+    expect($notification)->not->toBeNull();
+    expect($notification->type)->toBe('journal_submitted');
+    expect($notification->data['uuid'])->toBe($intern->uuid);
+});
+
+test('intern cannot update a journal once it has been reviewed', function () {
+    Storage::fake('public');
+    $institute = journalInstitute();
+    $program = journalProgram($institute);
+    $intern = journalIntern($institute, $program);
+    Intern::where('user_id', $intern->id)->update(['ojt_status' => 'ongoing']);
+    journalDtr($intern, '2026-08-15');
+
+    $this->actingAs($intern, 'api')->postJson('/api/intern/journals', journalPayload('2026-08-15'))->assertCreated();
+    DailyJournal::first()->forceFill(['status' => 'verified'])->save();
+
+    $this->actingAs($intern, 'api')
+        ->postJson('/api/intern/journals/'.DailyJournal::first()->id, [
+            'title' => 'Changed',
+            'journal' => 'Changed content',
+        ])
+        ->assertForbidden();
+
+    $this->actingAs($intern, 'api')
+        ->deleteJson('/api/intern/journals/'.DailyJournal::first()->id)
+        ->assertForbidden();
+
+    expect(DailyJournal::first()->title)->not->toBe('Changed');
+    expect(DailyJournal::count())->toBe(1);
+});
+
+test('intern can still edit and delete a pending journal', function () {
+    Storage::fake('public');
+    $institute = journalInstitute();
+    $program = journalProgram($institute);
+    $intern = journalIntern($institute, $program);
+    Intern::where('user_id', $intern->id)->update(['ojt_status' => 'ongoing']);
+    journalDtr($intern, '2026-08-15');
+
+    $this->actingAs($intern, 'api')->postJson('/api/intern/journals', journalPayload('2026-08-15'))->assertCreated();
+    $journal = DailyJournal::first();
+
+    $this->actingAs($intern, 'api')
+        ->postJson("/api/intern/journals/{$journal->id}", ['title' => 'Updated', 'journal' => 'Updated content'])
+        ->assertOk()
+        ->assertJsonPath('data.title', 'Updated');
+
+    $this->actingAs($intern, 'api')
+        ->deleteJson("/api/intern/journals/{$journal->id}")
+        ->assertOk();
+
+    expect(DailyJournal::count())->toBe(0);
+});
 
 test('intern can create a journal entry with photos', function () {
     Storage::fake('public');
