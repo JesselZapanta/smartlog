@@ -2,13 +2,25 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { getDefaultClassNames } from "react-day-picker";
-import { ArrowLeft, BookOpenText, CalendarDays, Check, ChevronLeft, ChevronRight, Clock3, Flag, Loader2 } from "lucide-react";
+import { ArrowLeft, BookOpenText, CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight, Clock3, Flag, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import HteLayout from "@/layouts/HteLayout.jsx";
+import OjtHoursCard from "@/components/OjtHoursCard.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { cn } from "@/lib/utils";
 import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import PageLoader from "@/components/PageLoader";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -26,7 +38,7 @@ function StatCard({ icon: Icon, label, value, tone }) {
         <Icon size={18} />
       </div>
       <div className="min-w-0">
-        <p className="font-heading text-xl font-bold leading-tight text-gray-900">{value}</p>
+        <p className="truncate font-heading text-xl font-bold leading-tight text-gray-900">{value}</p>
         <p className="truncate text-[11px] font-bold uppercase tracking-wider text-gray-400">{label}</p>
       </div>
     </div>
@@ -56,6 +68,22 @@ export default function HteInternMonitoringCalendarPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [monthDate, setMonthDate] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [completeOpen, setCompleteOpen] = useState(false);
+  const [completing, setCompleting] = useState(false);
+
+  const handleCompleteHours = useCallback(async () => {
+    setCompleting(true);
+    try {
+      const res = await api.post(`/hte/interns/${uuid}/complete`);
+      setIntern((prev) => ({ ...prev, ojt_status: res.data.data.ojt_status, end_date: res.data.data.end_date }));
+      setCompleteOpen(false);
+      toast.success("OJT hours marked complete", { description: res.data.data.message });
+    } catch (err) {
+      toast.error("Failed to mark OJT hours", { description: firstErrorMessage(err) });
+    } finally {
+      setCompleting(false);
+    }
+  }, [uuid]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -210,6 +238,16 @@ export default function HteInternMonitoringCalendarPage() {
             </div>
           </div>
 
+          <OjtHoursCard
+            requiredHours={intern.required_hours}
+            earnedMinutes={intern.earned_minutes}
+            institute={intern.institute}
+            ojtStatus={intern.ojt_status}
+            endDate={intern.end_date}
+            onComplete={() => setCompleteOpen(true)}
+            completing={completing}
+          />
+
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <StatCard icon={BookOpenText} label="Journals" value={stats.total} tone="green" />
             <StatCard icon={Clock3} label="Pending" value={stats.pending} tone="amber" />
@@ -280,6 +318,30 @@ export default function HteInternMonitoringCalendarPage() {
               </div>
             </div>
           </section>
+
+          <AlertDialog open={completeOpen} onOpenChange={setCompleteOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Mark hours as completed?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {intern.full_name} has met the required {intern.required_hours}h of OJT hours. Their status will
+                  change to &quot;Hours completed&quot; and today will be set as the end date. They will no longer be
+                  able to punch in or write journals.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={completing}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleCompleteHours}
+                  disabled={completing}
+                  className="bg-green-600 font-semibold hover:bg-green-700"
+                >
+                  {completing ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                  Mark completed
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </>
       ) : (
         <div className="flex items-center justify-center py-16">

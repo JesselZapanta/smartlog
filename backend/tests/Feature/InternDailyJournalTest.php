@@ -450,6 +450,20 @@ test('undeployed intern cannot create a journal', function () {
     expect(DailyJournal::count())->toBe(0);
 });
 
+test('intern who completed their hours cannot create a journal', function () {
+    Storage::fake('public');
+    $institute = journalInstitute();
+    $program = journalProgram($institute);
+    $intern = journalIntern($institute, $program);
+    Intern::where('user_id', $intern->id)->update(['ojt_status' => 'hours_completed']);
+
+    $this->actingAs($intern, 'api')
+        ->postJson('/api/intern/journals', journalPayload('2026-08-15'))
+        ->assertForbidden();
+
+    expect(DailyJournal::count())->toBe(0);
+});
+
 test('journal module is intern only', function () {
     $admin = User::factory()->create(['role' => 'admin']);
 

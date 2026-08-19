@@ -5,6 +5,7 @@ use App\Models\DailyJournal;
 use App\Models\Hte;
 use App\Models\Institute;
 use App\Models\Intern;
+use App\Models\OjtHour;
 use App\Models\PhotoDtr;
 use App\Models\Program;
 use App\Models\User;
@@ -131,6 +132,24 @@ test('hte verify and flag notify the instructors', function () {
         ->assertOk();
 
     expect(UserNotification::where('user_id', $instructor->id)->where('type', 'journal_flagged')->count())->toBe(1);
+});
+
+test('hte intern detail includes required and earned ojt hours', function () {
+    $institute = hteRecordInstitute();
+    OjtHour::create(['institute_id' => $institute->id, 'hours' => 300]);
+    $program = hteRecordProgram($institute);
+    $hte = hteRecordHte($institute, $program);
+    $intern = hteRecordIntern($institute, $program, $hte->hte->id);
+
+    $checked = hteRecordDtr($intern, '2026-08-15');
+    $checked->forceFill(['status' => 'checked'])->save();
+    hteRecordDtr($intern, '2026-08-16');
+
+    $this->actingAs($hte, 'api')
+        ->getJson("/api/hte/interns/{$intern->uuid}")
+        ->assertOk()
+        ->assertJsonPath('data.required_hours', 300)
+        ->assertJsonPath('data.earned_minutes', 480);
 });
 
 test('hte can view an assigned interns dtr and journal records for a month', function () {

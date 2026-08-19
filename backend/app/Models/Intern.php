@@ -78,4 +78,16 @@ class Intern extends Model
     {
         return $this->belongsTo(Program::class);
     }
+
+    public function requiredHours(): ?int
+    {
+        return $this->institute?->ojtHour?->hours;
+    }
+
+    public function earnedMinutes(): int
+    {
+        return $this->photoDtrs
+            ->where('status', 'checked')
+            ->reduce(fn (int $sum, PhotoDtr $dtr): int => $sum + $dtr->computedMinutes(), 0);
+    }
 }

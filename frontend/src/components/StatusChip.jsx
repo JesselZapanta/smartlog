@@ -8,6 +8,7 @@ const tones = {
   rejected: "bg-red-50 text-red-700 ring-red-100",
   terminated: "bg-red-50 text-red-700 ring-red-100",
   completed: "bg-blue-50 text-blue-700 ring-blue-100",
+  hours_completed: "bg-indigo-50 text-indigo-700 ring-indigo-100",
   inactive: "bg-gray-100 text-gray-600 ring-gray-200",
 };
 
@@ -21,6 +22,7 @@ const labels = {
   rejected: "Rejected",
   terminated: "Terminated",
   completed: "Completed",
+  hours_completed: "Hours completed",
   inactive: "Inactive",
 };
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Camera, Clock3, Loader2, Printer, X } from "lucide-react";
 import InternLayout from "@/layouts/InternLayout.jsx";
+import OjtHoursCard from "@/components/OjtHoursCard.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { Badge } from "@/components/ui/badge";
@@ -89,6 +90,7 @@ function toYMD(date) {
 
 export default function InternDtrLogsPage() {
   const [records, setRecords] = useState([]);
+  const [hoursSummary, setHoursSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [from, setFrom] = useState(() => {
     const date = new Date();
@@ -127,6 +129,13 @@ export default function InternDtrLogsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    api
+      .get("/intern/ojt-hours")
+      .then((res) => setHoursSummary(res.data.data || null))
+      .catch(() => setHoursSummary(null));
+  }, []);
 
   const [printing, setPrinting] = useState(false);
 
@@ -175,6 +184,16 @@ export default function InternDtrLogsPage() {
         <h1 className="font-heading text-2xl font-bold text-green-950 sm:text-3xl">DTR Logs</h1>
         <p className="mt-1 text-sm text-gray-500">Your daily time record logs with photo punches.</p>
       </div>
+
+      {hoursSummary && (
+        <div className="mt-6">
+          <OjtHoursCard
+            requiredHours={hoursSummary.required_hours}
+            earnedMinutes={hoursSummary.earned_minutes}
+            institute={hoursSummary.institute}
+          />
+        </div>
+      )}
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">

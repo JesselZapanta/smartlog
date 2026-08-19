@@ -7,9 +7,11 @@ use App\Http\Resources\Intern\InternDetailResource;
 use App\Http\Resources\Intern\InternListResource;
 use App\Models\Intern;
 use App\Models\User;
+use App\Models\UserNotification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class InternController extends Controller
 {
@@ -37,7 +39,7 @@ class InternController extends Controller
 
         $query = Intern::with(['user', 'institute', 'program', 'academicYear'])
             ->where('assigned_hte', $hte->id)
-            ->where('ojt_status', 'ongoing')
+            ->whereIn('ojt_status', ['ongoing', 'hours_completed'])
             ->withCount([
                 'journals',
                 'journals as journals_verified_count' => fn (Builder $builder) => $builder->where('status', 'verified'),
@@ -101,6 +103,52 @@ class InternController extends Controller
 
         return response()->json([
             'data' => new InternDetailResource($intern),
+        ]);
+    }
+
+    /**
+     * Mark the intern's OJT hours as completed once they meet the required hours.
+     * Sets ojt_status to hours_completed and end_date to today.
+     */
+    public function completeHours(Request $request, User $user): JsonResponse
+    {
+        $intern = $this->authorizeIntern($request, $user);
+
+        if ($intern->ojt_status !== 'ongoing') {
+            throw ValidationException::withMessages([
+                'ojt_status' => ['This intern has not been deployed or has already completed their OJT hours.'],
+            ]);
+        }
+
+        $required = $intern->requiredHours();
+
+        if ($required === null || $intern->earnedMinutes() < $required * 60) {
+            throw ValidationException::withMessages([
+                'hours' => ['The intern has not yet met the required OJT hours.'],
+            ]);
+        }
+
+        $endDate = now()->toDateString();
+
+        $intern->forceFill([
+            'ojt_status' => 'hours_completed',
+            'end_date' => $endDate,
+        ])->save();
+
+        UserNotification::notify(
+            $user,
+            'intern_hours_completed',
+            'OJT hours completed',
+            "Congratulations! You have completed your required OJT hours as of {$endDate}.",
+            ['uuid' => $user->uuid],
+        );
+
+        return response()->json([
+            'data' => [
+                'message' => $intern->user->full_name.' has completed their OJT hours.',
+                'ojt_status' => 'hours_completed',
+                'end_date' => $endDate,
+            ],
         ]);
     }
 

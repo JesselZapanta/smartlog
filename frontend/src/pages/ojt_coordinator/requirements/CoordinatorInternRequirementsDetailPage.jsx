@@ -170,7 +170,7 @@ export default function CoordinatorInternRequirementsDetailPage() {
   const complete = detail && detail.total > 0 && detail.submitted >= detail.total;
   const allApproved =
     detail && detail.total > 0 && detail.requirements.every((r) => r.submission?.status === "approved");
-  const deployed = detail?.intern?.ojt_status === "ongoing";
+  const deployed = ["ongoing", "hours_completed", "completed"].includes(detail?.intern?.ojt_status);
 
   async function handleDeploy() {
     setDeploying(true);

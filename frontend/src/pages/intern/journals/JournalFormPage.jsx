@@ -123,6 +123,7 @@ export default function JournalFormPage() {
 
   const [entry, setEntry] = useState(null);
   const [deployed, setDeployed] = useState(true);
+  const [ojtStatus, setOjtStatus] = useState("");
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
   const [journal, setJournal] = useState("");
@@ -164,6 +165,7 @@ export default function JournalFormPage() {
         api.get(`/intern/photo-dtr?from=${dateParam}&to=${dateParam}`),
       ]);
       setDeployed(Boolean(res.data.deployed));
+      setOjtStatus(res.data.ojt_status || "");
       const found = res.data.data;
       setEntry(found);
       setTitle(found?.title || "");
@@ -423,16 +425,39 @@ export default function JournalFormPage() {
           </Button>
         </div>
       ) : !deployed ? (
-        <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-amber-100 bg-amber-50/60 p-8 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
-            <FileClock size={20} />
+        ojtStatus === "hours_completed" ? (
+          <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-indigo-100 bg-indigo-50/60 p-8 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600">
+              <FileClock size={20} />
+            </div>
+            <p className="text-sm font-semibold text-indigo-800">Hours completed</p>
+            <p className="max-w-sm text-xs text-indigo-700/80">
+              You have completed your required OJT hours. Your records are now being reviewed by your HTE and
+              instructor.
+            </p>
           </div>
-          <p className="text-sm font-semibold text-amber-800">Not deployed yet</p>
-          <p className="max-w-sm text-xs text-amber-700/80">
-            You can start writing your daily journal once the coordinator deploys you to your host training
-            establishment.
-          </p>
-        </div>
+        ) : ojtStatus === "completed" ? (
+          <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-blue-100 bg-blue-50/60 p-8 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
+              <FileClock size={20} />
+            </div>
+            <p className="text-sm font-semibold text-blue-800">OJT completed</p>
+            <p className="max-w-sm text-xs text-blue-700/80">
+              Congratulations! You have completed your OJT.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-amber-100 bg-amber-50/60 p-8 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+              <FileClock size={20} />
+            </div>
+            <p className="text-sm font-semibold text-amber-800">Not deployed yet</p>
+            <p className="max-w-sm text-xs text-amber-700/80">
+              You can start writing your daily journal once the coordinator deploys you to your host training
+              establishment.
+            </p>
+          </div>
+        )
       ) : !dtr && !entry ? (
         <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-gray-100 bg-white p-10 text-center shadow-sm ring-1 ring-gray-100">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-500">

@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { getDefaultClassNames } from "react-day-picker";
 import { ArrowLeft, BookOpenText, CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight, Clock3, Flag, Loader2, X } from "lucide-react";
 import InstructorLayout from "@/layouts/InstructorLayout.jsx";
+import OjtHoursCard from "@/components/OjtHoursCard.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { cn } from "@/lib/utils";
@@ -27,7 +28,7 @@ function StatCard({ icon: Icon, label, value, tone }) {
         <Icon size={18} />
       </div>
       <div className="min-w-0">
-        <p className="font-heading text-xl font-bold leading-tight text-gray-900">{value}</p>
+        <p className="truncate font-heading text-xl font-bold leading-tight text-gray-900">{value}</p>
         <p className="truncate text-[11px] font-bold uppercase tracking-wider text-gray-400">{label}</p>
       </div>
     </div>
@@ -206,6 +207,12 @@ export default function InstructorInternMonitoringCalendarPage() {
               </div>
             </div>
           </div>
+
+          <OjtHoursCard
+            requiredHours={intern.required_hours}
+            earnedMinutes={intern.earned_minutes}
+            institute={intern.institute}
+          />
 
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <StatCard icon={BookOpenText} label="Journals" value={stats.total} tone="green" />

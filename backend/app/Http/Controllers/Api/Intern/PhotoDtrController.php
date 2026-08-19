@@ -57,6 +57,7 @@ class PhotoDtrController extends Controller
             'data' => PhotoDtrResource::collection($records),
             'today' => $today ? new PhotoDtrResource($today) : null,
             'deployed' => $intern->ojt_status === 'ongoing',
+            'ojt_status' => $intern->ojt_status,
         ]);
     }
 

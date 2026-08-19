@@ -181,9 +181,9 @@ class InternRequirementController extends Controller
 
         $intern = $this->authorizeIntern($request, $user);
 
-        if ($intern->ojt_status === 'ongoing') {
+        if (in_array($intern->ojt_status, ['ongoing', 'hours_completed', 'completed'], true)) {
             throw ValidationException::withMessages([
-                'ojt_status' => ['This intern is already deployed.'],
+                'ojt_status' => ['This intern has already been deployed or completed their OJT.'],
             ]);
         }
 

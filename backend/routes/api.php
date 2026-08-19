@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\Hte\InternController as HteInternController;
 use App\Http\Controllers\Api\Hte\InternMonitoringController as HteInternMonitoringController;
 use App\Http\Controllers\Api\Intern\DailyJournalController;
+use App\Http\Controllers\Api\Intern\OjtHoursController;
 use App\Http\Controllers\Api\Intern\PhotoDtrController;
 use App\Http\Controllers\Api\Intern\RequirementController as InternRequirementController;
 use App\Http\Controllers\Api\NotificationController;
@@ -77,6 +78,8 @@ Route::middleware('auth:api')->group(function (): void {
         Route::get('/intern/photo-dtr', [PhotoDtrController::class, 'index'])->name('api.intern.photo-dtr.index');
         Route::post('/intern/photo-dtr/punch', [PhotoDtrController::class, 'punch'])->name('api.intern.photo-dtr.punch');
 
+        Route::get('/intern/ojt-hours', [OjtHoursController::class, 'show'])->name('api.intern.ojt-hours.show');
+
         Route::get('/intern/journals', [DailyJournalController::class, 'index'])->name('api.intern.journals.index');
         Route::post('/intern/journals', [DailyJournalController::class, 'store'])->name('api.intern.journals.store');
         Route::get('/intern/journals/{journal}', [DailyJournalController::class, 'show'])->name('api.intern.journals.show');
@@ -121,6 +124,7 @@ Route::middleware('auth:api')->group(function (): void {
     Route::middleware('role:hte')->group(function (): void {
         Route::get('/hte/interns', [HteInternController::class, 'index'])->name('api.hte.interns.index');
         Route::get('/hte/interns/{user:uuid}', [HteInternController::class, 'show'])->name('api.hte.interns.show');
+        Route::post('/hte/interns/{user:uuid}/complete', [HteInternController::class, 'completeHours'])->name('api.hte.interns.complete');
         Route::get('/hte/interns/{user:uuid}/monitoring', [HteInternMonitoringController::class, 'index'])->name('api.hte.interns.monitoring');
         Route::post('/hte/interns/{user:uuid}/monitoring/verify', [HteInternMonitoringController::class, 'verify'])->name('api.hte.interns.monitoring.verify');
         Route::post('/hte/interns/{user:uuid}/monitoring/flag', [HteInternMonitoringController::class, 'flag'])->name('api.hte.interns.monitoring.flag');
