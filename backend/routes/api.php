@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\Intern\OjtHoursController;
 use App\Http\Controllers\Api\Intern\PhotoDtrController;
 use App\Http\Controllers\Api\Intern\RequirementController as InternRequirementController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\OjtCoordinator\Evaluations\EvaluationCriterionController as CoordinatorEvaluationCriterionController;
 use App\Http\Controllers\Api\OjtCoordinator\Htes\HteController as CoordinatorHteController;
 use App\Http\Controllers\Api\OjtCoordinator\Interns\InternController as CoordinatorInternController;
 use App\Http\Controllers\Api\OjtCoordinator\RegistrationApprovalController;
@@ -120,6 +121,9 @@ Route::middleware('auth:api')->group(function (): void {
         Route::post('/coordinator/intern-requirements/{user:uuid}/{requirement}/reject', [CoordinatorInternRequirementController::class, 'reject'])->name('api.coordinator.intern-requirements.reject');
         Route::post('/coordinator/intern-requirements/{user:uuid}/deploy', [CoordinatorInternRequirementController::class, 'deploy'])->name('api.coordinator.intern-requirements.deploy');
         Route::post('/coordinator/intern-requirements/{user:uuid}/mark-completed', [CoordinatorInternRequirementController::class, 'markCompleted'])->name('api.coordinator.intern-requirements.mark-completed');
+
+        Route::apiResource('coordinator/evaluations', CoordinatorEvaluationCriterionController::class)
+            ->except(['create', 'edit']);
     });
 
     Route::middleware('role:hte')->group(function (): void {
