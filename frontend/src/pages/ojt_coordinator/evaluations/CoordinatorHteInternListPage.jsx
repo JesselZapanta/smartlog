@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ClipboardCheck, Search, X, ArrowDown, ArrowUp, ChevronsUpDown, CalendarDays, School, Loader2, Users } from "lucide-react";
-import HteLayout from "@/layouts/HteLayout.jsx";
+import { Search, X, ArrowDown, ArrowUp, ChevronsUpDown, CalendarDays, School, Loader2, Users, Eye, Award, UserRound, Briefcase, Lightbulb, Building2 } from "lucide-react";
+import CoordinatorLayout from "@/layouts/CoordinatorLayout.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
@@ -101,18 +101,14 @@ function EvaluationBadge({ evaluation }) {
       </span>
     );
   }
-
   const answered = evaluation.answered ?? 0;
-
   if (evaluation.status === "completed") {
     return (
       <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-green-700 ring-1 ring-green-200">
-        <ClipboardCheck size={12} className="mr-1" />
         {answered}/{evaluation.total} done
       </span>
     );
   }
-
   if (evaluation.status === "partial") {
     return (
       <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-700 ring-1 ring-amber-200">
@@ -120,7 +116,6 @@ function EvaluationBadge({ evaluation }) {
       </span>
     );
   }
-
   return (
     <span className="inline-flex items-center rounded-full bg-gray-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-gray-500 ring-1 ring-gray-200">
       Not evaluated
@@ -128,9 +123,11 @@ function EvaluationBadge({ evaluation }) {
   );
 }
 
-export default function HteEvaluateInternListPage() {
+export default function CoordinatorHteInternListPage() {
+  const { hteUuid } = useParams();
   const [rows, setRows] = useState([]);
   const [meta, setMeta] = useState(null);
+  const [summary, setSummary] = useState(null);
   const [terms, setTerms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -170,15 +167,16 @@ export default function HteEvaluateInternListPage() {
       });
       if (debouncedSearch) params.set("search", debouncedSearch);
       if (academicYear !== "all") params.set("academic_year_id", academicYear);
-      const res = await api.get(`/hte/evaluations?${params.toString()}`);
+      const res = await api.get(`/coordinator/hte-evaluations/${hteUuid}/interns?${params.toString()}`);
       setRows(res.data.data);
       setMeta(res.data.meta);
+      setSummary(res.data.summary || null);
     } catch (err) {
       toast.error("Failed to load interns", { description: firstErrorMessage(err) });
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedSearch, order, academicYear]);
+  }, [page, debouncedSearch, order, academicYear, hteUuid]);
 
   useEffect(() => {
     loadRows();
@@ -203,14 +201,15 @@ export default function HteEvaluateInternListPage() {
   const hasFilters = Boolean(search) || academicYear !== "all";
 
   return (
-    <HteLayout>
+    <CoordinatorLayout>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-heading text-2xl font-bold text-green-950 sm:text-3xl">Evaluate Interns</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Rate your assigned interns against the standard evaluation criteria.
-          </p>
+          <h1 className="font-heading text-2xl font-bold text-green-950 sm:text-3xl">HTE Interns</h1>
+          <p className="mt-1 text-sm text-gray-500">Interns who evaluated this HTE — hours_completed and completed only.</p>
         </div>
+        <Button asChild variant="outline" className="h-10 rounded-xl">
+          <Link to="/coordinator/hte-evaluations">Back to HTEs</Link>
+        </Button>
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -262,6 +261,82 @@ export default function HteEvaluateInternListPage() {
         )}
       </div>
 
+      {summary && (
+        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ring-1 ring-gray-100">
+          <div className="flex items-center gap-2.5 border-b border-gray-50 px-4 py-3 sm:px-5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700 ring-1 ring-amber-100">
+              <Award size={16} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="font-heading text-sm font-bold text-green-950">Evaluation Summary</h2>
+              <p className="text-xs text-gray-500">
+                {summary.hte ? `${summary.hte.name} · ${summary.hte.institute || ""}` : "Total for this HTE"} {academicYear !== "all" ? `· ${terms.find((t) => String(t.id) === academicYear)?.description || academicYear}` : "· All academic years"} · {summary.evaluated_count} of {summary.interns_count} interns evaluated
+              </p>
+              {summary.hte && (
+                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-gray-400">
+                  <span className="inline-flex items-center gap-1"><Building2 size={10} /> {summary.hte.name}</span>
+                  {summary.hte.program && <span>· {summary.hte.program}</span>}
+                  {summary.hte.institute && <span>· {summary.hte.institute}</span>}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-px bg-gray-100 sm:grid-cols-3">
+            {[
+              { key: "personal_characteristics", label: "Personal", fullLabel: "Personal Characteristics", weight: "30%", tone: "bg-blue-50 text-blue-600 ring-blue-100", Icon: UserRound },
+              { key: "work_characteristics", label: "Work", fullLabel: "Work Characteristics", weight: "30%", tone: "bg-amber-50 text-amber-600 ring-amber-100", Icon: Briefcase },
+              { key: "job_knowledge", label: "Job Knowledge", fullLabel: "Job Knowledge", weight: "40%", tone: "bg-emerald-50 text-emerald-600 ring-emerald-100", Icon: Lightbulb },
+            ].map(({ key, label, fullLabel, weight, tone, Icon }) => {
+              const cat = summary.per_category?.[key];
+              const avg = cat?.avg;
+              return (
+                <div key={key} className="bg-white p-4">
+                  <div className="flex items-center gap-2">
+                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ring-1 ${tone}`}>
+                      <Icon size={13} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-bold leading-tight text-gray-800">{fullLabel}</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{weight} weight</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-baseline gap-1.5">
+                    <span className="font-heading text-2xl font-bold text-green-950">{avg != null ? Number(avg).toFixed(2) : "—"}</span>
+                    <span className="text-xs font-semibold text-gray-400">/ 5.00</span>
+                  </div>
+                  <div className="mt-1.5">
+                    <div className="h-1.5 overflow-hidden rounded-full bg-gray-100">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-green-600 to-emerald-500 transition-all"
+                        style={{ width: `${avg != null ? (Number(avg) / 5) * 100 : 0}%` }}
+                      />
+                    </div>
+                    <p className="mt-1 text-[11px] text-gray-500">
+                      {cat ? `${cat.answered} of ${cat.total} rated` : `0 of 0 rated`}
+                      {cat?.na_count > 0 ? ` · ${cat.na_count} N/A as 0` : ""}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {summary.weighted != null && (
+            <div className="flex flex-col gap-2 border-t border-green-600 bg-gradient-to-br from-green-600 to-emerald-500 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+              <span className="text-xs font-semibold text-green-50">
+                Weighted Average = (Personal 30% + Work 30% + Job Knowledge 40%)
+              </span>
+              <span className="font-heading text-sm font-bold text-white sm:hidden">{Number(summary.weighted).toFixed(2)} / 5.00</span>
+              <span className="hidden font-heading text-sm font-bold text-white sm:block">{Number(summary.weighted).toFixed(2)} / 5.00</span>
+            </div>
+          )}
+          <div className="flex items-center justify-between gap-3 bg-gray-50/60 px-4 py-2.5 sm:px-5">
+            <span className="text-xs text-gray-500">
+              Based on {summary.evaluated_count} evaluated intern{summary.evaluated_count === 1 ? "" : "s"} of {summary.interns_count} total
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ring-1 ring-gray-100">
         {loading ? (
           <>
@@ -301,7 +376,7 @@ export default function HteEvaluateInternListPage() {
               <Users size={20} />
             </div>
             <p className="text-sm font-semibold text-gray-700">No interns found</p>
-            <p className="text-xs text-gray-400">Try adjusting your search or filters.</p>
+            <p className="text-xs text-gray-400">No hours_completed or completed interns evaluated this HTE for the selected year.</p>
             {hasFilters && (
               <Button variant="outline" className="mt-1 h-10 rounded-xl text-green-700" onClick={clearFilters}>
                 Clear filters
@@ -354,13 +429,8 @@ export default function HteEvaluateInternListPage() {
                   </div>
                   <div className="mt-3 flex gap-2 border-t border-gray-50 pt-3">
                     <Button asChild className="h-10 flex-1 rounded-xl bg-green-600 text-white hover:bg-green-700">
-                      <Link to={`/hte/evaluations/${intern.uuid}`}>
-                        <ClipboardCheck size={15} />
-                        {intern.evaluation?.status === "completed"
-                          ? "View evaluation"
-                          : intern.evaluation?.status === "partial"
-                            ? "Continue"
-                            : "Start evaluation"}
+                      <Link to={`/coordinator/hte-evaluations/${hteUuid}/${intern.uuid}`}>
+                        <Eye size={15} /> View evaluation
                       </Link>
                     </Button>
                   </div>
@@ -429,16 +499,12 @@ export default function HteEvaluateInternListPage() {
                           <Button
                             asChild
                             variant="ghost"
-                            aria-label={`Evaluate ${intern.full_name}`}
+                            aria-label={`View ${intern.full_name} evaluation`}
                             className="h-10 rounded-xl text-green-700 transition-colors hover:bg-green-50"
                           >
-                            <Link to={`/hte/evaluations/${intern.uuid}`}>
-                              <ClipboardCheck size={15} className="mr-1.5" />
-                              {intern.evaluation?.status === "completed"
-                                ? "View"
-                                : intern.evaluation?.status === "partial"
-                                  ? "Continue"
-                                  : "Evaluate"}
+                            <Link to={`/coordinator/hte-evaluations/${hteUuid}/${intern.uuid}`}>
+                              <Eye size={15} className="mr-1.5" />
+                              View
                             </Link>
                           </Button>
                         </div>
@@ -454,8 +520,7 @@ export default function HteEvaluateInternListPage() {
         {!loading && meta && meta.total > 0 && (
           <div className="flex flex-col gap-3 border-t border-gray-100 bg-gray-50/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             <p className="text-sm text-gray-500">
-              Showing{" "}
-              <span className="font-semibold text-gray-700">{meta.from ?? 0}</span>–
+              Showing <span className="font-semibold text-gray-700">{meta.from ?? 0}</span>–
               <span className="font-semibold text-gray-700">{meta.to ?? 0}</span> of{" "}
               <span className="font-semibold text-gray-700">{meta.total}</span> interns
             </p>
@@ -508,6 +573,6 @@ export default function HteEvaluateInternListPage() {
           </div>
         )}
       </div>
-    </HteLayout>
+    </CoordinatorLayout>
   );
 }

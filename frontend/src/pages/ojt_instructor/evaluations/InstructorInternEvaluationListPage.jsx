@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { ClipboardCheck, Search, X, ArrowDown, ArrowUp, ChevronsUpDown, CalendarDays, School, Loader2, Users } from "lucide-react";
-import HteLayout from "@/layouts/HteLayout.jsx";
+import { ClipboardCheck, Search, X, ArrowDown, ArrowUp, ChevronsUpDown, CalendarDays, School, Loader2, Users, Eye } from "lucide-react";
+import InstructorLayout from "@/layouts/InstructorLayout.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
@@ -128,7 +128,7 @@ function EvaluationBadge({ evaluation }) {
   );
 }
 
-export default function HteEvaluateInternListPage() {
+export default function CoordinatorInternEvaluationListPage() {
   const [rows, setRows] = useState([]);
   const [meta, setMeta] = useState(null);
   const [terms, setTerms] = useState([]);
@@ -170,7 +170,7 @@ export default function HteEvaluateInternListPage() {
       });
       if (debouncedSearch) params.set("search", debouncedSearch);
       if (academicYear !== "all") params.set("academic_year_id", academicYear);
-      const res = await api.get(`/hte/evaluations?${params.toString()}`);
+      const res = await api.get(`/instructor/intern-evaluations?${params.toString()}`);
       setRows(res.data.data);
       setMeta(res.data.meta);
     } catch (err) {
@@ -203,13 +203,11 @@ export default function HteEvaluateInternListPage() {
   const hasFilters = Boolean(search) || academicYear !== "all";
 
   return (
-    <HteLayout>
+    <InstructorLayout>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-heading text-2xl font-bold text-green-950 sm:text-3xl">Evaluate Interns</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Rate your assigned interns against the standard evaluation criteria.
-          </p>
+          <h1 className="font-heading text-2xl font-bold text-green-950 sm:text-3xl">Intern Evaluations</h1>
+          <p className="mt-1 text-sm text-gray-500">View HTE evaluations for deployed interns — read only.</p>
         </div>
       </div>
 
@@ -354,13 +352,8 @@ export default function HteEvaluateInternListPage() {
                   </div>
                   <div className="mt-3 flex gap-2 border-t border-gray-50 pt-3">
                     <Button asChild className="h-10 flex-1 rounded-xl bg-green-600 text-white hover:bg-green-700">
-                      <Link to={`/hte/evaluations/${intern.uuid}`}>
-                        <ClipboardCheck size={15} />
-                        {intern.evaluation?.status === "completed"
-                          ? "View evaluation"
-                          : intern.evaluation?.status === "partial"
-                            ? "Continue"
-                            : "Start evaluation"}
+                      <Link to={`/instructor/intern-evaluations/${intern.uuid}`}>
+                        <Eye size={15} /> View evaluation
                       </Link>
                     </Button>
                   </div>
@@ -429,16 +422,12 @@ export default function HteEvaluateInternListPage() {
                           <Button
                             asChild
                             variant="ghost"
-                            aria-label={`Evaluate ${intern.full_name}`}
+                            aria-label={`View ${intern.full_name} evaluation`}
                             className="h-10 rounded-xl text-green-700 transition-colors hover:bg-green-50"
                           >
-                            <Link to={`/hte/evaluations/${intern.uuid}`}>
-                              <ClipboardCheck size={15} className="mr-1.5" />
-                              {intern.evaluation?.status === "completed"
-                                ? "View"
-                                : intern.evaluation?.status === "partial"
-                                  ? "Continue"
-                                  : "Evaluate"}
+                            <Link to={`/instructor/intern-evaluations/${intern.uuid}`}>
+                              <Eye size={15} className="mr-1.5" />
+                              View
                             </Link>
                           </Button>
                         </div>
@@ -454,8 +443,7 @@ export default function HteEvaluateInternListPage() {
         {!loading && meta && meta.total > 0 && (
           <div className="flex flex-col gap-3 border-t border-gray-100 bg-gray-50/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             <p className="text-sm text-gray-500">
-              Showing{" "}
-              <span className="font-semibold text-gray-700">{meta.from ?? 0}</span>–
+              Showing <span className="font-semibold text-gray-700">{meta.from ?? 0}</span>–
               <span className="font-semibold text-gray-700">{meta.to ?? 0}</span> of{" "}
               <span className="font-semibold text-gray-700">{meta.total}</span> interns
             </p>
@@ -508,6 +496,6 @@ export default function HteEvaluateInternListPage() {
           </div>
         )}
       </div>
-    </HteLayout>
+    </InstructorLayout>
   );
 }

@@ -1,4 +1,4 @@
-import { LayoutDashboard, ClipboardCheck, Users, Store, FileText, ClipboardList, UserCheck, Star } from "lucide-react";
+import { LayoutDashboard, ClipboardCheck, Users, Store, FileText, ClipboardList, UserCheck, Star, FileCheck, Building2 } from "lucide-react";
 import AppShell from "@/layouts/AppShell.jsx";
 
 const navItems = [
@@ -10,6 +10,8 @@ const navItems = [
   { to: "/coordinator/requirements", label: "Requirements", icon: FileText },
   { to: "/coordinator/intern-requirements", label: "Intern Requirements", icon: ClipboardList },
   { to: "/coordinator/evaluations", label: "Evaluations", icon: Star },
+  { to: "/coordinator/intern-evaluations", label: "Intern Evaluations", icon: FileCheck },
+  { to: "/coordinator/hte-evaluations", label: "HTE Evaluations", icon: Building2 },
 ];
 
 export default function CoordinatorLayout({ children }) {
