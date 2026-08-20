@@ -25,6 +25,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import StatusChip from "@/components/StatusChip.jsx";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import PageLoader from "@/components/PageLoader";
 
@@ -58,18 +66,21 @@ function HeroChip({ icon: Icon, children }) {
   );
 }
 
-function RatingOption({ option, selected }) {
+function RatingOption({ option, selected, disabled }) {
   const isNa = option.value === "na";
   return (
     <label
       className={cn(
-        "flex cursor-pointer items-center gap-3 rounded-xl border px-3.5 py-3 transition-colors",
+        "flex items-center gap-3 rounded-xl border px-3.5 py-3 transition-colors",
+        disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
         selected
           ? "border-green-500 bg-green-50"
-          : "border-gray-200 bg-white hover:border-green-300 hover:bg-green-50/40"
+          : disabled
+            ? "border-gray-200 bg-gray-50"
+            : "border-gray-200 bg-white hover:border-green-300 hover:bg-green-50/40"
       )}
     >
-      <RadioGroupItem value={option.value} />
+      <RadioGroupItem value={option.value} disabled={disabled} />
       <span className="min-w-0 text-sm">
         <span className="font-semibold text-gray-900">{isNa ? "N/A" : `${option.value} – ${option.label}`}</span>
         {isNa && <span className="ml-1.5 text-xs text-gray-400">Not applicable</span>}
@@ -86,6 +97,7 @@ export default function HteEvaluateInternFormPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -127,13 +139,23 @@ export default function HteEvaluateInternFormPage() {
   const answeredCount = (data?.criteria ?? []).filter((criterion) => Boolean(values[criterion.id])).length;
   const progress = totalCount > 0 ? Math.round((answeredCount / totalCount) * 100) : 0;
   const allAnswered = totalCount > 0 && answeredCount === totalCount;
+  const isSubmitted = useMemo(
+    () => Boolean(data?.criteria?.length && data.criteria.every((c) => c.response !== null)),
+    [data]
+  );
 
   function setRating(criterionId, value) {
+    if (isSubmitted) return;
     setValues((prev) => ({ ...prev, [criterionId]: value }));
   }
 
-  async function handleSubmit() {
-    if (submitting || !allAnswered) return;
+  function handleSubmit() {
+    if (submitting || !allAnswered || isSubmitted) return;
+    setConfirmOpen(true);
+  }
+
+  async function handleConfirmSubmit() {
+    if (submitting || !allAnswered || isSubmitted) return;
     setSubmitting(true);
     try {
       const responses = Object.entries(values).map(([criterionId, value]) => ({
@@ -145,6 +167,7 @@ export default function HteEvaluateInternFormPage() {
       toast.success("Evaluation submitted", {
         description: `${data.intern.full_name}'s evaluation was saved.`,
       });
+      setConfirmOpen(false);
       navigate("/hte/evaluations");
     } catch (err) {
       toast.error("Submission failed", { description: firstErrorMessage(err) });
@@ -227,6 +250,18 @@ export default function HteEvaluateInternFormPage() {
             </div>
           </div>
 
+          {isSubmitted && (
+            <div className="flex items-start gap-2.5 rounded-2xl bg-amber-50 p-3.5 ring-1 ring-amber-200">
+              <ClipboardCheck size={18} className="mt-0.5 shrink-0 text-amber-600" />
+              <div className="min-w-0">
+                <p className="text-xs font-bold uppercase tracking-wide text-amber-700">Evaluation submitted — read only</p>
+                <p className="mt-0.5 text-sm leading-relaxed text-amber-800">
+                  This evaluation has been submitted and can no longer be edited. The responses below are final.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm ring-1 ring-gray-100 sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-semibold text-gray-700">
@@ -235,7 +270,7 @@ export default function HteEvaluateInternFormPage() {
               <span className="font-mono text-sm font-bold text-green-700">{progress}%</span>
             </div>
             <Progress value={progress} className="mt-2 h-2.5" />
-            {!allAnswered && (
+            {!isSubmitted && !allAnswered && (
               <p className="mt-2 text-xs text-gray-400">
                 {totalCount - answeredCount} indicator{totalCount - answeredCount === 1 ? "" : "s"} still need an
                 answer.
@@ -285,6 +320,7 @@ export default function HteEvaluateInternFormPage() {
                         <RadioGroup
                           value={values[criterion.id] ?? ""}
                           onValueChange={(value) => setRating(criterion.id, value)}
+                          disabled={isSubmitted}
                           className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3"
                         >
                           {ratingOptions.map((option) => (
@@ -292,6 +328,7 @@ export default function HteEvaluateInternFormPage() {
                               key={option.value}
                               option={option}
                               selected={values[criterion.id] === option.value}
+                              disabled={isSubmitted}
                             />
                           ))}
                         </RadioGroup>
@@ -303,22 +340,66 @@ export default function HteEvaluateInternFormPage() {
             })}
           </div>
 
-          <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm ring-1 ring-gray-100 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-            <p className="text-sm text-gray-500">
-              {allAnswered
-                ? "All indicators answered — ready to submit."
-                : `${totalCount - answeredCount} indicator${totalCount - answeredCount === 1 ? "" : "s"} still need an answer.`}
-            </p>
-            <Button
-              type="button"
-              onClick={handleSubmit}
-              disabled={!allAnswered || submitting}
-              className="h-12 w-full rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700 sm:w-auto sm:min-w-44"
-            >
-              {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-              Submit evaluation
-            </Button>
-          </div>
+          {isSubmitted ? (
+            <div className="flex items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-gray-50 p-4 text-center shadow-sm ring-1 ring-gray-100 sm:p-5">
+              <ClipboardCheck size={16} className="shrink-0 text-gray-400" />
+              <p className="text-sm font-semibold text-gray-500">This evaluation is final and cannot be edited.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm ring-1 ring-gray-100 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+              <p className="text-sm text-gray-500">
+                {allAnswered
+                  ? "All indicators answered — ready to submit."
+                  : `${totalCount - answeredCount} indicator${totalCount - answeredCount === 1 ? "" : "s"} still need an answer.`}
+              </p>
+              <Button
+                type="button"
+                onClick={handleSubmit}
+                disabled={!allAnswered || submitting}
+                className="h-12 w-full rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700 sm:w-auto sm:min-w-44"
+              >
+                {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                Submit evaluation
+              </Button>
+            </div>
+          )}
+
+          <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Submit evaluation?</DialogTitle>
+                <DialogDescription>
+                  You are about to submit the evaluation for <span className="font-semibold text-gray-900">{data.intern.full_name}</span>.
+                  Once submitted, this evaluation will become read-only and cannot be changed.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200">
+                <p className="text-xs font-semibold leading-relaxed text-amber-800">
+                  Please review all {totalCount} ratings carefully before confirming. This action is final.
+                </p>
+              </div>
+              <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setConfirmOpen(false)}
+                  disabled={submitting}
+                  className="h-11 rounded-xl"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleConfirmSubmit}
+                  disabled={submitting}
+                  className="h-11 rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700"
+                >
+                  {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                  Confirm and submit
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </>
       ) : null}
     </HteLayout>

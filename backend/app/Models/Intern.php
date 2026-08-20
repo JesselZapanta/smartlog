@@ -64,6 +64,11 @@ class Intern extends Model
         return $this->hasMany(InternEvaluation::class);
     }
 
+    public function hteEvaluations(): HasMany
+    {
+        return $this->hasMany(HteEvaluation::class);
+    }
+
     public function assignedHte(): BelongsTo
     {
         return $this->belongsTo(Hte::class, 'assigned_hte');

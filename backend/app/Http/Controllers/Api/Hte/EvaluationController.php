@@ -202,6 +202,12 @@ class EvaluationController extends Controller
             ->pluck('id')
             ->all();
 
+        if (InternEvaluation::where('intern_id', $intern->id)->where('hte_id', $hte->id)->exists()) {
+            throw ValidationException::withMessages([
+                'evaluation' => ['This evaluation has already been submitted and cannot be updated.'],
+            ]);
+        }
+
         foreach ($data['responses'] as $response) {
             $criterionId = (int) $response['criterion_id'];
 

@@ -12,6 +12,7 @@ import InternDtrLogsPage from "@/pages/intern/dtr-logs/InternDtrLogsPage.jsx";
 import InternDtrPrintPage from "@/pages/intern/dtr-logs/InternDtrPrintPage.jsx";
 import JournalCalendarPage from "@/pages/intern/journals/JournalCalendarPage.jsx";
 import JournalFormPage from "@/pages/intern/journals/JournalFormPage.jsx";
+import InternEvaluateHtePage from "@/pages/intern/evaluations/InternEvaluateHtePage.jsx";
 import CoordinatorDashboard from "@/pages/ojt_coordinator/CoordinatorDashboard.jsx";
 import RegistrationApprovalsListPage from "@/pages/ojt_coordinator/registrations/RegistrationApprovalsListPage.jsx";
 import RegistrationApprovalDetailPage from "@/pages/ojt_coordinator/registrations/RegistrationApprovalDetailPage.jsx";
@@ -130,6 +131,14 @@ function App() {
         element={
           <ProtectedRoute roles={["intern"]} approvedIntern>
             <JournalFormPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/intern/evaluations"
+        element={
+          <ProtectedRoute roles={["intern"]} approvedIntern>
+            <InternEvaluateHtePage />
           </ProtectedRoute>
         }
       />

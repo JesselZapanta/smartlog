@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\Hte\EvaluationController as HteEvaluationController
 use App\Http\Controllers\Api\Hte\InternController as HteInternController;
 use App\Http\Controllers\Api\Hte\InternMonitoringController as HteInternMonitoringController;
 use App\Http\Controllers\Api\Intern\DailyJournalController;
+use App\Http\Controllers\Api\Intern\EvaluationController as InternEvaluationController;
 use App\Http\Controllers\Api\Intern\OjtHoursController;
 use App\Http\Controllers\Api\Intern\PhotoDtrController;
 use App\Http\Controllers\Api\Intern\RequirementController as InternRequirementController;
@@ -81,6 +82,9 @@ Route::middleware('auth:api')->group(function (): void {
         Route::post('/intern/photo-dtr/punch', [PhotoDtrController::class, 'punch'])->name('api.intern.photo-dtr.punch');
 
         Route::get('/intern/ojt-hours', [OjtHoursController::class, 'show'])->name('api.intern.ojt-hours.show');
+
+        Route::get('/intern/evaluations', [InternEvaluationController::class, 'show'])->name('api.intern.evaluations.show');
+        Route::post('/intern/evaluations', [InternEvaluationController::class, 'store'])->name('api.intern.evaluations.store');
 
         Route::get('/intern/journals', [DailyJournalController::class, 'index'])->name('api.intern.journals.index');
         Route::post('/intern/journals', [DailyJournalController::class, 'store'])->name('api.intern.journals.store');
