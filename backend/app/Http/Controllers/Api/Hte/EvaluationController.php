@@ -97,6 +97,16 @@ class EvaluationController extends Controller
             ->groupBy('intern_id')
             ->pluck('answered', 'intern_id');
 
+        $weightedRows = InternEvaluation::query()
+            ->where('hte_id', $hte->id)
+            ->whereIn('intern_evaluations.intern_id', $interns->pluck('id'))
+            ->join('evaluation_criteria', 'intern_evaluations.criterion_id', '=', 'evaluation_criteria.id')
+            ->where('evaluation_criteria.type', 'intern')
+            ->selectRaw('intern_evaluations.intern_id, evaluation_criteria.category, SUM(CASE WHEN intern_evaluations.is_na THEN 0 ELSE intern_evaluations.rating END) as sum_rating, COUNT(*) as answered')
+            ->groupBy('intern_evaluations.intern_id', 'evaluation_criteria.category')
+            ->get()
+            ->groupBy('intern_id');
+
         $data = InternListResource::collection($interns)->resolve($request);
 
         foreach ($data as $index => $item) {
@@ -104,10 +114,20 @@ class EvaluationController extends Controller
             $total = (int) ($totals[$intern->institute_id] ?? 0);
             $answeredCount = (int) ($answered[$intern->id] ?? 0);
 
+            $perCategory = $weightedRows->get($intern->id, collect());
+            $avgs = [];
+            foreach (['personal_characteristics', 'work_characteristics', 'job_knowledge'] as $cat) {
+                $row = $perCategory->firstWhere('category', $cat);
+                $avgs[$cat] = $row ? (float) $row->sum_rating / (int) $row->answered : null;
+            }
+            $hasData = $avgs['personal_characteristics'] !== null || $avgs['work_characteristics'] !== null || $avgs['job_knowledge'] !== null;
+            $weighted = $hasData ? round(($avgs['personal_characteristics'] ?? 0) * 0.3 + ($avgs['work_characteristics'] ?? 0) * 0.3 + ($avgs['job_knowledge'] ?? 0) * 0.4, 2) : null;
+
             $data[$index]['evaluation'] = [
                 'total' => $total,
                 'answered' => $answeredCount,
                 'status' => $this->evaluationStatus($total, $answeredCount),
+                'weighted_average' => $weighted,
             ];
         }
 

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import { toast } from "sonner";
+import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   Award,
@@ -10,14 +9,12 @@ import {
   ClipboardCheck,
   Hash,
   Lightbulb,
-  Loader2,
   Mail,
   Phone,
   School,
-  Send,
   UserRound,
 } from "lucide-react";
-import HteLayout from "@/layouts/HteLayout.jsx";
+import CoordinatorLayout from "@/layouts/CoordinatorLayout.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { ratingOptions, categorySections } from "@/pages/hte/evaluations/constants.js";
@@ -27,14 +24,6 @@ import StatusChip from "@/components/StatusChip.jsx";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Progress } from "@/components/ui/progress";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import PageLoader from "@/components/PageLoader";
 
@@ -68,21 +57,16 @@ function HeroChip({ icon: Icon, children }) {
   );
 }
 
-function RatingOption({ option, selected, disabled }) {
+function RatingOption({ option, selected }) {
   const isNa = option.value === "na";
   return (
     <label
       className={cn(
-        "flex items-center gap-3 rounded-xl border px-3.5 py-3 transition-colors",
-        disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
-        selected
-          ? "border-green-500 bg-green-50"
-          : disabled
-            ? "border-gray-200 bg-gray-50"
-            : "border-gray-200 bg-white hover:border-green-300 hover:bg-green-50/40"
+        "flex cursor-not-allowed items-center gap-3 rounded-xl border px-3.5 py-3 opacity-60",
+        selected ? "border-green-500 bg-green-50" : "border-gray-200 bg-gray-50"
       )}
     >
-      <RadioGroupItem value={option.value} disabled={disabled} />
+      <RadioGroupItem value={option.value} disabled />
       <span className="min-w-0 text-sm">
         <span className="font-semibold text-gray-900">{isNa ? "N/A" : `${option.value} – ${option.label}`}</span>
         {isNa && <span className="ml-1.5 text-xs text-gray-400">Not applicable</span>}
@@ -91,31 +75,17 @@ function RatingOption({ option, selected, disabled }) {
   );
 }
 
-export default function HteEvaluateInternFormPage() {
+export default function CoordinatorInternEvaluationDetailPage() {
   const { uuid } = useParams();
-  const navigate = useNavigate();
   const [data, setData] = useState(null);
-  const [values, setValues] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get(`/hte/evaluations/${uuid}`);
-      const payload = res.data.data;
-      setData(payload);
-      const initial = {};
-      payload.criteria.forEach((criterion) => {
-        if (criterion.response) {
-          initial[criterion.id] = criterion.response.is_na
-            ? "na"
-            : String(criterion.response.rating);
-        }
-      });
-      setValues(initial);
+      const res = await api.get(`/coordinator/intern-evaluations/${uuid}`);
+      setData(res.data.data);
     } catch (err) {
       setError(firstErrorMessage(err));
     } finally {
@@ -138,26 +108,22 @@ export default function HteEvaluateInternFormPage() {
   }, [data]);
 
   const totalCount = data?.criteria.length ?? 0;
-  const answeredCount = (data?.criteria ?? []).filter((criterion) => Boolean(values[criterion.id])).length;
+  const answeredCount = (data?.criteria ?? []).filter((c) => c.response !== null).length;
   const progress = totalCount > 0 ? Math.round((answeredCount / totalCount) * 100) : 0;
-  const allAnswered = totalCount > 0 && answeredCount === totalCount;
-  const isSubmitted = useMemo(
-    () => Boolean(data?.criteria?.length && data.criteria.every((c) => c.response !== null)),
-    [data]
-  );
+  const isSubmitted = totalCount > 0 && answeredCount === totalCount;
 
   const categoryAverages = useMemo(() => {
     const map = {};
     for (const section of categorySections) {
       const items = grouped.find((g) => g.key === section.key)?.items ?? [];
-      const answered = items.filter((c) => values[c.id] != null && values[c.id] !== "").map((c) => values[c.id]);
-      const ratings = answered.map((v) => (v === "na" ? 0 : Number(v)));
+      const answered = items.map((c) => c.response).filter((r) => r != null);
+      const ratings = answered.map((r) => (r.is_na ? 0 : r.rating));
       const avg = answered.length ? ratings.reduce((a, b) => a + b, 0) / answered.length : null;
-      const naCount = answered.filter((v) => v === "na").length;
+      const naCount = answered.filter((r) => r.is_na).length;
       map[section.key] = { avg, count: answered.length - naCount, total: items.length, naCount, answeredCount: answered.length };
     }
     return map;
-  }, [grouped, values]);
+  }, [grouped]);
 
   const weightedAverage = useMemo(() => {
     const p = categoryAverages.personal_characteristics?.avg;
@@ -167,48 +133,16 @@ export default function HteEvaluateInternFormPage() {
     return (p ?? 0) * 0.3 + (w ?? 0) * 0.3 + (j ?? 0) * 0.4;
   }, [categoryAverages]);
 
-  function setRating(criterionId, value) {
-    if (isSubmitted) return;
-    setValues((prev) => ({ ...prev, [criterionId]: value }));
-  }
-
-  function handleSubmit() {
-    if (submitting || !allAnswered || isSubmitted) return;
-    setConfirmOpen(true);
-  }
-
-  async function handleConfirmSubmit() {
-    if (submitting || !allAnswered || isSubmitted) return;
-    setSubmitting(true);
-    try {
-      const responses = Object.entries(values).map(([criterionId, value]) => ({
-        criterion_id: Number(criterionId),
-        rating: value === "na" ? null : Number(value),
-        is_na: value === "na",
-      }));
-      await api.post(`/hte/evaluations/${uuid}`, { responses });
-      toast.success("Evaluation submitted", {
-        description: `${data.intern.full_name}'s evaluation was saved.`,
-      });
-      setConfirmOpen(false);
-      navigate("/hte/evaluations");
-    } catch (err) {
-      toast.error("Submission failed", { description: firstErrorMessage(err) });
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
   return (
-    <HteLayout>
+    <CoordinatorLayout>
       <div className="flex items-center gap-2">
         <Button
           asChild
           variant="ghost"
           className="h-11 rounded-xl text-gray-500 hover:bg-gray-100 hover:text-green-700"
         >
-          <Link to="/hte/evaluations">
-            <ArrowLeft size={16} /> Back to evaluate interns
+          <Link to="/coordinator/intern-evaluations">
+            <ArrowLeft size={16} /> Back to intern evaluations
           </Link>
         </Button>
       </div>
@@ -219,7 +153,7 @@ export default function HteEvaluateInternFormPage() {
         <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center shadow-sm ring-1 ring-gray-100">
           <p className="text-sm text-red-600">{error}</p>
           <Button asChild variant="outline" className="mt-4 h-10 rounded-xl text-green-700">
-            <Link to="/hte/evaluations">Back to evaluate interns</Link>
+            <Link to="/coordinator/intern-evaluations">Back to intern evaluations</Link>
           </Button>
         </div>
       ) : data ? (
@@ -231,9 +165,7 @@ export default function HteEvaluateInternFormPage() {
             <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-center gap-4">
                 <Avatar className="h-16 w-16 shrink-0 border-2 border-white/40 shadow-md sm:h-20 sm:w-20">
-                  {data.intern.profile_picture && (
-                    <AvatarImage src={data.intern.profile_picture} alt={data.intern.full_name} />
-                  )}
+                  {data.intern.profile_picture && <AvatarImage src={data.intern.profile_picture} alt={data.intern.full_name} />}
                   <AvatarFallback className="bg-gradient-to-br from-white/25 to-white/10 text-lg font-bold text-white">
                     {getInitials(data.intern.full_name)}
                   </AvatarFallback>
@@ -273,17 +205,46 @@ export default function HteEvaluateInternFormPage() {
             </div>
           </div>
 
-          {isSubmitted && (
-            <div className="flex items-start gap-2.5 rounded-2xl bg-amber-50 p-3.5 ring-1 ring-amber-200">
-              <ClipboardCheck size={18} className="mt-0.5 shrink-0 text-amber-600" />
-              <div className="min-w-0">
-                <p className="text-xs font-bold uppercase tracking-wide text-amber-700">Evaluation submitted — read only</p>
-                <p className="mt-0.5 text-sm leading-relaxed text-amber-800">
-                  This evaluation has been submitted and can no longer be edited. The responses below are final.
-                </p>
+          {data.hte && (
+            <div className="overflow-hidden rounded-2xl border border-green-100 bg-white shadow-sm ring-1 ring-green-100">
+              <div className="flex items-center gap-3 border-b border-green-100/70 bg-green-50/60 px-4 py-3 sm:px-5">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-green-600 text-white shadow-sm">
+                  <Building2 size={17} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-green-700/70">Host Training Establishment</p>
+                  <p className="truncate font-heading text-base font-bold text-green-950">{data.hte.name}</p>
+                </div>
+                {data.hte.status && <StatusChip status={data.hte.status} />}
+              </div>
+              <div className="grid grid-cols-1 gap-2.5 px-4 py-4 sm:grid-cols-2 sm:px-5">
+                <div className="flex items-center gap-2.5 rounded-xl bg-gray-50 px-3 py-2.5">
+                  <Building2 size={14} className="shrink-0 text-gray-400" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Institute</p>
+                    <p className="truncate text-sm font-semibold text-gray-800">{data.hte.institute || "—"}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2.5 rounded-xl bg-gray-50 px-3 py-2.5">
+                  <School size={14} className="shrink-0 text-gray-400" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Program</p>
+                    <p className="truncate text-sm font-semibold text-gray-800">{data.hte.program || "—"}</p>
+                  </div>
+                </div>
               </div>
             </div>
           )}
+
+          <div className="flex items-start gap-2.5 rounded-2xl bg-blue-50 p-3.5 ring-1 ring-blue-200">
+            <ClipboardCheck size={18} className="mt-0.5 shrink-0 text-blue-600" />
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-wide text-blue-700">Read-only evaluation</p>
+              <p className="mt-0.5 text-sm leading-relaxed text-blue-800">
+                This evaluation was submitted by the HTE. You are viewing it in read-only mode.
+              </p>
+            </div>
+          </div>
 
           <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm ring-1 ring-gray-100 sm:p-5">
             <div className="flex items-center justify-between gap-3">
@@ -293,10 +254,9 @@ export default function HteEvaluateInternFormPage() {
               <span className="font-mono text-sm font-bold text-green-700">{progress}%</span>
             </div>
             <Progress value={progress} className="mt-2 h-2.5" />
-            {!isSubmitted && !allAnswered && (
-              <p className="mt-2 text-xs text-gray-400">
-                {totalCount - answeredCount} indicator{totalCount - answeredCount === 1 ? "" : "s"} still need an
-                answer.
+            {!isSubmitted && (
+              <p className="mt-2 text-xs text-amber-600">
+                {totalCount - answeredCount} indicator{totalCount - answeredCount === 1 ? "" : "s"} not yet evaluated by HTE.
               </p>
             )}
           </div>
@@ -373,9 +333,7 @@ export default function HteEvaluateInternFormPage() {
                 <ClipboardCheck size={20} />
               </div>
               <p className="text-sm font-semibold text-gray-700">No evaluation criteria yet</p>
-              <p className="max-w-sm text-xs text-gray-400">
-                The coordinator has not set up intern evaluation criteria for this institute yet.
-              </p>
+              <p className="max-w-sm text-xs text-gray-400">No active intern evaluation criteria for this institute.</p>
             </div>
           )}
 
@@ -409,34 +367,35 @@ export default function HteEvaluateInternFormPage() {
                         </div>
 
                         <div className="space-y-3">
-                          {section.items.map((criterion, index) => (
-                            <div
-                              key={criterion.id}
-                              className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm ring-1 ring-gray-100 sm:p-5"
-                            >
-                              <div className="flex items-start gap-2.5">
-                                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 font-mono text-[11px] font-bold text-gray-500">
-                                  {index + 1}
-                                </span>
-                                <p className="text-sm font-medium leading-relaxed text-gray-800">{criterion.indicator}</p>
-                              </div>
-                              <RadioGroup
-                                value={values[criterion.id] ?? ""}
-                                onValueChange={(value) => setRating(criterion.id, value)}
-                                disabled={isSubmitted}
-                                className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3"
+                          {section.items.map((criterion, index) => {
+                            const selectedValue = criterion.response
+                              ? criterion.response.is_na
+                                ? "na"
+                                : String(criterion.response.rating)
+                              : "";
+                            return (
+                              <div
+                                key={criterion.id}
+                                className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm ring-1 ring-gray-100 sm:p-5"
                               >
-                                {ratingOptions.map((option) => (
-                                  <RatingOption
-                                    key={option.value}
-                                    option={option}
-                                    selected={values[criterion.id] === option.value}
-                                    disabled={isSubmitted}
-                                  />
-                                ))}
-                              </RadioGroup>
-                            </div>
-                          ))}
+                                <div className="flex items-start gap-2.5">
+                                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 font-mono text-[11px] font-bold text-gray-500">
+                                    {index + 1}
+                                  </span>
+                                  <p className="text-sm font-medium leading-relaxed text-gray-800">{criterion.indicator}</p>
+                                </div>
+                                <RadioGroup value={selectedValue} disabled className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                  {ratingOptions.map((option) => (
+                                    <RatingOption
+                                      key={option.value}
+                                      option={option}
+                                      selected={selectedValue === option.value}
+                                    />
+                                  ))}
+                                </RadioGroup>
+                              </div>
+                            );
+                          })}
                         </div>
                       </section>
                     );
@@ -445,69 +404,8 @@ export default function HteEvaluateInternFormPage() {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
-
-          {isSubmitted ? (
-            <div className="flex items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-gray-50 p-4 text-center shadow-sm ring-1 ring-gray-100 sm:p-5">
-              <ClipboardCheck size={16} className="shrink-0 text-gray-400" />
-              <p className="text-sm font-semibold text-gray-500">This evaluation is final and cannot be edited.</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm ring-1 ring-gray-100 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-              <p className="text-sm text-gray-500">
-                {allAnswered
-                  ? "All indicators answered — ready to submit."
-                  : `${totalCount - answeredCount} indicator${totalCount - answeredCount === 1 ? "" : "s"} still need an answer.`}
-              </p>
-              <Button
-                type="button"
-                onClick={handleSubmit}
-                disabled={!allAnswered || submitting}
-                className="h-12 w-full rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700 sm:w-auto sm:min-w-44"
-              >
-                {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                Submit evaluation
-              </Button>
-            </div>
-          )}
-
-          <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Submit evaluation?</DialogTitle>
-                <DialogDescription>
-                  You are about to submit the evaluation for <span className="font-semibold text-gray-900">{data.intern.full_name}</span>.
-                  Once submitted, this evaluation will become read-only and cannot be changed.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200">
-                <p className="text-xs font-semibold leading-relaxed text-amber-800">
-                  Please review all {totalCount} ratings carefully before confirming. This action is final.
-                </p>
-              </div>
-              <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setConfirmOpen(false)}
-                  disabled={submitting}
-                  className="h-11 rounded-xl"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleConfirmSubmit}
-                  disabled={submitting}
-                  className="h-11 rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700"
-                >
-                  {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                  Confirm and submit
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
         </>
       ) : null}
-    </HteLayout>
+    </CoordinatorLayout>
   );
 }

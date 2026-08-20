@@ -129,6 +129,14 @@ Route::middleware('auth:api')->group(function (): void {
 
         Route::apiResource('coordinator/evaluations', CoordinatorEvaluationCriterionController::class)
             ->except(['create', 'edit']);
+
+        Route::get('/coordinator/intern-evaluations', [App\Http\Controllers\Api\OjtCoordinator\Evaluations\InternEvaluationController::class, 'index'])->name('api.coordinator.intern-evaluations.index');
+        Route::get('/coordinator/intern-evaluations/{user:uuid}', [App\Http\Controllers\Api\OjtCoordinator\Evaluations\InternEvaluationController::class, 'show'])->name('api.coordinator.intern-evaluations.show');
+
+        Route::get('/coordinator/hte-evaluations', [App\Http\Controllers\Api\OjtCoordinator\Evaluations\HteEvaluationController::class, 'index'])->name('api.coordinator.hte-evaluations.index');
+        Route::get('/coordinator/hte-evaluations/{user:uuid}/interns', [App\Http\Controllers\Api\OjtCoordinator\Evaluations\HteEvaluationController::class, 'interns'])->name('api.coordinator.hte-evaluations.interns');
+        Route::get('/coordinator/hte-evaluations/{user:uuid}', [App\Http\Controllers\Api\OjtCoordinator\Evaluations\HteEvaluationController::class, 'show'])->name('api.coordinator.hte-evaluations.show');
+        Route::get('/coordinator/hte-evaluations/{hte:uuid}/{intern:uuid}', [App\Http\Controllers\Api\OjtCoordinator\Evaluations\HteEvaluationController::class, 'showForHte'])->withoutScopedBindings()->name('api.coordinator.hte-evaluations.showForHte');
     });
 
     Route::middleware('role:hte')->group(function (): void {
@@ -150,6 +158,9 @@ Route::middleware('auth:api')->group(function (): void {
         Route::get('/instructor/interns/{user:uuid}/monitoring', [InstructorInternMonitoringController::class, 'index'])->name('api.instructor.interns.monitoring');
         Route::post('/instructor/interns/{user:uuid}/monitoring/approve', [InstructorInternMonitoringController::class, 'approve'])->name('api.instructor.interns.monitoring.approve');
         Route::post('/instructor/interns/{user:uuid}/monitoring/reject', [InstructorInternMonitoringController::class, 'reject'])->name('api.instructor.interns.monitoring.reject');
+
+        Route::get('/instructor/intern-evaluations', [App\Http\Controllers\Api\OjtInstructor\Evaluations\InternEvaluationController::class, 'index'])->name('api.instructor.intern-evaluations.index');
+        Route::get('/instructor/intern-evaluations/{user:uuid}', [App\Http\Controllers\Api\OjtInstructor\Evaluations\InternEvaluationController::class, 'show'])->name('api.instructor.intern-evaluations.show');
     });
 
     Route::middleware('role:admin')->group(function (): void {

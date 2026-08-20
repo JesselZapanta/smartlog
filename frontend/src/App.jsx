@@ -26,12 +26,19 @@ import CoordinatorRequirementListPage from "@/pages/ojt_coordinator/requirements
 import CoordinatorInternRequirementsPage from "@/pages/ojt_coordinator/requirements/CoordinatorInternRequirementsPage.jsx";
 import CoordinatorInternRequirementsDetailPage from "@/pages/ojt_coordinator/requirements/CoordinatorInternRequirementsDetailPage.jsx";
 import EvaluationListPage from "@/pages/ojt_coordinator/evaluations/EvaluationListPage.jsx";
+import CoordinatorInternEvaluationListPage from "@/pages/ojt_coordinator/evaluations/CoordinatorInternEvaluationListPage.jsx";
+import CoordinatorInternEvaluationDetailPage from "@/pages/ojt_coordinator/evaluations/CoordinatorInternEvaluationDetailPage.jsx";
+import CoordinatorHteEvaluationListPage from "@/pages/ojt_coordinator/evaluations/CoordinatorHteEvaluationListPage.jsx";
+import CoordinatorHteInternListPage from "@/pages/ojt_coordinator/evaluations/CoordinatorHteInternListPage.jsx";
+import CoordinatorHteEvaluationDetailPage from "@/pages/ojt_coordinator/evaluations/CoordinatorHteEvaluationDetailPage.jsx";
 import InstructorDashboard from "@/pages/ojt_instructor/InstructorDashboard.jsx";
 import InstructorDeployedInternsPage from "@/pages/ojt_instructor/interns/InstructorDeployedInternsPage.jsx";
 import InstructorInternDetailPage from "@/pages/ojt_instructor/interns/InstructorInternDetailPage.jsx";
 import InstructorInternMonitoringPage from "@/pages/ojt_instructor/monitoring/InstructorInternMonitoringPage.jsx";
 import InstructorInternMonitoringCalendarPage from "@/pages/ojt_instructor/monitoring/InstructorInternMonitoringCalendarPage.jsx";
 import InstructorInternMonitoringDayPage from "@/pages/ojt_instructor/monitoring/InstructorInternMonitoringDayPage.jsx";
+import InstructorInternEvaluationListPage from "@/pages/ojt_instructor/evaluations/InstructorInternEvaluationListPage.jsx";
+import InstructorInternEvaluationDetailPage from "@/pages/ojt_instructor/evaluations/InstructorInternEvaluationDetailPage.jsx";
 import HteDashboard from "@/pages/hte/HteDashboard.jsx";
 import HteAssignedInternsPage from "@/pages/hte/interns/HteAssignedInternsPage.jsx";
 import HteAssignedInternDetailPage from "@/pages/hte/interns/HteAssignedInternDetailPage.jsx";
@@ -255,6 +262,54 @@ function App() {
         }
       />
       <Route
+        path="/coordinator/intern-evaluations"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <CoordinatorInternEvaluationListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coordinator/intern-evaluations/:uuid"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <CoordinatorInternEvaluationDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coordinator/hte-evaluations"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <CoordinatorHteEvaluationListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coordinator/hte-evaluations/:hteUuid"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <CoordinatorHteInternListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coordinator/hte-evaluations/:hteUuid/:internUuid"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <CoordinatorHteEvaluationDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coordinator/hte-evaluations/:uuid"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <CoordinatorHteEvaluationDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/instructor"
         element={
           <ProtectedRoute roles={["ojt_instructor"]}>
@@ -299,6 +354,22 @@ function App() {
         element={
           <ProtectedRoute roles={["ojt_instructor"]}>
             <InstructorInternMonitoringDayPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/intern-evaluations"
+        element={
+          <ProtectedRoute roles={["ojt_instructor"]}>
+            <InstructorInternEvaluationListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/intern-evaluations/:uuid"
+        element={
+          <ProtectedRoute roles={["ojt_instructor"]}>
+            <InstructorInternEvaluationDetailPage />
           </ProtectedRoute>
         }
       />
