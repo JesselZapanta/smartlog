@@ -1,4 +1,4 @@
-import { BookOpenText, Camera, ClipboardList, FileText, LayoutDashboard } from "lucide-react";
+import { BookOpenText, Camera, ClipboardCheck, ClipboardList, FileText, LayoutDashboard } from "lucide-react";
 import AppShell from "@/layouts/AppShell.jsx";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -12,6 +12,7 @@ const fullNav = [
   { to: "/intern/photo-dtr", label: "Photo DTR", icon: Camera },
   { to: "/intern/dtr-logs", label: "DTR Logs", icon: ClipboardList },
   { to: "/intern/journals", label: "Daily Journal", icon: BookOpenText },
+  { to: "/intern/evaluations", label: "Evaluate HTE", icon: ClipboardCheck },
 ];
 
 export default function InternLayout({ children }) {

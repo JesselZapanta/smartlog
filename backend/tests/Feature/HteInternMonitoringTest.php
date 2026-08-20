@@ -46,7 +46,7 @@ function hteRecordHte(Institute $institute, Program $program): User
     return $user;
 }
 
-function hteRecordIntern(Institute $institute, Program $program, int $hteId): User
+function hteRecordIntern(Institute $institute, Program $program, int $hteId, string $ojtStatus = 'ongoing'): User
 {
     $user = User::factory()->create(['role' => 'intern']);
     Intern::create([
@@ -55,7 +55,7 @@ function hteRecordIntern(Institute $institute, Program $program, int $hteId): Us
         'institute_id' => $institute->id,
         'program_id' => $program->id,
         'assigned_hte' => $hteId,
-        'ojt_status' => 'ongoing',
+        'ojt_status' => $ojtStatus,
     ]);
 
     return $user;
@@ -103,6 +103,24 @@ test('hte intern list includes journal stats', function () {
         ->assertJsonPath('data.0.journals_verified_count', 1)
         ->assertJsonPath('data.0.journals_flagged_count', 1)
         ->assertJsonPath('data.0.journals_unchecked_count', 1);
+});
+
+test('hte intern list includes ongoing, hours completed and completed interns', function () {
+    $institute = hteRecordInstitute();
+    $program = hteRecordProgram($institute);
+    $hte = hteRecordHte($institute, $program);
+    $hteId = $hte->hte->id;
+
+    hteRecordIntern($institute, $program, $hteId, 'ongoing');
+    hteRecordIntern($institute, $program, $hteId, 'hours_completed');
+    hteRecordIntern($institute, $program, $hteId, 'completed');
+    hteRecordIntern($institute, $program, $hteId, 'pending');
+
+    $this->actingAs($hte, 'api')
+        ->getJson('/api/hte/interns')
+        ->assertOk()
+        ->assertJsonCount(3, 'data')
+        ->assertJsonPath('meta.total', 3);
 });
 
 test('hte verify and flag notify the instructors', function () {

@@ -14,9 +14,11 @@ use App\Http\Controllers\Api\Admin\RequirementController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\Hte\EvaluationController as HteEvaluationController;
 use App\Http\Controllers\Api\Hte\InternController as HteInternController;
 use App\Http\Controllers\Api\Hte\InternMonitoringController as HteInternMonitoringController;
 use App\Http\Controllers\Api\Intern\DailyJournalController;
+use App\Http\Controllers\Api\Intern\EvaluationController as InternEvaluationController;
 use App\Http\Controllers\Api\Intern\OjtHoursController;
 use App\Http\Controllers\Api\Intern\PhotoDtrController;
 use App\Http\Controllers\Api\Intern\RequirementController as InternRequirementController;
@@ -81,6 +83,9 @@ Route::middleware('auth:api')->group(function (): void {
 
         Route::get('/intern/ojt-hours', [OjtHoursController::class, 'show'])->name('api.intern.ojt-hours.show');
 
+        Route::get('/intern/evaluations', [InternEvaluationController::class, 'show'])->name('api.intern.evaluations.show');
+        Route::post('/intern/evaluations', [InternEvaluationController::class, 'store'])->name('api.intern.evaluations.store');
+
         Route::get('/intern/journals', [DailyJournalController::class, 'index'])->name('api.intern.journals.index');
         Route::post('/intern/journals', [DailyJournalController::class, 'store'])->name('api.intern.journals.store');
         Route::get('/intern/journals/{journal}', [DailyJournalController::class, 'show'])->name('api.intern.journals.show');
@@ -133,6 +138,10 @@ Route::middleware('auth:api')->group(function (): void {
         Route::get('/hte/interns/{user:uuid}/monitoring', [HteInternMonitoringController::class, 'index'])->name('api.hte.interns.monitoring');
         Route::post('/hte/interns/{user:uuid}/monitoring/verify', [HteInternMonitoringController::class, 'verify'])->name('api.hte.interns.monitoring.verify');
         Route::post('/hte/interns/{user:uuid}/monitoring/flag', [HteInternMonitoringController::class, 'flag'])->name('api.hte.interns.monitoring.flag');
+
+        Route::get('/hte/evaluations', [HteEvaluationController::class, 'index'])->name('api.hte.evaluations.index');
+        Route::get('/hte/evaluations/{user:uuid}', [HteEvaluationController::class, 'show'])->name('api.hte.evaluations.show');
+        Route::post('/hte/evaluations/{user:uuid}', [HteEvaluationController::class, 'store'])->name('api.hte.evaluations.store');
     });
 
     Route::middleware('role:ojt_instructor')->group(function (): void {

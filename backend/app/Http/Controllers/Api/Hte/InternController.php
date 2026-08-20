@@ -39,7 +39,7 @@ class InternController extends Controller
 
         $query = Intern::with(['user', 'institute', 'program', 'academicYear'])
             ->where('assigned_hte', $hte->id)
-            ->whereIn('ojt_status', ['ongoing', 'hours_completed'])
+            ->whereIn('ojt_status', ['ongoing', 'hours_completed', 'completed'])
             ->withCount([
                 'journals',
                 'journals as journals_verified_count' => fn (Builder $builder) => $builder->where('status', 'verified'),
