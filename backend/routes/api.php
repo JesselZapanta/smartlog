@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\Hte\EvaluationController as HteEvaluationController;
 use App\Http\Controllers\Api\Hte\InternController as HteInternController;
 use App\Http\Controllers\Api\Hte\InternMonitoringController as HteInternMonitoringController;
+use App\Http\Controllers\Api\Hte\IssueController;
 use App\Http\Controllers\Api\Intern\DailyJournalController;
 use App\Http\Controllers\Api\Intern\EvaluationController as InternEvaluationController;
 use App\Http\Controllers\Api\Intern\OjtHoursController;
@@ -91,6 +92,13 @@ Route::middleware('auth:api')->group(function (): void {
         Route::get('/intern/journals/{journal}', [DailyJournalController::class, 'show'])->name('api.intern.journals.show');
         Route::post('/intern/journals/{journal}', [DailyJournalController::class, 'update'])->name('api.intern.journals.update');
         Route::delete('/intern/journals/{journal}', [DailyJournalController::class, 'destroy'])->name('api.intern.journals.destroy');
+
+        Route::get('/intern/issues/hte', [App\Http\Controllers\Api\Intern\IssueController::class, 'hteInfo'])->name('api.intern.issues.hte');
+        Route::get('/intern/issues', [App\Http\Controllers\Api\Intern\IssueController::class, 'index'])->name('api.intern.issues.index');
+        Route::post('/intern/issues', [App\Http\Controllers\Api\Intern\IssueController::class, 'store'])->name('api.intern.issues.store');
+        Route::get('/intern/issues/{issue}', [App\Http\Controllers\Api\Intern\IssueController::class, 'show'])->name('api.intern.issues.show');
+        Route::put('/intern/issues/{issue}', [App\Http\Controllers\Api\Intern\IssueController::class, 'update'])->name('api.intern.issues.update');
+        Route::delete('/intern/issues/{issue}', [App\Http\Controllers\Api\Intern\IssueController::class, 'destroy'])->name('api.intern.issues.destroy');
     });
 
     Route::middleware('role:ojt_coordinator')->group(function (): void {
@@ -137,6 +145,13 @@ Route::middleware('auth:api')->group(function (): void {
         Route::get('/coordinator/hte-evaluations/{user:uuid}/interns', [App\Http\Controllers\Api\OjtCoordinator\Evaluations\HteEvaluationController::class, 'interns'])->name('api.coordinator.hte-evaluations.interns');
         Route::get('/coordinator/hte-evaluations/{user:uuid}', [App\Http\Controllers\Api\OjtCoordinator\Evaluations\HteEvaluationController::class, 'show'])->name('api.coordinator.hte-evaluations.show');
         Route::get('/coordinator/hte-evaluations/{hte:uuid}/{intern:uuid}', [App\Http\Controllers\Api\OjtCoordinator\Evaluations\HteEvaluationController::class, 'showForHte'])->withoutScopedBindings()->name('api.coordinator.hte-evaluations.showForHte');
+
+        Route::get('/coordinator/issues/interns/options', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'internOptions'])->name('api.coordinator.issues.interns-options');
+        Route::get('/coordinator/issues', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'index'])->name('api.coordinator.issues.index');
+        Route::post('/coordinator/issues', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'store'])->name('api.coordinator.issues.store');
+        Route::get('/coordinator/issues/{issue}', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'show'])->name('api.coordinator.issues.show');
+        Route::put('/coordinator/issues/{issue}', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'update'])->name('api.coordinator.issues.update');
+        Route::delete('/coordinator/issues/{issue}', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'destroy'])->name('api.coordinator.issues.destroy');
     });
 
     Route::middleware('role:hte')->group(function (): void {
@@ -150,6 +165,13 @@ Route::middleware('auth:api')->group(function (): void {
         Route::get('/hte/evaluations', [HteEvaluationController::class, 'index'])->name('api.hte.evaluations.index');
         Route::get('/hte/evaluations/{user:uuid}', [HteEvaluationController::class, 'show'])->name('api.hte.evaluations.show');
         Route::post('/hte/evaluations/{user:uuid}', [HteEvaluationController::class, 'store'])->name('api.hte.evaluations.store');
+
+        Route::get('/hte/issues/assignable-interns/options', [IssueController::class, 'assignableInterns'])->name('api.hte.issues.assignable-interns');
+        Route::get('/hte/issues', [IssueController::class, 'index'])->name('api.hte.issues.index');
+        Route::post('/hte/issues', [IssueController::class, 'store'])->name('api.hte.issues.store');
+        Route::get('/hte/issues/{issue}', [IssueController::class, 'show'])->name('api.hte.issues.show');
+        Route::put('/hte/issues/{issue}', [IssueController::class, 'update'])->name('api.hte.issues.update');
+        Route::delete('/hte/issues/{issue}', [IssueController::class, 'destroy'])->name('api.hte.issues.destroy');
     });
 
     Route::middleware('role:ojt_instructor')->group(function (): void {

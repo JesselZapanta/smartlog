@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Store, Search, X, ArrowUp, ArrowDown, ChevronsUpDown, CalendarDays, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import CoordinatorLayout from "@/layouts/CoordinatorLayout.jsx";
+import PageHeader from "@/components/PageHeader.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
@@ -198,19 +199,20 @@ export default function CoordinatorHteListPage() {
 
   return (
     <CoordinatorLayout>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-heading text-2xl font-bold text-green-950 sm:text-3xl">HTE Management</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage host training establishments for your institute.</p>
-        </div>
-        <Button asChild className="h-11 rounded-xl bg-green-600 px-4 font-semibold text-white hover:bg-green-700">
-          <Link to="/coordinator/htes/new">
-            <Plus size={16} /> Add HTE
-          </Link>
-        </Button>
-      </div>
+            <PageHeader
+        title="HTE Management"
+        subtitle="Manage host training establishments for your institute."
+        icon={Store}
+        action={
+          <Button asChild className="h-11 shrink-0 rounded-xl bg-white px-4 font-semibold text-green-700 shadow-sm hover:bg-green-50">
+            <Link to="/coordinator/htes/new">
+              <Plus size={16} /> Add HTE
+            </Link>
+          </Button>
+        }
+      />
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative w-full sm:max-w-xs">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <Input

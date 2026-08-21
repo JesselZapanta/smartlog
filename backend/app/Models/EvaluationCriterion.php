@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class EvaluationCriterion extends Model
 {
@@ -19,5 +20,15 @@ class EvaluationCriterion extends Model
         return [
             'status' => 'string',
         ];
+    }
+
+    public function internEvaluations(): HasMany
+    {
+        return $this->hasMany(InternEvaluation::class, 'criterion_id');
+    }
+
+    public function hteEvaluations(): HasMany
+    {
+        return $this->hasMany(HteEvaluation::class, 'criterion_id');
     }
 }

@@ -14,6 +14,7 @@ import {
   School,
 } from "lucide-react";
 import AdminLayout from "@/layouts/AdminLayout.jsx";
+import PageHeader from "@/components/PageHeader.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import ProgramFormDialog from "@/pages/admin/programs/ProgramFormDialog.jsx";
@@ -243,17 +244,18 @@ export default function ProgramListPage() {
 
   return (
     <AdminLayout>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-heading text-2xl font-bold text-green-950 sm:text-3xl">Programs</h1>
-          <p className="mt-1 text-sm text-gray-500">Academic programs offered by each institute.</p>
-        </div>
-        <Button className="h-11 rounded-xl bg-green-600 px-4 font-semibold text-white hover:bg-green-700" onClick={openCreate}>
-          <Plus size={16} /> Add Program
-        </Button>
-      </div>
+            <PageHeader
+        title="Programs"
+        subtitle="Academic programs offered by each institute."
+        icon={BookOpen}
+        action={
+          <Button className="h-11 shrink-0 rounded-xl bg-white px-4 font-semibold text-green-700 shadow-sm hover:bg-green-50" onClick={openCreate}>
+            <Plus size={16} /> Add Program
+          </Button>
+        }
+      />
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative w-full sm:max-w-xs">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <Input

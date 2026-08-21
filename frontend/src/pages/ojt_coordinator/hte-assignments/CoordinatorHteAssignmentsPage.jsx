@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Search, X, ArrowUp, ArrowDown, ChevronsUpDown, UserCheck, Users, Building2, Loader2 } from "lucide-react";
 import CoordinatorLayout from "@/layouts/CoordinatorLayout.jsx";
+import PageHeader from "@/components/PageHeader.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
@@ -177,14 +178,9 @@ export default function CoordinatorHteAssignmentsPage() {
 
   return (
     <CoordinatorLayout>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-heading text-2xl font-bold text-green-950 sm:text-3xl">Assigned Interns</h1>
-          <p className="mt-1 text-sm text-gray-500">Assign your approved interns to host training establishments.</p>
-        </div>
-      </div>
+            <PageHeader title="Assigned Interns" subtitle="Assign your approved interns to host training establishments." icon={UserCheck} />
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative w-full sm:max-w-xs">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <Input
