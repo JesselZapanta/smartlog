@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Intern;
 use App\Http\Controllers\Controller;
 use App\Models\EvaluationCriterion;
 use App\Models\HteEvaluation;
+use App\Models\UserNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -164,6 +165,14 @@ class EvaluationController extends Controller
                 ['rating' => $rating, 'is_na' => $isNa]
             );
         }
+
+        UserNotification::notifyCoordinators(
+            $intern->institute_id,
+            'hte_evaluated',
+            'HTE Evaluated',
+            $request->user()->full_name.' evaluated '.$hte->name.'.',
+            ['intern_uuid' => $request->user()->uuid, 'hte_id' => $hte->id]
+        );
 
         return response()->json([
             'data' => ['message' => 'HTE evaluation submitted successfully.'],

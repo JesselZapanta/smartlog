@@ -148,6 +148,13 @@ class EvaluationCriterionController extends Controller
     {
         $this->authorizeCriterion($request, $evaluation);
 
+        if ($evaluation->internEvaluations()->exists() || $evaluation->hteEvaluations()->exists()) {
+            return response()->json([
+                'message' => 'Cannot delete criterion with existing evaluations.',
+                'errors' => ['criterion' => ['This criterion cannot be deleted because evaluations have been submitted for it.']],
+            ], 422);
+        }
+
         $evaluation->delete();
 
         return response()->json([

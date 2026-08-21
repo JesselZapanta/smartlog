@@ -9,6 +9,7 @@ use App\Models\EvaluationCriterion;
 use App\Models\Intern;
 use App\Models\InternEvaluation;
 use App\Models\User;
+use App\Models\UserNotification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -255,6 +256,21 @@ class EvaluationController extends Controller
                 ['rating' => $rating, 'is_na' => $isNa]
             );
         }
+
+        UserNotification::notifyCoordinators(
+            $intern->institute_id,
+            'intern_evaluated',
+            'Intern Evaluated',
+            $request->user()->hte->name.' evaluated '.$user->full_name.'.',
+            ['intern_uuid' => $user->uuid, 'hte_id' => $hte->id]
+        );
+
+        UserNotification::notifyInstructors(
+            'intern_evaluated',
+            'Intern Evaluated',
+            $request->user()->hte->name.' evaluated '.$user->full_name.'.',
+            ['intern_uuid' => $user->uuid, 'hte_id' => $hte->id]
+        );
 
         return response()->json([
             'data' => ['message' => 'Evaluation submitted successfully.'],

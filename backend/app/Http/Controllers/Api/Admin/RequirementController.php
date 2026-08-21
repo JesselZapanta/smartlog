@@ -101,6 +101,13 @@ class RequirementController extends Controller
 
     public function destroy(Requirement $requirement): JsonResponse
     {
+        if ($requirement->submissions()->exists()) {
+            return response()->json([
+                'message' => 'Cannot delete requirement with existing file submissions.',
+                'errors' => ['requirement' => ['This requirement cannot be deleted because files have been uploaded to it.']],
+            ], 422);
+        }
+
         $requirement->delete();
 
         return response()->json([

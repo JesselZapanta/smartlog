@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
   Users,
+  ShieldCheck,
   Plus,
   Search,
   Pencil,
@@ -15,6 +16,7 @@ import {
   ChevronsUpDown,
 } from "lucide-react";
 import AdminLayout from "@/layouts/AdminLayout.jsx";
+import PageHeader from "@/components/PageHeader.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { getInitials, roleLabel, roleOptions, roleTone } from "@/pages/admin/users/constants.js";
@@ -194,19 +196,20 @@ export default function UserListPage() {
 
   return (
     <AdminLayout>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-heading text-2xl font-bold text-green-950 sm:text-3xl">User Management</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage system accounts, roles, and access.</p>
-        </div>
-        <Button asChild className="h-11 rounded-xl bg-green-600 px-4 font-semibold text-white hover:bg-green-700">
-          <Link to="/admin/users/new">
-            <Plus size={16} /> Add User
-          </Link>
-        </Button>
-      </div>
+            <PageHeader
+        title="User Management"
+        subtitle="Manage system accounts, roles, and access."
+        icon={ShieldCheck}
+        action={
+          <Button asChild className="h-11 shrink-0 rounded-xl bg-white px-4 font-semibold text-green-700 shadow-sm hover:bg-green-50">
+            <Link to="/admin/users/new">
+              <Plus size={16} /> Add User
+            </Link>
+          </Button>
+        }
+      />
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative w-full sm:max-w-xs">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <Input

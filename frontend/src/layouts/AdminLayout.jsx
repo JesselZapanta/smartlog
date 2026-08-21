@@ -1,4 +1,4 @@
-import { CalendarDays, School, BookOpen, LayoutDashboard, Users, FileText, Store, ClipboardCheck, BarChart3, ShieldCheck, Settings, Camera, Clock } from "lucide-react";
+import { CalendarDays, School, BookOpen, LayoutDashboard, Users, FileText, Store, BarChart3, ShieldCheck, Clock } from "lucide-react";
 import AppShell from "@/layouts/AppShell.jsx";
 
 const settingsGroupNav = [
@@ -12,18 +12,16 @@ const sidebarNav = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/admin/users", label: "User Management", icon: ShieldCheck },
   { to: "/admin/interns", label: "Interns", icon: Users },
-  { to: "/admin/requirements", label: "Requirements", icon: FileText },
   { to: "/admin/htes", label: "Host Training Est.", icon: Store },
-  { to: "/admin/evaluations", label: "Evaluations", icon: ClipboardCheck },
-  { to: "/admin/reports", label: "Reports", icon: BarChart3 },
+  { to: "/admin/requirements", label: "Requirements", icon: FileText },
+  { to: "/admin/reports", label: "Report", icon: BarChart3 },
 ];
 
 const bottomNav = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/admin/interns", label: "Interns", icon: Users },
-  { to: "/admin/dtr", label: "DTR", icon: Camera },
-  { to: "/admin/reports", label: "Reports", icon: BarChart3 },
-  { to: "/admin/settings", label: "Settings", icon: Settings },
+  { to: "/admin/htes", label: "HTE", icon: Store },
+  { to: "/admin/reports", label: "Report", icon: BarChart3 },
 ];
 
 export default function AdminLayout({ children }) {
