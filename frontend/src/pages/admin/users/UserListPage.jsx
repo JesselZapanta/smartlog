@@ -10,7 +10,6 @@ import {
   Trash2,
   X,
   Loader2,
-  CalendarDays,
   ArrowUp,
   ArrowDown,
   ChevronsUpDown,
@@ -20,7 +19,6 @@ import PageHeader from "@/components/PageHeader.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { getInitials, roleLabel, roleOptions, roleTone } from "@/pages/admin/users/constants.js";
-import PageLoader from "@/components/PageLoader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -209,7 +207,7 @@ export default function UserListPage() {
         }
       />
 
-<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:p-4">
         <div className="relative w-full sm:max-w-xs">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <Input
@@ -242,15 +240,6 @@ export default function UserListPage() {
             ))}
           </SelectContent>
         </Select>
-        <Button
-          variant="outline"
-          className="h-11 rounded-xl md:hidden"
-          onClick={toggleOrder}
-          aria-label="Toggle sort order"
-        >
-          {order === "desc" ? <ArrowDown size={14} /> : <ArrowUp size={14} />}
-          {order === "desc" ? "Newest first" : "Oldest first"}
-        </Button>
         {hasFilters && (
           <Button variant="ghost" className="h-11 rounded-xl text-gray-500 hover:text-gray-700" onClick={clearFilters}>
             <X size={14} /> Clear filters
@@ -260,34 +249,29 @@ export default function UserListPage() {
 
       <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ring-1 ring-gray-100">
         {loading ? (
-          <>
-            <div className="md:hidden">
-              <PageLoader />
-            </div>
-            <div className="hidden overflow-x-auto md:block">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-green-50 hover:bg-green-50">
-                    <SortableHeader label="ID" column="id" sort="id" order={order} onSort={toggleOrder} />
-                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">User</TableHead>
-                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Role</TableHead>
-                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Contact</TableHead>
-                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Joined</TableHead>
-                    <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-green-700">
-                      Actions
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-64">
-                      <Loader2 size={28} className="mx-auto animate-spin text-green-600" />
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-          </>
+          <div className="overflow-x-auto">
+            <Table className="min-w-[900px]">
+              <TableHeader>
+                <TableRow className="bg-green-50 hover:bg-green-50">
+                  <SortableHeader label="ID" column="id" sort="id" order={order} onSort={toggleOrder} />
+                  <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">User</TableHead>
+                  <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Role</TableHead>
+                  <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Contact</TableHead>
+                  <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Joined</TableHead>
+                  <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-green-700">
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell colSpan={6} className="h-64">
+                    <Loader2 size={28} className="mx-auto animate-spin text-green-600" />
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
         ) : null}
 
         {!loading && users.length === 0 && (
@@ -306,67 +290,9 @@ export default function UserListPage() {
         )}
 
         {!loading && users.length > 0 && (
-          <>
-            <div className="space-y-2.5 p-3 sm:p-4 md:hidden">
-              {users.map((user) => (
-                <div
-                  key={user.uuid}
-                  className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm ring-1 ring-gray-100"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex min-w-0 items-center gap-2.5">
-                      <Avatar className="h-9 w-9 shrink-0">
-                        {user.profile_picture && <AvatarImage src={user.profile_picture} alt={user.full_name} />}
-                        <AvatarFallback className="bg-gradient-to-br from-green-700 to-green-500 text-xs font-bold text-white">
-                          {getInitials(user.full_name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-gray-900">{user.full_name}</p>
-                        <p className="truncate text-xs text-gray-400">{user.email}</p>
-                      </div>
-                    </div>
-                    <Badge
-                      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full font-semibold ring-1 ${
-                        roleTone[user.role] || roleTone.intern
-                      }`}
-                    >
-                      <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                      {roleLabel[user.role] || user.role}
-                    </Badge>
-                  </div>
-                  <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
-                    <span className="inline-flex items-center gap-1.5">
-                      <CalendarDays size={13} className="shrink-0 text-gray-300" />
-                      Joined {formatDate(user.created_at)}
-                    </span>
-                    <span className="font-mono text-gray-400">#{user.id}</span>
-                  </div>
-                  <div className="mt-3 flex gap-2 border-t border-gray-50 pt-3">
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="h-10 flex-1 rounded-xl border-green-200 text-green-700 hover:bg-green-50"
-                    >
-                      <Link to={`/admin/users/${user.uuid}/edit`}>
-                        <Pencil size={15} /> Edit
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="h-10 flex-1 rounded-xl border-red-200 text-red-600 hover:bg-red-50"
-                      onClick={() => setDeleteTarget(user)}
-                    >
-                      <Trash2 size={15} /> Delete
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="hidden overflow-x-auto md:block">
-              <Table>
-                <TableHeader>
+          <div className="overflow-x-auto">
+            <Table className="min-w-[900px]">
+              <TableHeader>
                   <TableRow className="bg-green-50 hover:bg-green-50">
                     <SortableHeader label="ID" column="id" sort="id" order={order} onSort={toggleOrder} />
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">User</TableHead>
@@ -445,20 +371,13 @@ export default function UserListPage() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
-          </>
+          </div>
         )}
 
         {!loading && meta && meta.total > 0 && (
-          <div className="flex flex-col gap-3 border-t border-gray-100 bg-gray-50/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-            <p className="text-sm text-gray-500">
-              Showing{" "}
-              <span className="font-semibold text-gray-700">{meta.from ?? 0}</span>–
-              <span className="font-semibold text-gray-700">{meta.to ?? 0}</span> of{" "}
-              <span className="font-semibold text-gray-700">{meta.total}</span> users
-            </p>
-            <Pagination className="mx-0 w-auto">
-              <PaginationContent>
+          <div className="flex items-center justify-center border-t border-gray-100 bg-gray-50/60 px-4 py-4">
+            <Pagination className="w-auto">
+              <PaginationContent className="justify-center">
                 <PaginationItem>
                   <PaginationPrevious
                     href="#"
