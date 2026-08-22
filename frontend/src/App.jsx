@@ -40,6 +40,8 @@ import InstructorInternDetailPage from "@/pages/ojt_instructor/interns/Instructo
 import InstructorInternMonitoringPage from "@/pages/ojt_instructor/monitoring/InstructorInternMonitoringPage.jsx";
 import InstructorInternMonitoringCalendarPage from "@/pages/ojt_instructor/monitoring/InstructorInternMonitoringCalendarPage.jsx";
 import InstructorInternMonitoringDayPage from "@/pages/ojt_instructor/monitoring/InstructorInternMonitoringDayPage.jsx";
+import InstructorInternDtrLogsPage from "@/pages/ojt_instructor/monitoring/InstructorInternDtrLogsPage.jsx";
+import InstructorInternDtrPrintPage from "@/pages/ojt_instructor/monitoring/InstructorInternDtrPrintPage.jsx";
 import InstructorInternEvaluationListPage from "@/pages/ojt_instructor/evaluations/InstructorInternEvaluationListPage.jsx";
 import InstructorInternEvaluationDetailPage from "@/pages/ojt_instructor/evaluations/InstructorInternEvaluationDetailPage.jsx";
 import HteDashboard from "@/pages/hte/HteDashboard.jsx";
@@ -328,14 +330,6 @@ function App() {
         }
       />
       <Route
-        path="/coordinator/issues/new"
-        element={
-          <ProtectedRoute roles={["ojt_coordinator"]}>
-            <CoordinatorIssueFormPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/coordinator/issues/:id"
         element={
           <ProtectedRoute roles={["ojt_coordinator"]}>
@@ -396,6 +390,22 @@ function App() {
         element={
           <ProtectedRoute roles={["ojt_instructor"]}>
             <InstructorInternMonitoringDayPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/monitoring/:uuid/dtr-logs"
+        element={
+          <ProtectedRoute roles={["ojt_instructor"]}>
+            <InstructorInternDtrLogsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/monitoring/:uuid/dtr-logs/print"
+        element={
+          <ProtectedRoute roles={["ojt_instructor"]}>
+            <InstructorInternDtrPrintPage />
           </ProtectedRoute>
         }
       />

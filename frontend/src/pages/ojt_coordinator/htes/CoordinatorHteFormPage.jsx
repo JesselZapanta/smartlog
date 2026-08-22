@@ -522,8 +522,8 @@ export default function CoordinatorHteFormPage() {
                 <CardContent className="p-5 sm:p-6">
                   {step === 1 && (
                     <div className="space-y-4">
-                      <div className="flex flex-col gap-4 rounded-2xl border border-gray-100 bg-gray-50/60 p-4 ring-1 ring-gray-100 sm:flex-row sm:items-center">
-                        <Avatar className="h-20 w-20 shrink-0">
+                      <div className="flex flex-col items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50/60 p-3 ring-1 ring-gray-100 sm:flex-row sm:items-center sm:p-4">
+                        <Avatar className="h-16 w-16 shrink-0 sm:h-20 sm:w-20">
                           {(avatarPreview || existingAvatarUrl) && (
                             <AvatarImage
                               src={avatarPreview || existingAvatarUrl}
@@ -531,7 +531,7 @@ export default function CoordinatorHteFormPage() {
                               className="object-cover"
                             />
                           )}
-                          <AvatarFallback className="bg-gradient-to-br from-green-700 to-green-500 text-xl font-bold text-white">
+                          <AvatarFallback className="bg-gradient-to-br from-green-700 to-green-500 text-lg font-bold text-white sm:text-xl">
                             {((form.watch("firstname") || "") + " " + (form.watch("lastname") || ""))
                               .trim()
                               .split(" ")
@@ -542,26 +542,26 @@ export default function CoordinatorHteFormPage() {
                               .toUpperCase() || "?"}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <div className="flex w-auto flex-col items-center gap-1.5 sm:w-auto sm:flex-row sm:items-center sm:gap-2">
                           <label
                             htmlFor="hte-profile-picture-input"
-                            className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-green-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-green-700"
+                            className="inline-flex h-8 w-auto cursor-pointer items-center justify-center gap-1 rounded-lg bg-green-600 px-4 text-[11px] font-semibold text-white shadow-sm transition-colors hover:bg-green-700 sm:h-8"
                           >
-                            <ImagePlus size={16} />
+                            <ImagePlus size={12} />
                             {avatarPreview || existingAvatarUrl ? "Change photo" : "Upload photo"}
                           </label>
                           {(avatarPreview || existingAvatarUrl) && (
                             <Button
                               type="button"
                               variant="ghost"
-                              className="h-11 rounded-xl text-red-600 hover:bg-red-50"
+                              className="h-8 w-auto rounded-lg px-3 text-xs font-medium text-red-600 hover:bg-red-50 sm:h-8"
                               onClick={removeAvatar}
                             >
-                              <X size={16} /> Remove
+                              <X size={12} /> Remove
                             </Button>
                           )}
                         </div>
-                        <p className="text-xs text-gray-400 sm:ml-auto sm:max-w-[9.5rem]">
+                        <p className="w-full text-center text-xs text-gray-400 sm:ml-auto sm:max-w-[9.5rem] sm:text-left">
                           JPG, PNG, GIF or WebP. Max 2 MB.
                         </p>
                       </div>
@@ -1031,21 +1031,21 @@ export default function CoordinatorHteFormPage() {
                   )}
                 </CardContent>
 
-                <div className="flex flex-col-reverse gap-2 border-t border-gray-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                <div className="flex flex-row items-center justify-between gap-2 border-t border-gray-100 px-4 py-4 sm:px-6">
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-11 rounded-xl"
+                    className="h-11 flex-1 rounded-xl sm:flex-initial"
                     onClick={() => navigate("/coordinator/htes")}
                   >
                     Cancel
                   </Button>
-                  <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
+                  <div className="flex flex-1 flex-row items-center justify-end gap-2 sm:flex-initial">
                     {step > 1 && (
                       <Button
                         type="button"
                         variant="outline"
-                        className="h-11 rounded-xl"
+                        className="h-11 flex-1 rounded-xl sm:flex-initial"
                         onClick={() => setStep((s) => s - 1)}
                       >
                         <ChevronLeft size={16} /> Back
@@ -1055,7 +1055,7 @@ export default function CoordinatorHteFormPage() {
                       <Button
                         type="button"
                         onClick={handleNext}
-                        className="h-11 rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700"
+                        className="h-11 flex-1 rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700 sm:flex-initial"
                       >
                         Next <ChevronRight size={16} />
                       </Button>
@@ -1064,7 +1064,7 @@ export default function CoordinatorHteFormPage() {
                         type="button"
                         onClick={handleSave}
                         disabled={submitting}
-                        className="h-11 rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700"
+                        className="h-11 flex-1 rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700 sm:flex-initial"
                       >
                         {submitting ? (
                           <>

@@ -55,9 +55,9 @@ function formatDateTime(value) {
 
 function HeroChip({ icon: Icon, children }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-bold text-white ring-1 ring-white/30 backdrop-blur">
-      {Icon && <Icon size={11} className="text-green-100" />}
-      {children}
+    <span className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-bold text-white ring-1 ring-white/30 backdrop-blur">
+      {Icon && <Icon size={11} className="shrink-0 text-green-100" />}
+      <span className="min-w-0 break-words">{children}</span>
     </span>
   );
 }
@@ -70,7 +70,7 @@ function InfoRow({ icon: Icon, label, value, mono }) {
       </div>
       <div className="min-w-0 flex-1">
         <dt className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{label}</dt>
-        <dd className={`mt-0.5 text-sm font-semibold text-gray-800 ${mono ? "font-mono" : ""}`}>{value || "—"}</dd>
+        <dd className={`mt-0.5 break-words text-sm font-semibold text-gray-800 ${mono ? "font-mono" : ""}`}>{value || "—"}</dd>
       </div>
     </div>
   );
@@ -95,28 +95,28 @@ export default function InternDetailView({ intern }) {
   const [tab, setTab] = useState("overview");
 
   return (
-    <div className="space-y-5">
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-green-800 via-green-700 to-emerald-500 p-5 shadow-lg sm:p-7">
+    <div className="space-y-4 sm:space-y-5">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-green-800 via-green-700 to-emerald-500 p-4 shadow-lg sm:p-7">
         <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-white/10" />
         <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-white/5" />
 
-        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 items-center gap-4">
-            <Avatar className="h-16 w-16 shrink-0 border-2 border-white/40 shadow-md sm:h-20 sm:w-20">
+        <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            <Avatar className="h-14 w-14 shrink-0 border-2 border-white/40 shadow-md sm:h-20 sm:w-20">
               {intern.profile_picture && <AvatarImage src={intern.profile_picture} alt={intern.full_name} />}
-              <AvatarFallback className="bg-gradient-to-br from-white/25 to-white/10 text-lg font-bold text-white">
+              <AvatarFallback className="bg-gradient-to-br from-white/25 to-white/10 text-base font-bold text-white sm:text-lg">
                 {getInitials(intern.full_name)}
               </AvatarFallback>
             </Avatar>
-            <div className="min-w-0">
-              <h1 className="truncate font-heading text-2xl font-bold text-white sm:text-3xl">{intern.full_name}</h1>
-              <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-green-100">
-                <span className="inline-flex items-center gap-1.5">
-                  <Mail size={13} /> {intern.email}
+            <div className="min-w-0 flex-1">
+              <h1 className="break-words font-heading text-xl font-bold leading-tight text-white sm:truncate sm:text-3xl">{intern.full_name}</h1>
+              <p className="mt-1 flex flex-col gap-1 text-xs text-green-100 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-1 sm:text-sm">
+                <span className="inline-flex min-w-0 items-center gap-1.5 break-all">
+                  <Mail size={13} className="shrink-0" /> <span className="min-w-0 break-all">{intern.email}</span>
                 </span>
                 {intern.contact_number && (
                   <span className="inline-flex items-center gap-1.5">
-                    <Phone size={13} /> {intern.contact_number}
+                    <Phone size={13} className="shrink-0" /> {intern.contact_number}
                   </span>
                 )}
               </p>
@@ -127,13 +127,13 @@ export default function InternDetailView({ intern }) {
               </div>
             </div>
           </div>
-          <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
+          <div className="flex w-full shrink-0 flex-col items-start gap-2 sm:w-auto sm:items-end">
             <div className="flex flex-wrap items-center gap-1.5">
               <StatusChip status={intern.status} />
               {intern.ojt_status && intern.ojt_status !== "pending" && <StatusChip status={intern.ojt_status} />}
             </div>
             <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-green-100">
-              <CalendarDays size={12} /> Registered {formatDate(intern.created_at)}
+              <CalendarDays size={12} className="shrink-0" /> Registered {formatDate(intern.created_at)}
             </span>
           </div>
         </div>
@@ -160,35 +160,35 @@ export default function InternDetailView({ intern }) {
       )}
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="h-11! w-full gap-1 overflow-x-auto overflow-y-hidden bg-gray-100/80">
+        <TabsList className="flex h-auto! w-full justify-start gap-1.5 overflow-x-auto bg-gray-100/80 p-1 [scrollbar-width:none] sm:h-11! sm:gap-1 [&::-webkit-scrollbar]:hidden">
           <TabsTrigger
             value="overview"
-            className="flex-1 min-w-0 gap-1 rounded-md px-1 text-xs font-semibold sm:gap-1.5 sm:px-3 sm:text-sm data-active:bg-green-600! data-active:text-white! data-active:shadow-sm"
+            className="min-h-11 shrink-0 gap-1.5 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs font-semibold sm:gap-1.5 sm:px-3 sm:text-sm data-active:bg-green-600! data-active:text-white! data-active:shadow-sm"
           >
-            <Building2 size={14} className="shrink-0" /> Overview
+            <Building2 size={16} className="shrink-0" /> Overview
           </TabsTrigger>
           <TabsTrigger
             value="placement"
-            className="flex-1 min-w-0 gap-1 rounded-md px-1 text-xs font-semibold sm:gap-1.5 sm:px-3 sm:text-sm data-active:bg-green-600! data-active:text-white! data-active:shadow-sm"
+            className="min-h-11 shrink-0 gap-1.5 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs font-semibold sm:gap-1.5 sm:px-3 sm:text-sm data-active:bg-green-600! data-active:text-white! data-active:shadow-sm"
           >
-            <School size={14} className="shrink-0" /> Placement
+            <School size={16} className="shrink-0" /> Placement
           </TabsTrigger>
           <TabsTrigger
             value="personal"
-            className="flex-1 min-w-0 gap-1 rounded-md px-1 text-xs font-semibold sm:gap-1.5 sm:px-3 sm:text-sm data-active:bg-green-600! data-active:text-white! data-active:shadow-sm"
+            className="min-h-11 shrink-0 gap-1.5 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs font-semibold sm:gap-1.5 sm:px-3 sm:text-sm data-active:bg-green-600! data-active:text-white! data-active:shadow-sm"
           >
-            <UserRound size={14} className="shrink-0" /> Personal
+            <UserRound size={16} className="shrink-0" /> Personal
           </TabsTrigger>
           <TabsTrigger
             value="address"
-            className="flex-1 min-w-0 gap-1 rounded-md px-1 text-xs font-semibold sm:gap-1.5 sm:px-3 sm:text-sm data-active:bg-green-600! data-active:text-white! data-active:shadow-sm"
+            className="min-h-11 shrink-0 gap-1.5 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs font-semibold sm:gap-1.5 sm:px-3 sm:text-sm data-active:bg-green-600! data-active:text-white! data-active:shadow-sm"
           >
-            <MapPin size={14} className="shrink-0" /> Address
+            <MapPin size={16} className="shrink-0" /> Address
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-0">
-          <div className="mt-5 space-y-5">
+          <div className="mt-4 space-y-4 sm:mt-5 sm:space-y-5">
             <div className="overflow-hidden rounded-2xl border border-green-200 bg-gradient-to-r from-green-50 to-emerald-50/40 shadow-sm ring-1 ring-green-100">
               <div className="flex flex-col gap-3 border-b border-green-100/70 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                 <div className="flex items-center gap-2.5">
@@ -229,7 +229,7 @@ export default function InternDetailView({ intern }) {
         </TabsContent>
 
         <TabsContent value="placement" className="mt-0">
-          <div className="mt-5">
+          <div className="mt-4 sm:mt-5">
             <InfoCard icon={School} title="Placement">
               <InfoRow icon={Building2} label="Institute" value={intern.institute} />
               <InfoRow icon={GraduationCap} label="Program" value={intern.program} />
@@ -258,7 +258,7 @@ export default function InternDetailView({ intern }) {
         </TabsContent>
 
         <TabsContent value="personal" className="mt-0">
-          <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5">
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:mt-5 lg:grid-cols-2 lg:gap-5">
             <InfoCard icon={UserRound} title="Personal Information">
               <InfoRow icon={Cake} label="Date of Birth" value={formatDate(intern.date_of_birth)} />
               <InfoRow icon={MapPin} label="Place of Birth" value={intern.place_of_birth} />
@@ -277,7 +277,7 @@ export default function InternDetailView({ intern }) {
         </TabsContent>
 
         <TabsContent value="address" className="mt-0">
-          <div className="mt-5">
+          <div className="mt-4 sm:mt-5">
             <InfoCard icon={MapPin} title="Address" tone="bg-blue-50 text-blue-600">
               <InfoRow icon={Map} label="Region" value={location?.region} />
               <InfoRow icon={MapPin} label="Province" value={location?.province} />

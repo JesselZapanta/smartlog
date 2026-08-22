@@ -36,6 +36,7 @@ export default function RegistrationApprovalDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [acting, setActing] = useState(false);
+  const [approveOpen, setApproveOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [reason, setReason] = useState("");
 
@@ -120,7 +121,7 @@ export default function RegistrationApprovalDetailPage() {
                 <div className="flex shrink-0 gap-2">
                   <Button
                     className="h-11 flex-1 gap-1.5 rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700 sm:flex-none"
-                    onClick={approve}
+                    onClick={() => setApproveOpen(true)}
                     disabled={acting}
                   >
                     {acting ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
@@ -155,6 +156,44 @@ export default function RegistrationApprovalDetailPage() {
         </>
       ) : null}
 
+      <Dialog open={approveOpen} onOpenChange={(open) => !open && !acting && setApproveOpen(false)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Approve registration</DialogTitle>
+            <DialogDescription>
+              {registration
+                ? `Approve ${registration.full_name}'s registration? They will be able to log in and be assigned to an HTE.`
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-row gap-2 sm:justify-end">
+            <Button
+              variant="outline"
+              className="h-11 flex-1 rounded-xl sm:flex-initial"
+              onClick={() => setApproveOpen(false)}
+              disabled={acting}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="h-11 flex-1 rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700 sm:flex-initial"
+              onClick={approve}
+              disabled={acting}
+            >
+              {acting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" /> Approving…
+                </>
+              ) : (
+                <>
+                  <Check size={16} /> Approve registration
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={rejectOpen} onOpenChange={(open) => !open && !acting && setRejectOpen(false)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -179,10 +218,10 @@ export default function RegistrationApprovalDetailPage() {
               </p>
             )}
           </div>
-          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <DialogFooter className="flex flex-row gap-2 sm:justify-end">
             <Button
               variant="outline"
-              className="h-11 rounded-xl"
+              className="h-11 flex-1 rounded-xl sm:flex-initial"
               onClick={() => setRejectOpen(false)}
               disabled={acting}
             >
@@ -190,7 +229,7 @@ export default function RegistrationApprovalDetailPage() {
             </Button>
             <Button
               variant="destructive"
-              className="h-11 rounded-xl"
+              className="h-11 flex-1 rounded-xl sm:flex-initial"
               onClick={confirmReject}
               disabled={acting || reason.trim().length < 5}
             >

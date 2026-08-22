@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Search, X, ArrowDown, ArrowUp, ChevronsUpDown, Plus, Loader2, AlertTriangle, Pencil, Trash2 } from "lucide-react";
+import { Search, X, ArrowDown, ArrowUp, ChevronsUpDown, Loader2, AlertTriangle, Pencil, Trash2 } from "lucide-react";
 import CoordinatorLayout from "@/layouts/CoordinatorLayout.jsx";
 import PageHeader from "@/components/PageHeader.jsx";
 import api from "@/lib/api";
@@ -176,12 +176,17 @@ export default function CoordinatorIssuesListPage() {
 
   function clearFilters() {
     setSearch("");
-    setAcademicYear("all");
+    const active = terms.find((term) => term.status === "active");
+    setAcademicYear(active ? String(active.id) : "all");
     setStatus("all");
     setPage(1);
   }
 
-  const hasFilters = Boolean(search) || academicYear !== "all" || status !== "all";
+  const activeAcademicYearId = (() => {
+    const active = terms.find((term) => term.status === "active");
+    return active ? String(active.id) : "all";
+  })();
+  const hasFilters = Boolean(search) || academicYear !== activeAcademicYearId || status !== "all";
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -209,13 +214,6 @@ export default function CoordinatorIssuesListPage() {
         title="Issues"
         subtitle="Track and manage issues reported in your institute."
         icon={AlertTriangle}
-        action={
-          <Button asChild className="h-11 shrink-0 rounded-xl bg-white px-4 font-semibold text-green-700 shadow-sm hover:bg-green-50">
-            <Link to="/coordinator/issues/new">
-              <Plus size={16} /> Add Issue
-            </Link>
-          </Button>
-        }
       />
 
 <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:p-4">
@@ -302,7 +300,7 @@ export default function CoordinatorIssuesListPage() {
               <AlertTriangle size={20} />
             </div>
             <p className="text-sm font-semibold text-gray-700">No issues found</p>
-            <p className="text-xs text-gray-400">Try adjusting your search or filters, or add a new issue.</p>
+            <p className="text-xs text-gray-400">Try adjusting your search or filters.</p>
             {hasFilters && (
               <Button variant="outline" className="mt-1 h-10 rounded-xl text-green-700" onClick={clearFilters}>
                 Clear filters

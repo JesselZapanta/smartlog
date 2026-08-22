@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Clock3, Loader2, Printer, X } from "lucide-react";
-import InternLayout from "@/layouts/InternLayout.jsx";
+import { ArrowLeft, Building2, Clock3, GraduationCap, Loader2, Printer, School, X } from "lucide-react";
+import InstructorLayout from "@/layouts/InstructorLayout.jsx";
 import OjtHoursCard from "@/components/OjtHoursCard.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
   Table,
@@ -88,9 +90,11 @@ function toYMD(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-export default function InternDtrLogsPage() {
+export default function InstructorInternDtrLogsPage() {
+  const { uuid } = useParams();
   const [records, setRecords] = useState([]);
   const [hoursSummary, setHoursSummary] = useState(null);
+  const [intern, setIntern] = useState(null);
   const [loading, setLoading] = useState(true);
   const [from, setFrom] = useState(() => {
     const date = new Date();
@@ -111,39 +115,49 @@ export default function InternDtrLogsPage() {
     };
   }, [viewPhoto]);
 
+  useEffect(() => {
+    if (!uuid) return;
+    api
+      .get(`/instructor/interns/${uuid}`)
+      .then((res) => setIntern(res.data.data))
+      .catch(() => setIntern(null));
+  }, [uuid]);
+
   const load = useCallback(async () => {
+    if (!uuid) return;
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (from) params.set("from", from);
       if (to) params.set("to", to);
-      const res = await api.get(`/intern/photo-dtr?${params.toString()}`);
+      const res = await api.get(`/instructor/interns/${uuid}/photo-dtr?${params.toString()}`);
       setRecords(res.data.data || []);
     } catch (err) {
       toast.error("Failed to load DTR logs", { description: firstErrorMessage(err) });
     } finally {
       setLoading(false);
     }
-  }, [from, to]);
+  }, [uuid, from, to]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   useEffect(() => {
+    if (!uuid) return;
     api
-      .get("/intern/ojt-hours")
+      .get(`/instructor/interns/${uuid}/ojt-hours`)
       .then((res) => setHoursSummary(res.data.data || null))
       .catch(() => setHoursSummary(null));
-  }, []);
+  }, [uuid]);
 
   const [printing, setPrinting] = useState(false);
 
   function handlePrint() {
-    if (!from || !to || printing) return;
+    if (!from || !to || printing || !uuid) return;
     setPrinting(true);
     const iframe = document.createElement("iframe");
-    iframe.src = `/intern/dtr-logs/print?from=${from}&to=${to}`;
+    iframe.src = `/instructor/monitoring/${uuid}/dtr-logs/print?from=${from}&to=${to}`;
     iframe.style.position = "fixed";
     iframe.style.top = "0";
     iframe.style.left = "0";
@@ -179,14 +193,57 @@ export default function InternDtrLogsPage() {
   }
 
   return (
-    <InternLayout>
-      <div>
+    <InstructorLayout>
+      <div className="flex items-center gap-2">
+        <Button
+          asChild
+          variant="ghost"
+          className="h-11 rounded-xl px-3 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-green-700 sm:px-4"
+        >
+          <Link to={`/instructor/monitoring/${uuid}`} className="inline-flex items-center gap-2">
+            <ArrowLeft size={16} /> <span>Back to monitoring</span>
+          </Link>
+        </Button>
+      </div>
+      <div className="mt-2">
         <h1 className="font-heading text-2xl font-bold text-green-950 sm:text-3xl">DTR Logs</h1>
-        <p className="mt-1 text-sm text-gray-500">Your daily time record logs with photo punches.</p>
+        <p className="mt-1 break-words text-sm text-gray-500">
+          {intern ? `${intern.full_name} — daily time record logs with photo punches.` : "Daily time record logs with photo punches."}
+        </p>
       </div>
 
+      {intern?.hte && (
+        <div className="mt-4 overflow-hidden rounded-2xl border border-green-100 bg-white shadow-sm ring-1 ring-green-100">
+          <div className="flex items-center gap-3 border-b border-green-100/70 bg-green-50/60 px-4 py-3 sm:px-5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-green-600 text-white shadow-sm">
+              <Building2 size={17} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-green-700/70">Host Training Establishment</p>
+              <p className="break-words font-heading text-base font-bold leading-tight text-green-950 sm:truncate">{intern.hte.name}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-2.5 px-3 py-3 sm:grid-cols-2 sm:px-5 sm:py-4">
+            <div className="flex items-center gap-2.5 rounded-xl bg-gray-50 px-3 py-2.5">
+              <School size={14} className="shrink-0 text-gray-400" />
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Institute</p>
+                <p className="break-words text-sm font-semibold text-gray-800">{intern.hte.institute || "—"}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5 rounded-xl bg-gray-50 px-3 py-2.5">
+              <GraduationCap size={14} className="shrink-0 text-gray-400" />
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Program</p>
+                <p className="break-words text-sm font-semibold text-gray-800">{intern.hte.program || "—"}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {hoursSummary && (
-        <div className="mt-6">
+        <div className="mt-4 sm:mt-6">
           <OjtHoursCard
             requiredHours={hoursSummary.required_hours}
             earnedMinutes={hoursSummary.earned_minutes}
@@ -253,7 +310,7 @@ export default function InternDtrLogsPage() {
         <div className="mt-3 flex flex-col items-center gap-2 rounded-2xl border border-dashed border-gray-200 py-10 text-center">
           <Clock3 size={20} className="text-gray-300" />
           <p className="text-sm font-semibold text-gray-500">No records in this range</p>
-          <p className="text-xs text-gray-400">Adjust the date filter, or clock in on the Photo DTR page.</p>
+          <p className="text-xs text-gray-400">Adjust the date filter.</p>
         </div>
       ) : (
         <div className="mt-3 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ring-1 ring-gray-100">
@@ -356,6 +413,6 @@ export default function InternDtrLogsPage() {
           </div>
         </div>
       )}
-    </InternLayout>
+    </InstructorLayout>
   );
 }
