@@ -57,7 +57,7 @@ const roles = [
   {
     icon: User,
     title: "Intern",
-    subtitle: "Student · BSIT / BSCS / etc.",
+    subtitle: "Student · BSCS / etc.",
     desc: "The actor in the field. Captures attendance, submits journals and requirements, and tracks completion.",
     bullets: ["Photo-captured DTR", "Daily journals & requirements", "View hours & evaluations"],
     accent: "from-emerald-600 to-green-600",
@@ -79,9 +79,11 @@ export default function WhoItsForPage() {
           <div className="text-center lg:text-left">
             <Badge
               variant="outline"
-              className="border-white/20 bg-white/10 px-2.5 py-1 text-center font-mono text-[0.6rem] leading-tight tracking-[0.15em] text-[#86efac] sm:px-3 sm:text-[0.65rem] sm:tracking-[0.2em]"
+              className="max-w-full !h-auto min-h-7 whitespace-normal break-words border-white/20 bg-white/10 px-3 py-1.5 text-center font-mono text-[0.58rem] leading-snug tracking-[0.1em] text-[#86efac] sm:px-3 sm:py-1 sm:text-[0.65rem] sm:tracking-[0.2em] [&]:whitespace-normal"
             >
-              <Users size={12} className="mr-1 inline sm:mr-1.5" /> TCGC · OJT, PLACEMENT & ALUMNI AFFAIRS OFFICE
+              <span className="inline-flex flex-wrap items-center justify-center gap-1 text-center">
+                <Users size={12} className="shrink-0" /> TCGC · OJT, PLACEMENT & ALUMNI AFFAIRS OFFICE
+              </span>
             </Badge>
             <h1 className="mt-4 font-heading text-3xl font-bold leading-tight text-white sm:text-4xl lg:text-[2.5rem]">
               Built for <span className="text-[#86efac]">TCGC.</span>
@@ -105,7 +107,7 @@ export default function WhoItsForPage() {
               </span>
             </div>
           </div>
-          <div className="relative mx-auto flex w-full max-w-[340px] flex-col items-center gap-4 sm:max-w-sm">
+          <div className="relative mx-auto flex w-full max-w-[90vw] flex-col items-center gap-4 sm:max-w-sm">
             <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/5 blur-xl" />
             <div className="relative flex w-full flex-col items-center rounded-[1.75rem] border border-white/15 bg-white p-6 shadow-2xl sm:p-7">
               <img
