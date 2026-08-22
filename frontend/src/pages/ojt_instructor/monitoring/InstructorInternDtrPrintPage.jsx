@@ -58,6 +58,7 @@ function DtrForm({ records, from, to, name }) {
 
   let totalMinutes = 0;
   for (const record of records) {
+    if (record.status !== "checked") continue;
     const worked = computeHours(record.slots);
     if (worked) totalMinutes += worked.hours * 60 + worked.minutes;
   }
