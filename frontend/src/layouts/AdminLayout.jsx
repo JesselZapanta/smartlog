@@ -1,4 +1,4 @@
-import { CalendarDays, School, BookOpen, LayoutDashboard, Users, FileText, Store, BarChart3, ShieldCheck, Clock } from "lucide-react";
+import { CalendarDays, School, BookOpen, LayoutDashboard, Users, FileText, Store, BarChart3, ShieldCheck, Clock, Files } from "lucide-react";
 import AppShell from "@/layouts/AppShell.jsx";
 
 const settingsGroupNav = [
@@ -14,6 +14,7 @@ const sidebarNav = [
   { to: "/admin/interns", label: "Interns", icon: Users },
   { to: "/admin/htes", label: "Host Training Est.", icon: Store },
   { to: "/admin/requirements", label: "Requirements", icon: FileText },
+  { to: "/admin/documents", label: "Documents", icon: Files },
   { to: "/admin/reports", label: "Report", icon: BarChart3 },
 ];
 
