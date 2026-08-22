@@ -13,6 +13,7 @@ import {
   ArrowUp,
   ArrowDown,
   ChevronsUpDown,
+  School,
 } from "lucide-react";
 import AdminLayout from "@/layouts/AdminLayout.jsx";
 import PageHeader from "@/components/PageHeader.jsx";
@@ -57,11 +58,6 @@ import {
 } from "@/components/ui/pagination";
 
 const PER_PAGE = 10;
-
-function formatDate(value) {
-  if (!value) return "—";
-  return new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
 
 function getPageList(current, total) {
   if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1);
@@ -256,8 +252,7 @@ export default function UserListPage() {
                   <SortableHeader label="ID" column="id" sort="id" order={order} onSort={toggleOrder} />
                   <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">User</TableHead>
                   <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Role</TableHead>
-                  <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Contact</TableHead>
-                  <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Joined</TableHead>
+                  <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Institute</TableHead>
                   <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-green-700">
                     Actions
                   </TableHead>
@@ -265,7 +260,7 @@ export default function UserListPage() {
               </TableHeader>
               <TableBody>
                 <TableRow>
-                  <TableCell colSpan={6} className="h-64">
+                  <TableCell colSpan={5} className="h-64">
                     <Loader2 size={28} className="mx-auto animate-spin text-green-600" />
                   </TableCell>
                 </TableRow>
@@ -297,8 +292,7 @@ export default function UserListPage() {
                     <SortableHeader label="ID" column="id" sort="id" order={order} onSort={toggleOrder} />
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">User</TableHead>
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Role</TableHead>
-                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Contact</TableHead>
-                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Joined</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Institute</TableHead>
                     <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-green-700">
                       Actions
                     </TableHead>
@@ -338,10 +332,10 @@ export default function UserListPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-gray-600">{user.contact_number || "—"}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-gray-600">{formatDate(user.created_at)}</span>
+                        <span className="inline-flex items-center gap-1.5 text-sm text-gray-600">
+                          <School size={14} className="text-gray-300" />
+                          {user.institute || "—"}
+                        </span>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">

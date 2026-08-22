@@ -34,7 +34,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import PageLoader from "@/components/PageLoader";
 import {
   Pagination,
   PaginationContent,
@@ -218,7 +217,7 @@ export default function CoordinatorInternRequirementsPage() {
     <CoordinatorLayout>
             <PageHeader title="Intern Requirements" subtitle="Track intern requirement submissions for your institute." icon={ClipboardList} />
 
-<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+<div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:p-4">
         <div className="relative w-full sm:max-w-xs">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <Input
@@ -238,7 +237,9 @@ export default function CoordinatorInternRequirementsPage() {
             </button>
           )}
         </div>
-        <Select value={academicYear} onValueChange={onAcademicYearChange}>
+        
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:gap-3">
+<Select value={academicYear} onValueChange={onAcademicYearChange}>
           <SelectTrigger className="data-[size=default]:h-11 w-full rounded-xl sm:w-52">
             <SelectValue placeholder="All academic years" />
           </SelectTrigger>
@@ -251,15 +252,7 @@ export default function CoordinatorInternRequirementsPage() {
             ))}
           </SelectContent>
         </Select>
-        <Button
-          variant="outline"
-          className="h-11 rounded-xl md:hidden"
-          onClick={toggleOrder}
-          aria-label="Toggle sort order"
-        >
-          {order === "desc" ? <ArrowDown size={14} /> : <ArrowUp size={14} />}
-          {order === "desc" ? "Newest first" : "Oldest first"}
-        </Button>
+        </div>
         {hasFilters && (
           <Button
             variant="ghost"
@@ -278,12 +271,8 @@ export default function CoordinatorInternRequirementsPage() {
 
       <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ring-1 ring-gray-100">
         {loading ? (
-          <>
-            <div className="md:hidden">
-              <PageLoader />
-            </div>
-            <div className="hidden overflow-x-auto md:block">
-              <Table>
+          <div className="overflow-x-auto">
+            <Table className="min-w-[900px]">
                 <TableHeader>
                   <TableRow className="bg-green-50 hover:bg-green-50">
                     <SortableHeader label="ID" column="id" sort="id" order={order} onSort={toggleOrder} />
@@ -305,7 +294,6 @@ export default function CoordinatorInternRequirementsPage() {
                 </TableBody>
               </Table>
             </div>
-          </>
         ) : null}
 
         {!loading && rows.length === 0 && (
@@ -319,46 +307,8 @@ export default function CoordinatorInternRequirementsPage() {
         )}
 
         {!loading && rows.length > 0 && (
-          <>
-            <div className="space-y-2.5 p-3 sm:p-4 md:hidden">
-              {rows.map((intern) => (
-                <div key={intern.uuid} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm ring-1 ring-gray-100">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex min-w-0 items-center gap-2.5">
-                      <Avatar className="h-9 w-9 shrink-0">
-                        {intern.profile_picture && <AvatarImage src={intern.profile_picture} alt={intern.full_name} />}
-                        <AvatarFallback className="bg-gradient-to-br from-green-700 to-green-500 text-xs font-bold text-white">
-                          {getInitials(intern.full_name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-gray-900">{intern.full_name}</p>
-                        <p className="truncate text-xs text-gray-400">{intern.email}</p>
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end gap-1.5">
-                      <ProgressPill submitted={intern.submitted} total={intern.total} />
-                      <OjtStatusPill status={intern.ojt_status} startDate={intern.start_date} />
-                    </div>
-                  </div>
-                  <div className="mt-2.5 text-xs text-gray-500">{intern.program || "—"}</div>
-                  <div className="mt-3 flex gap-2 border-t border-gray-50 pt-3">
-                    <Button
-                      asChild
-                      variant="outline"
-                      className="h-10 flex-1 rounded-xl border-green-200 text-green-700 hover:bg-green-50"
-                    >
-                      <Link to={`/coordinator/intern-requirements/${intern.uuid}`}>
-                        <Eye size={15} /> View submissions
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="hidden overflow-x-auto md:block">
-              <Table>
+          <div className="overflow-x-auto">
+            <Table className="min-w-[900px]">
                 <TableHeader>
                   <TableRow className="bg-green-50 hover:bg-green-50">
                     <SortableHeader label="ID" column="id" sort="id" order={order} onSort={toggleOrder} />
@@ -419,20 +369,13 @@ export default function CoordinatorInternRequirementsPage() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
-          </>
+          </div>
         )}
 
         {!loading && meta && meta.total > 0 && (
-          <div className="flex flex-col gap-3 border-t border-gray-100 bg-gray-50/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-            <p className="text-sm text-gray-500">
-              Showing{" "}
-              <span className="font-semibold text-gray-700">{meta.from ?? 0}</span>–
-              <span className="font-semibold text-gray-700">{meta.to ?? 0}</span> of{" "}
-              <span className="font-semibold text-gray-700">{meta.total}</span> interns
-            </p>
-            <Pagination className="mx-0 w-auto">
-              <PaginationContent>
+          <div className="flex items-center justify-center border-t border-gray-100 bg-gray-50/60 px-4 py-4">
+            <Pagination className="w-auto">
+              <PaginationContent className="justify-center">
                 <PaginationItem>
                   <PaginationPrevious
                     href="#"

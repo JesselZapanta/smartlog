@@ -31,6 +31,10 @@ class UserResource extends JsonResource
             'contact_number' => $this->contact_number,
             'profile_picture' => StorageUrl::url($this->profile_picture),
             'role' => $this->role,
+            'institute' => $this->intern?->institute?->name
+                ?? $this->coordinator?->institute?->name
+                ?? $this->hte?->institute?->name
+                ?? null,
             'registration_status' => $this->intern?->status,
             'email' => $this->email,
             'email_verified_at' => $this->email_verified_at,

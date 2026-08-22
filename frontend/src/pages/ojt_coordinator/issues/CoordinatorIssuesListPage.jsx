@@ -263,10 +263,6 @@ export default function CoordinatorIssuesListPage() {
           </SelectContent>
         </Select>
         </div>
-        <Button variant="outline" className="h-11 rounded-xl md:hidden" onClick={toggleOrder} aria-label="Toggle sort order">
-          {order === "desc" ? <ArrowDown size={14} /> : <ArrowUp size={14} />}
-          {order === "desc" ? "Newest first" : "Oldest first"}
-        </Button>
         {hasFilters && (
           <Button variant="ghost" className="h-11 rounded-xl text-gray-500 hover:text-gray-700" onClick={clearFilters}>
             <X size={14} /> Clear filters
