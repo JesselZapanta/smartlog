@@ -16,7 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useAuth } from "@/contexts/AuthContext";
-import { LogoMark } from "@/components/Logo.jsx";
+import { LogoBadge } from "@/components/Logo.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 
@@ -87,7 +87,9 @@ export default function VerifyEmailPage() {
 
         <div className="relative p-10 xl:p-14">
           <div className="flex items-center gap-3">
-            <LogoMark size={44} className="drop-shadow-lg" />
+            <Link to="/" aria-label="SMARTLOG — back to landing page" className="flex shrink-0 no-underline">
+              <LogoBadge size={48} className="drop-shadow-lg" />
+            </Link>
             <div>
               <div className="font-heading text-lg font-bold leading-tight text-white">SMARTLOG</div>
               <div className="font-mono text-[11px] font-medium tracking-widest text-emerald-300">
@@ -128,7 +130,7 @@ export default function VerifyEmailPage() {
               <div className="text-[11px] font-medium text-emerald-200/70">Tangub City Global College</div>
             </div>
             <div className="ml-auto hidden text-right text-[11px] text-emerald-200/60 sm:block">
-              Office of Practicum &amp; Alumni Affairs
+              OJT, Placement and Alumni Affairs Office
             </div>
           </div>
         </div>
@@ -139,7 +141,9 @@ export default function VerifyEmailPage() {
           <div className="relative -mx-4 -mt-4 mb-8 overflow-hidden rounded-b-[2rem] bg-gradient-to-br from-green-700 via-green-600 to-emerald-500 px-6 pb-8 pt-6 sm:mx-0 sm:mt-0 lg:hidden">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.12)_1px,transparent_0)] [background-size:20px_20px]" />
             <div className="relative flex items-center gap-3">
-              <LogoMark size={44} className="drop-shadow-lg" />
+              <Link to="/" aria-label="SMARTLOG — back to landing page" className="flex shrink-0 no-underline">
+              <LogoBadge size={48} className="drop-shadow-lg" />
+            </Link>
               <div>
                 <div className="font-heading text-lg font-bold leading-tight text-white">SMARTLOG</div>
                 <div className="font-mono text-[11px] font-medium tracking-widest text-emerald-100">

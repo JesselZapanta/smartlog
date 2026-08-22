@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import NotificationBell from "@/components/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
-import { LogoMark } from "@/components/Logo.jsx";
+import { LogoBadge } from "@/components/Logo.jsx";
 
 function SidebarNavItem({ to, label, icon: Icon, end, compact }) {
   return (
@@ -96,8 +96,8 @@ export default function AppShell({ children, navItems, bottomNavItems, portalLab
     <div className="min-h-screen bg-gray-50">
       <aside className="fixed left-0 top-0 z-40 hidden h-screen w-60 flex-col bg-green-950 shadow-[2px_0_20px_rgba(0,0,0,0.18)] lg:flex">
         <div className="border-b border-white/10 px-5 py-6">
-          <Link to="/" className="flex items-center gap-2.5 no-underline">
-            <LogoMark size={32} className="drop-shadow-md" />
+          <Link to="/" aria-label="SMARTLOG — back to landing page" className="flex items-center gap-2.5 no-underline">
+            <LogoBadge size={38} className="drop-shadow-md" />
             <div>
               <div className="font-heading text-[0.95rem] font-bold text-white">SMARTLOG</div>
               <div className="font-mono text-[0.68rem] text-[#86efac]">{portalLabel}</div>
@@ -226,8 +226,8 @@ export default function AppShell({ children, navItems, bottomNavItems, portalLab
         </header>
 
         <header className="fixed left-0 right-0 top-0 z-50 flex h-15.5 items-center justify-between border-b border-gray-100 bg-white px-4 shadow-sm lg:hidden">
-          <Link to="/" className="flex items-center gap-2 no-underline">
-            <LogoMark size={36} className="drop-shadow-md" />
+          <Link to="/" aria-label="SMARTLOG — back to landing page" className="flex items-center gap-2 no-underline">
+            <LogoBadge size={42} className="drop-shadow-md" />
             <div>
               <div className="font-heading text-base font-bold leading-tight text-green-900">SMARTLOG</div>
               <div className="font-mono text-xs font-medium text-green-700/75">{portalLabel}</div>
