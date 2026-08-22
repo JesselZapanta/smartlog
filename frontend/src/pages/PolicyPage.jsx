@@ -89,7 +89,6 @@ export default function PolicyPage() {
             <div className="rounded-[1.5rem] border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
               <div className="flex items-center gap-2">
                 <Badge className="bg-green-600 font-mono text-[0.65rem] tracking-widest">TERMS</Badge>
-                <span className="font-mono text-xs text-gray-400">Last updated: August 22, 2026</span>
               </div>
               <h2 className="mt-3 font-heading text-xl font-bold text-green-950">Terms of Service</h2>
               <p className="mt-2 text-sm leading-relaxed text-gray-500">
@@ -162,7 +161,6 @@ export default function PolicyPage() {
             <div className="rounded-[1.5rem] border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
               <div className="flex items-center gap-2">
                 <Badge className="bg-emerald-600 font-mono text-[0.65rem] tracking-widest">PRIVACY</Badge>
-                <span className="font-mono text-xs text-gray-400">Last updated: August 22, 2026</span>
               </div>
               <h2 className="mt-3 font-heading text-xl font-bold text-green-950">Privacy Policy</h2>
               <p className="mt-2 text-sm leading-relaxed text-gray-500">

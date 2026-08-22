@@ -69,13 +69,7 @@ export default function PublicHeader() {
         </div>
 
         <div className="flex items-center gap-2 md:hidden">
-          {user ? (
-            <Button asChild size="sm" className="h-9 rounded-xl bg-green-600 px-3.5 text-sm font-semibold text-white hover:bg-green-700">
-              <Link to={dashboardPath} className="inline-flex items-center gap-1.5">
-                <LayoutDashboard size={14} /> Dashboard
-              </Link>
-            </Button>
-          ) : (
+          {!user && (
             <Button asChild size="sm" className="h-9 rounded-xl bg-green-600 px-3.5 text-sm font-semibold text-white hover:bg-green-700">
               <Link to="/login">Login</Link>
             </Button>
