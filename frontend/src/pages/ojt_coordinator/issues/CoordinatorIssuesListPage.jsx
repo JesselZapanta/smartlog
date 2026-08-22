@@ -224,7 +224,7 @@ export default function CoordinatorIssuesListPage() {
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search issue, intern or HTEâ€¦"
+            placeholder="Search issue, intern or HTE…"
             className="h-11 rounded-xl pl-10 pr-10"
           />
           {search && (
@@ -263,10 +263,6 @@ export default function CoordinatorIssuesListPage() {
           </SelectContent>
         </Select>
         </div>
-        <Button variant="outline" className="h-11 rounded-xl md:hidden" onClick={toggleOrder} aria-label="Toggle sort order">
-          {order === "desc" ? <ArrowDown size={14} /> : <ArrowUp size={14} />}
-          {order === "desc" ? "Newest first" : "Oldest first"}
-        </Button>
         {hasFilters && (
           <Button variant="ghost" className="h-11 rounded-xl text-gray-500 hover:text-gray-700" onClick={clearFilters}>
             <X size={14} /> Clear filters
@@ -392,7 +388,7 @@ export default function CoordinatorIssuesListPage() {
         {!loading && meta && meta.total > 0 && (
           <div className="flex flex-col items-center gap-3 border-t border-gray-100 bg-gray-50/60 px-4 py-4 text-center sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:text-left">
             <p className="text-sm text-gray-500">
-              Showing <span className="font-semibold text-gray-700">{meta.from ?? 0}</span>â€“
+              Showing <span className="font-semibold text-gray-700">{meta.from ?? 0}</span>–
               <span className="font-semibold text-gray-700">{meta.to ?? 0}</span> of{" "}
               <span className="font-semibold text-gray-700">{meta.total}</span> issues
             </p>
@@ -463,7 +459,7 @@ export default function CoordinatorIssuesListPage() {
             <Button variant="destructive" className="h-11 rounded-xl" disabled={deleting} onClick={handleDelete}>
               {deleting ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" /> Deletingâ€¦
+                  <Loader2 size={16} className="animate-spin" /> Deleting…
                 </>
               ) : (
                 <>

@@ -21,7 +21,7 @@ class UserController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $query = User::query();
+        $query = User::query()->with(['intern.institute', 'coordinator.institute', 'hte.institute']);
 
         $search = $request->string('search')->trim()->toString();
 

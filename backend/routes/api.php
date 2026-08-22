@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Admin\AcademicTermController;
 use App\Http\Controllers\Api\Admin\CoordinatorController;
+use App\Http\Controllers\Api\Admin\DocumentController as AdminDocumentController;
 use App\Http\Controllers\Api\Admin\HteController;
 use App\Http\Controllers\Api\Admin\Htes\HteController as HtesHteController;
 use App\Http\Controllers\Api\Admin\InstituteController;
@@ -225,5 +226,8 @@ Route::middleware('auth:api')->group(function (): void {
 
         Route::apiResource('ojt-hours', OjtHourController::class)
             ->except(['create', 'edit']);
+
+        Route::get('documents', [AdminDocumentController::class, 'index'])->name('api.documents.index');
+        Route::get('documents/download', [AdminDocumentController::class, 'download'])->name('api.documents.download');
     });
 });

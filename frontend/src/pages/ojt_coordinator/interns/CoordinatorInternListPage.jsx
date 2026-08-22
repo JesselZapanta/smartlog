@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Users, Search, Eye, X, ArrowUp, ArrowDown, ChevronsUpDown, CalendarDays, School, Loader2 } from "lucide-react";
+import { Users, Search, Eye, X, ArrowUp, ArrowDown, ChevronsUpDown,   Loader2 } from "lucide-react";
 import CoordinatorLayout from "@/layouts/CoordinatorLayout.jsx";
 import PageHeader from "@/components/PageHeader.jsx";
 import api from "@/lib/api";
@@ -13,7 +13,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import StatusChip from "@/components/StatusChip.jsx";
@@ -23,9 +23,8 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow
 } from "@/components/ui/table";
-import PageLoader from "@/components/PageLoader";
 import {
   Pagination,
   PaginationContent,
@@ -33,7 +32,7 @@ import {
   PaginationItem,
   PaginationLink,
   PaginationNext,
-  PaginationPrevious,
+  PaginationPrevious
 } from "@/components/ui/pagination";
 
 const PER_PAGE = 10;
@@ -127,8 +126,8 @@ export default function CoordinatorInternListPage() {
         page: String(page),
         per_page: String(PER_PAGE),
         sort: "id",
-        order,
-      });
+        order
+});
       if (debouncedSearch) params.set("search", debouncedSearch);
       if (academicYear !== "all") params.set("academic_year_id", academicYear);
       const res = await api.get(`/registrations/interns?${params.toString()}`);
@@ -167,7 +166,7 @@ export default function CoordinatorInternListPage() {
     <CoordinatorLayout>
             <PageHeader title="Interns" subtitle="View all approved interns in your institute." icon={Users} />
 
-<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+<div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:p-4">
         <div className="relative w-full sm:max-w-xs">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <Input
@@ -187,7 +186,9 @@ export default function CoordinatorInternListPage() {
             </button>
           )}
         </div>
-        <Select value={academicYear} onValueChange={onAcademicYearChange}>
+        
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:gap-3">
+<Select value={academicYear} onValueChange={onAcademicYearChange}>
           <SelectTrigger className="data-[size=default]:h-11 w-full rounded-xl sm:w-52">
             <SelectValue placeholder="All academic years" />
           </SelectTrigger>
@@ -200,15 +201,7 @@ export default function CoordinatorInternListPage() {
             ))}
           </SelectContent>
         </Select>
-        <Button
-          variant="outline"
-          className="h-11 rounded-xl md:hidden"
-          onClick={toggleOrder}
-          aria-label="Toggle sort order"
-        >
-          {order === "desc" ? <ArrowDown size={14} /> : <ArrowUp size={14} />}
-          {order === "desc" ? "Newest first" : "Oldest first"}
-        </Button>
+        </div>
         {hasFilters && (
           <Button variant="ghost" className="h-11 rounded-xl text-gray-500 hover:text-gray-700" onClick={clearFilters}>
             <X size={14} /> Clear filters
@@ -218,12 +211,8 @@ export default function CoordinatorInternListPage() {
 
       <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ring-1 ring-gray-100">
         {loading ? (
-          <>
-            <div className="md:hidden">
-              <PageLoader />
-            </div>
-            <div className="hidden overflow-x-auto md:block">
-              <Table>
+          <div className="overflow-x-auto">
+            <Table className="min-w-[900px]">
                 <TableHeader>
                   <TableRow className="bg-green-50 hover:bg-green-50">
                     <SortableHeader label="ID" column="id" sort="id" order={order} onSort={toggleOrder} />
@@ -245,7 +234,6 @@ export default function CoordinatorInternListPage() {
                 </TableBody>
               </Table>
             </div>
-          </>
         ) : null}
 
         {!loading && rows.length === 0 && (
@@ -264,52 +252,8 @@ export default function CoordinatorInternListPage() {
         )}
 
         {!loading && rows.length > 0 && (
-          <>
-            <div className="space-y-2.5 p-3 sm:p-4 md:hidden">
-              {rows.map((intern) => (
-                <div
-                  key={intern.uuid}
-                  className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm ring-1 ring-gray-100"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex min-w-0 items-center gap-2.5">
-                      <Avatar className="h-9 w-9 shrink-0">
-                        {intern.profile_picture && <AvatarImage src={intern.profile_picture} alt={intern.full_name} />}
-                        <AvatarFallback className="bg-gradient-to-br from-green-700 to-green-500 text-xs font-bold text-white">
-                          {getInitials(intern.full_name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-gray-900">{intern.full_name}</p>
-                        <p className="truncate text-xs text-gray-400">{intern.email}</p>
-                      </div>
-                    </div>
-                    <StatusChip status={intern.status} />
-                  </div>
-                  <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
-                    <span className="inline-flex items-center gap-1.5">
-                      <School size={13} className="shrink-0 text-gray-300" />
-                      {intern.program || "—"}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <CalendarDays size={13} className="shrink-0 text-gray-300" />
-                      Registered {formatDate(intern.created_at)}
-                    </span>
-                    <span className="font-mono text-gray-400">#{intern.id}</span>
-                  </div>
-                  <div className="mt-3 flex gap-2 border-t border-gray-50 pt-3">
-                    <Button asChild variant="outline" className="h-10 flex-1 rounded-xl border-green-200 text-green-700 hover:bg-green-50">
-                      <Link to={`/coordinator/interns/${intern.uuid}`}>
-                        <Eye size={15} /> View details
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="hidden overflow-x-auto md:block">
-              <Table>
+          <div className="overflow-x-auto">
+            <Table className="min-w-[900px]">
                 <TableHeader>
                   <TableRow className="bg-green-50 hover:bg-green-50">
                     <SortableHeader label="ID" column="id" sort="id" order={order} onSort={toggleOrder} />
@@ -373,20 +317,13 @@ export default function CoordinatorInternListPage() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
-          </>
+          </div>
         )}
 
         {!loading && meta && meta.total > 0 && (
-          <div className="flex flex-col gap-3 border-t border-gray-100 bg-gray-50/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-            <p className="text-sm text-gray-500">
-              Showing{" "}
-              <span className="font-semibold text-gray-700">{meta.from ?? 0}</span>–
-              <span className="font-semibold text-gray-700">{meta.to ?? 0}</span> of{" "}
-              <span className="font-semibold text-gray-700">{meta.total}</span> interns
-            </p>
-            <Pagination className="mx-0 w-auto">
-              <PaginationContent>
+          <div className="flex items-center justify-center border-t border-gray-100 bg-gray-50/60 px-4 py-4">
+            <Pagination className="w-auto">
+              <PaginationContent className="justify-center">
                 <PaginationItem>
                   <PaginationPrevious
                     href="#"

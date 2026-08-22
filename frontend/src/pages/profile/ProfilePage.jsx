@@ -163,9 +163,9 @@ function homePathFor(role) {
 
 function ReadOnlyField({ label, value }) {
   return (
-    <div>
+    <div className="min-w-0">
       <p className="text-xs font-bold uppercase tracking-wider text-gray-500">{label}</p>
-      <p className="mt-1 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm font-medium text-gray-700">
+      <p className="mt-1 break-words rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm font-medium text-gray-700">
         {value || "—"}
       </p>
     </div>
@@ -543,11 +543,11 @@ export default function ProfilePage() {
 
   return (
     <Layout>
-      <div className="mx-auto w-full max-w-4xl space-y-4 sm:space-y-5">
+      <div className="mx-auto w-full max-w-4xl space-y-4 px-1 sm:space-y-5 sm:px-0">
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-600 via-emerald-600 to-teal-500 px-4 py-5 sm:px-8 sm:py-6">
         <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-white/10" />
         <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-white/5" />
-        <div className="relative z-10 flex items-center gap-3 sm:gap-4">
+        <div className="relative z-10 flex items-center gap-2.5 sm:gap-4">
           <Button
             asChild
             variant="ghost"
@@ -557,12 +557,12 @@ export default function ProfilePage() {
               <ArrowLeft size={18} />
             </Link>
           </Button>
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 ring-1 ring-white/30 backdrop-blur-sm sm:h-12 sm:w-12">
-            <UserRound size={22} className="text-white" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/20 ring-1 ring-white/30 backdrop-blur-sm sm:h-12 sm:w-12">
+            <UserRound size={20} className="text-white sm:h-[22px] sm:w-[22px]" />
           </div>
-          <div className="min-w-0">
-            <h1 className="truncate font-heading text-lg font-bold text-white sm:text-xl">My Profile</h1>
-            <p className="mt-0.5 truncate text-xs text-green-100 sm:text-sm">
+          <div className="min-w-0 flex-1">
+            <h1 className="break-words font-heading text-[17px] font-bold leading-tight text-white sm:truncate sm:text-xl">My Profile</h1>
+            <p className="mt-0.5 break-words text-[11px] leading-snug text-green-100 sm:truncate sm:text-sm">
               Manage your account details and personal information
             </p>
           </div>
@@ -574,49 +574,51 @@ export default function ProfilePage() {
       ) : (
         <>
           <div className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm ring-1 ring-gray-100 sm:p-4">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <Avatar className="h-14 w-14 shrink-0 sm:h-16 sm:w-16">
-                {(avatarPreview || profile.user.profile_picture) && (
-                  <AvatarImage
-                    src={avatarPreview || profile.user.profile_picture}
-                    alt="Profile picture"
-                    className="object-cover"
-                  />
-                )}
-                <AvatarFallback className="bg-gradient-to-br from-green-700 to-green-500 text-lg font-bold text-white">
-                  {getInitials(`${accountForm.watch("firstname") || ""} ${accountForm.watch("lastname") || ""}`)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <h2 className="truncate font-heading text-base font-bold text-green-950 sm:text-lg">
-                    {profile.user.full_name}
-                  </h2>
-                  <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-700 ring-1 ring-green-100">
-                    {roleLabels[profile.user.role] || profile.user.role}
-                  </span>
-                </div>
-                <p className="mt-0.5 truncate text-xs text-gray-500 sm:text-sm">{profile.user.email}</p>
-                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-400 sm:text-xs">
-                  <span className="font-mono">#{profile.user.id}</span>
-                  <span className="inline-flex items-center gap-1">
-                    <CalendarDays size={12} /> Joined {formatDate(profile.user.created_at)}
-                  </span>
-                  {profile.user.email_verified_at ? (
-                    <span className="inline-flex items-center gap-1 font-semibold text-green-700">
-                      <BadgeCheck size={12} /> Verified
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 font-semibold text-amber-600">
-                      <ShieldAlert size={12} /> Unverified
-                    </span>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
+                <Avatar className="h-14 w-14 shrink-0 sm:h-16 sm:w-16">
+                  {(avatarPreview || profile.user.profile_picture) && (
+                    <AvatarImage
+                      src={avatarPreview || profile.user.profile_picture}
+                      alt="Profile picture"
+                      className="object-cover"
+                    />
                   )}
+                  <AvatarFallback className="bg-gradient-to-br from-green-700 to-green-500 text-lg font-bold text-white">
+                    {getInitials(`${accountForm.watch("firstname") || ""} ${accountForm.watch("lastname") || ""}`)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <h2 className="break-words font-heading text-[15px] font-bold leading-tight text-green-950 sm:truncate sm:text-lg">
+                      {profile.user.full_name}
+                    </h2>
+                    <span className="inline-flex shrink-0 items-center rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-700 ring-1 ring-green-100">
+                      {roleLabels[profile.user.role] || profile.user.role}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 break-all text-xs text-gray-500 sm:truncate sm:text-sm">{profile.user.email}</p>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-400 sm:text-xs">
+                    <span className="font-mono">#{profile.user.id}</span>
+                    <span className="inline-flex items-center gap-1">
+                      <CalendarDays size={12} /> Joined {formatDate(profile.user.created_at)}
+                    </span>
+                    {profile.user.email_verified_at ? (
+                      <span className="inline-flex items-center gap-1 font-semibold text-green-700">
+                        <BadgeCheck size={12} /> Verified
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 font-semibold text-amber-600">
+                        <ShieldAlert size={12} /> Unverified
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto">
                 <label
                   htmlFor="profile-picture-input"
-                  className="inline-flex h-11 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-green-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-green-700 sm:px-4 sm:text-sm"
+                  className="inline-flex h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-green-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-green-700 sm:flex-initial sm:px-4 sm:text-sm"
                 >
                   <ImagePlus size={15} />
                   {avatarPreview || profile.user.profile_picture ? "Change" : "Upload photo"}
@@ -626,7 +628,7 @@ export default function ProfilePage() {
                     type="button"
                     variant="ghost"
                     aria-label="Remove photo"
-                    className="h-11 w-11 rounded-xl px-0 text-red-600 hover:bg-red-50"
+                    className="h-11 w-11 shrink-0 rounded-xl px-0 text-red-600 hover:bg-red-50"
                     onClick={removeAvatar}
                   >
                     <Trash2 size={15} />
@@ -645,20 +647,20 @@ export default function ProfilePage() {
 
           <Tabs value={tab} onValueChange={setTab}>
             <div className="rounded-2xl border border-gray-100 bg-white p-1.5 shadow-sm ring-1 ring-gray-100 sm:p-2">
-              <TabsList className="h-11! w-full gap-1 bg-gray-100/80">
-                <TabsTrigger value="account" className="min-w-0 gap-1 rounded-md px-1 text-xs font-semibold sm:gap-1.5 sm:px-3 sm:text-sm data-active:bg-green-600! data-active:text-white! data-active:shadow-sm">
-                  <UserRound size={15} className="hidden shrink-0 sm:block" /> <span className="truncate">Account</span>
+              <TabsList className="flex h-auto! w-full justify-start gap-1.5 overflow-x-auto bg-gray-100/80 p-1 [scrollbar-width:none] sm:h-11! sm:gap-1 [&::-webkit-scrollbar]:hidden">
+                <TabsTrigger value="account" className="min-h-11 shrink-0 gap-1.5 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs font-semibold sm:gap-1.5 sm:px-3 sm:text-sm data-active:bg-green-600! data-active:text-white! data-active:shadow-sm">
+                  <UserRound size={16} className="shrink-0" /> Account
                 </TabsTrigger>
-                <TabsTrigger value="location" className="min-w-0 gap-1 rounded-md px-1 text-xs font-semibold sm:gap-1.5 sm:px-3 sm:text-sm data-active:bg-green-600! data-active:text-white! data-active:shadow-sm">
-                  <MapPin size={15} className="hidden shrink-0 sm:block" /> <span className="truncate">Location</span>
+                <TabsTrigger value="location" className="min-h-11 shrink-0 gap-1.5 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs font-semibold sm:gap-1.5 sm:px-3 sm:text-sm data-active:bg-green-600! data-active:text-white! data-active:shadow-sm">
+                  <MapPin size={16} className="shrink-0" /> Location
                 </TabsTrigger>
                 {roleTab && (
-                  <TabsTrigger value={roleTab.value} className="min-w-0 gap-1 rounded-md px-1 text-xs font-semibold sm:gap-1.5 sm:px-3 sm:text-sm data-active:bg-green-600! data-active:text-white! data-active:shadow-sm">
-                    <roleTab.icon size={15} className="hidden shrink-0 sm:block" /> <span className="truncate">{roleTab.label}</span>
+                  <TabsTrigger value={roleTab.value} className="min-h-11 shrink-0 gap-1.5 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs font-semibold sm:gap-1.5 sm:px-3 sm:text-sm data-active:bg-green-600! data-active:text-white! data-active:shadow-sm">
+                    <roleTab.icon size={16} className="shrink-0" /> {roleTab.label}
                   </TabsTrigger>
                 )}
-                <TabsTrigger value="credentials" className="min-w-0 gap-1 rounded-md px-1 text-xs font-semibold sm:gap-1.5 sm:px-3 sm:text-sm data-active:bg-green-600! data-active:text-white! data-active:shadow-sm">
-                  <Lock size={15} className="hidden shrink-0 sm:block" /> <span className="truncate">Credentials</span>
+                <TabsTrigger value="credentials" className="min-h-11 shrink-0 gap-1.5 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs font-semibold sm:gap-1.5 sm:px-3 sm:text-sm data-active:bg-green-600! data-active:text-white! data-active:shadow-sm">
+                  <Lock size={16} className="shrink-0" /> Credentials
                 </TabsTrigger>
               </TabsList>
             </div>
