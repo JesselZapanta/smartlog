@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -217,11 +217,11 @@ export default function ForgotPasswordPage() {
             </div>
 
             <div className="px-5 sm:px-8">
-              <div className="flex items-center gap-2 py-3">
+              <div className="flex items-center gap-2 py-3 sm:gap-3">
                 {steps.map((s, idx) => (
-                  <div key={s.id} className="flex items-center gap-2 flex-1">
+                  <Fragment key={s.id}>
                     {idx > 0 && (
-                      <div className={`h-0.5 flex-1 rounded-full ${step > s.id - 1 ? "bg-green-600" : "bg-gray-200"}`} />
+                      <div className={`h-0.5 flex-1 rounded-full ${step > idx ? "bg-green-600" : "bg-gray-200"}`} />
                     )}
                     <div
                       className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ring-1 ${
@@ -234,14 +234,19 @@ export default function ForgotPasswordPage() {
                     >
                       {step > s.id ? <Check size={12} /> : s.id}
                     </div>
-                  </div>
+                  </Fragment>
                 ))}
               </div>
-              <div className="flex justify-between px-1 pb-2">
-                {steps.map((s) => (
-                  <span key={s.id} className={`text-[10px] font-semibold tracking-wide ${step === s.id ? "text-green-700" : "text-gray-400"}`}>
-                    {s.label}
-                  </span>
+              <div className="flex items-center gap-2 sm:gap-3">
+                {steps.map((s, idx) => (
+                  <Fragment key={s.id}>
+                    {idx > 0 && <div className="flex-1" />}
+                    <div className="flex w-7 shrink-0 justify-center">
+                      <span className={`text-center text-[10px] font-semibold tracking-wide ${step === s.id ? "text-green-700" : "text-gray-400"}`}>
+                        {s.label}
+                      </span>
+                    </div>
+                  </Fragment>
                 ))}
               </div>
             </div>
