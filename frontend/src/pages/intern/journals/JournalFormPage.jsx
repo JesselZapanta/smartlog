@@ -25,6 +25,16 @@ import InternLayout from "@/layouts/InternLayout.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { downscaleImageFile } from "@/lib/image";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog.jsx";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -131,7 +141,8 @@ export default function JournalFormPage() {
   const [newPhotos, setNewPhotos] = useState([]);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [deleteArmed, setDeleteArmed] = useState(false);
+  const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [dtr, setDtr] = useState(null);
 
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -323,13 +334,16 @@ export default function JournalFormPage() {
 
   const photoSlotsLeft = MAX_PHOTOS - existingPhotos.length + removedIds.size - newPhotos.length;
 
-  async function handleSave() {
-    if (locked || !title.trim() || !journal.trim()) {
-      if (!locked) {
-        toast.error("Missing details", { description: "Add a title and journal content before saving." });
-      }
+  function requestSave() {
+    if (locked) return;
+    if (!title.trim() || !journal.trim()) {
+      toast.error("Missing details", { description: "Add a title and journal content before saving." });
       return;
     }
+    setSaveConfirmOpen(true);
+  }
+
+  async function handleSave() {
     setSaving(true);
     try {
       const body = new FormData();
@@ -353,22 +367,17 @@ export default function JournalFormPage() {
     }
   }
 
-  function handleDelete() {
-    if (locked) return;
-    if (!deleteArmed) {
-      setDeleteArmed(true);
-      window.setTimeout(() => setDeleteArmed(false), 3000);
-      return;
-    }
+  async function handleDelete() {
     setDeleting(true);
-    api
-      .delete(`/intern/journals/${entry.id}`)
-      .then(() => {
-        toast.success("Journal deleted");
-        navigate("/intern/journals");
-      })
-      .catch((err) => toast.error("Delete failed", { description: firstErrorMessage(err) }))
-      .finally(() => setDeleting(false));
+    try {
+      await api.delete(`/intern/journals/${entry.id}`);
+      toast.success("Journal deleted");
+      navigate("/intern/journals");
+    } catch (err) {
+      toast.error("Delete failed", { description: firstErrorMessage(err) });
+    } finally {
+      setDeleting(false);
+    }
   }
 
   const prettyDate = validDate
@@ -763,32 +772,74 @@ export default function JournalFormPage() {
             )}
           </section>
 
-          <div className="flex flex-col gap-3 sm:flex-row-reverse">
+          <div className="flex flex-row items-center justify-end gap-2">
+            {entry && (
+              <Button
+                type="button"
+                onClick={() => setDeleteConfirmOpen(true)}
+                disabled={deleting || saving || locked}
+                variant="outline"
+                className="h-11 rounded-xl border-red-200 px-4 text-sm font-semibold text-red-600 hover:bg-red-50 sm:px-6"
+              >
+                {deleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                {deleting ? "Deleting…" : "Delete entry"}
+              </Button>
+            )}
             <Button
               type="button"
-              onClick={handleSave}
+              onClick={requestSave}
               disabled={saving || photoSlotsLeft < 0 || locked}
-              className="h-11 w-full rounded-xl bg-green-600 px-6 text-sm font-semibold shadow-sm hover:bg-green-700 active:scale-[0.99] sm:w-auto"
+              className="h-11 rounded-xl bg-green-600 px-4 text-sm font-semibold shadow-sm hover:bg-green-700 active:scale-[0.99] sm:px-6"
             >
               {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
               {saving ? "Saving…" : entry ? "Save changes" : "Submit journal"}
             </Button>
-            {entry && (
-              <Button
-                type="button"
-                onClick={handleDelete}
-                disabled={deleting || saving || locked}
-                variant={deleteArmed ? "destructive" : "outline"}
-                className={cn(
-                  "h-11 w-full rounded-xl px-6 text-sm font-semibold sm:w-auto",
-                  deleteArmed ? "bg-red-600 text-white hover:bg-red-700" : "border-red-200 text-red-600 hover:bg-red-50"
-                )}
-              >
-                {deleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                {deleting ? "Deleting…" : deleteArmed ? "Tap again to confirm" : "Delete entry"}
-              </Button>
-            )}
           </div>
+
+          <AlertDialog open={saveConfirmOpen} onOpenChange={setSaveConfirmOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{entry ? "Save changes?" : "Submit journal?"}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {entry
+                    ? "This will update your journal entry for this date and send it back for review if it was already approved."
+                    : `This will submit your journal entry for ${prettyDate}. You can still edit it later while it is pending.`}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex-row justify-end">
+                <AlertDialogCancel disabled={saving}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="bg-green-600 font-semibold hover:bg-green-700"
+                >
+                  {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                  {entry ? "Save changes" : "Submit journal"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {entry && (
+            <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete this journal entry?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently remove the journal entry for {prettyDate}, including its photos. This action
+                    cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-red-600 font-semibold hover:bg-red-700">
+                    {deleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                    Delete entry
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       )}
 

@@ -48,6 +48,15 @@ Route::post('/verify-email', [AuthController::class, 'verifyEmail'])
 Route::post('/verify-email/resend', [AuthController::class, 'resendVerification'])
     ->middleware('throttle:3,1')
     ->name('api.verify-email.resend');
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])
+    ->middleware('throttle:3,1')
+    ->name('api.forgot-password');
+Route::post('/forgot-password/verify', [AuthController::class, 'verifyResetCode'])
+    ->middleware('throttle:10,1')
+    ->name('api.forgot-password.verify');
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])
+    ->middleware('throttle:10,1')
+    ->name('api.reset-password');
 
 Route::middleware('auth:api')->group(function (): void {
     Route::get('/me', [AuthController::class, 'me'])->name('api.me');

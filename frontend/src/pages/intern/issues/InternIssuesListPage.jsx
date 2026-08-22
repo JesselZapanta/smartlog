@@ -100,6 +100,7 @@ export default function InternIssuesListPage() {
   const [rows, setRows] = useState([]);
   const [meta, setMeta] = useState(null);
   const [hteInfo, setHteInfo] = useState(null);
+  const [hteLoading, setHteLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -124,7 +125,8 @@ export default function InternIssuesListPage() {
     api
       .get("/intern/issues/hte")
       .then((res) => setHteInfo(res.data.data))
-      .catch(() => setHteInfo(null));
+      .catch(() => setHteInfo(null))
+      .finally(() => setHteLoading(false));
   }, []);
 
   const isAssigned = Boolean(hteInfo);
@@ -236,13 +238,21 @@ export default function InternIssuesListPage() {
         subtitle="Track and manage issues with your HTE."
         icon={AlertTriangle}
         action={
-          <Button className="h-11 shrink-0 rounded-xl bg-white px-4 font-semibold text-green-700 shadow-sm hover:bg-green-50" onClick={openCreateDialog}>
+          <Button
+            className="h-11 shrink-0 rounded-xl bg-white px-4 font-semibold text-green-700 shadow-sm hover:bg-green-50 disabled:opacity-60"
+            onClick={openCreateDialog}
+            disabled={hteLoading}
+          >
             <Plus size={16} /> Report Issue
           </Button>
         }
       />
 
-      {!isAssigned && (
+      {hteLoading ? (
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 size={28} className="animate-spin text-green-600" />
+        </div>
+      ) : !isAssigned ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-8 text-center shadow-sm sm:p-10">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-amber-600 ring-1 ring-amber-200">
             <Building2 size={22} />
@@ -253,9 +263,7 @@ export default function InternIssuesListPage() {
             assignment.
           </p>
         </div>
-      )}
-
-      {isAssigned && (
+      ) : (
         <>
           <div className="overflow-hidden rounded-2xl border border-green-100 bg-white shadow-sm ring-1 ring-green-100">
             <div className="bg-gradient-to-br from-green-700 via-green-600 to-emerald-500 p-4 sm:p-5">

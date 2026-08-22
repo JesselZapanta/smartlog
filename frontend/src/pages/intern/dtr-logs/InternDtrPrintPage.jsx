@@ -59,6 +59,7 @@ function DtrForm({ records, from, to, name }) {
 
   let totalMinutes = 0;
   for (const record of records) {
+    if (record.status !== "checked") continue;
     const worked = computeHours(record.slots);
     if (worked) totalMinutes += worked.hours * 60 + worked.minutes;
   }
@@ -122,17 +123,18 @@ function DtrForm({ records, from, to, name }) {
               const record = byDate[ymd];
               const slots = record?.slots || {};
               const worked = computeHours(slots);
+              const isNotChecked = Boolean(record && record.status !== "checked");
               return (
                 <tr key={ymd} className="h-[11px]">
-                  <td className="whitespace-nowrap border border-black px-0.5 py-0.5 text-center font-semibold">
+                  <td className={`whitespace-nowrap border border-black px-0.5 py-0.5 text-center font-semibold ${isNotChecked ? "text-red-600" : ""}`}>
                     {sameMonth ? day.getDate() : day.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                   </td>
-                  <td className="whitespace-nowrap border border-black px-0.5 py-0.5 text-center">{formatTime(slots.am_in?.time)}</td>
-                  <td className="whitespace-nowrap border border-black px-0.5 py-0.5 text-center">{formatTime(slots.am_out?.time)}</td>
-                  <td className="whitespace-nowrap border border-black px-0.5 py-0.5 text-center">{formatTime(slots.pm_in?.time)}</td>
-                  <td className="whitespace-nowrap border border-black px-0.5 py-0.5 text-center">{formatTime(slots.pm_out?.time)}</td>
-                  <td className="whitespace-nowrap border border-black px-0.5 py-0.5 text-center">{worked ? worked.hours : ""}</td>
-                  <td className="whitespace-nowrap border border-black px-0.5 py-0.5 text-center">{worked ? worked.minutes : ""}</td>
+                  <td className={`whitespace-nowrap border border-black px-0.5 py-0.5 text-center ${isNotChecked && slots.am_in?.time ? "font-bold text-red-600" : ""}`}>{formatTime(slots.am_in?.time)}</td>
+                  <td className={`whitespace-nowrap border border-black px-0.5 py-0.5 text-center ${isNotChecked && slots.am_out?.time ? "font-bold text-red-600" : ""}`}>{formatTime(slots.am_out?.time)}</td>
+                  <td className={`whitespace-nowrap border border-black px-0.5 py-0.5 text-center ${isNotChecked && slots.pm_in?.time ? "font-bold text-red-600" : ""}`}>{formatTime(slots.pm_in?.time)}</td>
+                  <td className={`whitespace-nowrap border border-black px-0.5 py-0.5 text-center ${isNotChecked && slots.pm_out?.time ? "font-bold text-red-600" : ""}`}>{formatTime(slots.pm_out?.time)}</td>
+                  <td className={`whitespace-nowrap border border-black px-0.5 py-0.5 text-center ${isNotChecked && worked ? "font-bold text-red-600" : ""}`}>{worked ? worked.hours : ""}</td>
+                  <td className={`whitespace-nowrap border border-black px-0.5 py-0.5 text-center ${isNotChecked && worked ? "font-bold text-red-600" : ""}`}>{worked ? worked.minutes : ""}</td>
                 </tr>
               );
             })}

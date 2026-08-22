@@ -12,6 +12,7 @@ import {
   ClipboardList,
   Clock3,
   ExternalLink,
+  FileText,
   GraduationCap,
   Info,
   Loader2,
@@ -30,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import StatusChip from "@/components/StatusChip";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import PageLoader from "@/components/PageLoader";
 import {
@@ -136,44 +138,57 @@ function StatusTags({ title, approved, pending, rejected }) {
 }
 
 function RequirementCard({ requirement, actingId, onApprove, onReject }) {
+  const submission = requirement.submission;
+  const approved = submission?.status === "approved";
+
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm ring-1 ring-gray-100">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-heading text-sm font-bold text-green-950">{requirement.name}</p>
+    <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ring-1 ring-gray-100">
+      <div className="flex items-start gap-3 p-4">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-700 ring-1 ring-green-100">
+          <FileText size={17} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="break-words font-heading text-sm font-bold leading-snug text-green-950">
+            {requirement.name}
+          </p>
+          <div className="mt-2 flex flex-col items-start gap-1.5">
+            {submission && <StatusPill status={submission.status} />}
+            <TypePill type={requirement.type} />
+          </div>
           {requirement.description && (
-            <p className="mt-1 text-xs text-gray-500">{requirement.description}</p>
+            <p className="mt-1.5 text-xs leading-relaxed text-gray-500">{requirement.description}</p>
           )}
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-1.5">
-          <TypePill type={requirement.type} />
-          {requirement.submission && <StatusPill status={requirement.submission.status} />}
         </div>
       </div>
 
-      {requirement.submission?.status === "rejected" && requirement.submission.rejection_reason && (
-        <div className="mt-3 flex items-start gap-2 rounded-xl bg-red-50 p-3 ring-1 ring-red-100">
+      {submission?.status === "rejected" && submission.rejection_reason && (
+        <div className="mx-4 mb-3 flex items-start gap-2 rounded-xl bg-red-50 p-3 ring-1 ring-red-100">
           <AlertTriangle size={15} className="mt-0.5 shrink-0 text-red-600" />
           <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-wide text-red-700">Rejection reason</p>
-            <p className="mt-0.5 text-sm text-red-800">{requirement.submission.rejection_reason}</p>
+            <p className="mt-0.5 break-words text-sm text-red-800">{submission.rejection_reason}</p>
           </div>
         </div>
       )}
 
-      <div className="mt-4 border-t border-gray-50 pt-4">
-        {requirement.submission ? (
-          <div className="flex min-h-11 items-center justify-between gap-2 rounded-xl border border-green-200 bg-green-50 px-3 py-2">
-            <div className="min-w-0 text-sm font-medium text-green-800">
-              <p className="truncate">Submitted {formatDate(requirement.submission.submitted_at)}</p>
-              {requirement.submission.reviewed_by && (
+      <div className="border-t border-gray-100 bg-gray-50/60 p-3 sm:p-4">
+        {submission ? (
+          <div
+            className={cn(
+              "flex min-h-11 items-center justify-between gap-2 rounded-xl px-3 py-2",
+              approved ? "border border-green-200 bg-green-50" : "border border-gray-200 bg-white"
+            )}
+          >
+            <div className={cn("min-w-0 text-sm font-medium", approved ? "text-green-800" : "text-gray-700")}>
+              <p className="truncate">Submitted {formatDate(submission.submitted_at)}</p>
+              {submission.reviewed_by && (
                 <p className="mt-0.5 truncate text-xs text-green-700/70">
-                  reviewed by {requirement.submission.reviewed_by}
+                  reviewed by {submission.reviewed_by}
                 </p>
               )}
             </div>
             <a
-              href={requirement.submission.file_url}
+              href={submission.file_url}
               target="_blank"
               rel="noreferrer"
               aria-label="Open submitted PDF"
@@ -183,14 +198,14 @@ function RequirementCard({ requirement, actingId, onApprove, onReject }) {
             </a>
           </div>
         ) : (
-          <p className="text-xs text-gray-400">Not yet submitted</p>
+          <p className="px-1 py-2 text-xs font-medium text-gray-400">Not yet submitted</p>
         )}
 
-        {requirement.submission?.status === "pending" && (
-          <div className="mt-3 grid grid-cols-2 gap-2">
+        {submission?.status === "pending" && (
+          <div className="mt-2.5 grid grid-cols-2 gap-2">
             <Button
               variant="outline"
-              className="h-11 rounded-xl border-green-200 text-green-700 hover:bg-green-50"
+              className="h-11 rounded-xl border-green-200 bg-white text-green-700 hover:bg-green-50"
               disabled={actingId === requirement.id}
               onClick={() => onApprove(requirement)}
             >
@@ -203,18 +218,12 @@ function RequirementCard({ requirement, actingId, onApprove, onReject }) {
             </Button>
             <Button
               variant="outline"
-              className="h-11 rounded-xl border-red-200 text-red-600 hover:bg-red-50"
+              className="h-11 rounded-xl border-red-200 bg-white text-red-600 hover:bg-red-50"
               disabled={actingId === requirement.id}
               onClick={() => onReject(requirement)}
             >
               <X size={16} /> Reject
             </Button>
-          </div>
-        )}
-
-        {requirement.submission?.status === "approved" && (
-          <div className="mt-3 flex items-center gap-2 rounded-xl bg-green-50 px-3 py-2.5 text-sm font-semibold text-green-700 ring-1 ring-green-100">
-            <CheckCircle2 size={16} /> Approved
           </div>
         )}
       </div>

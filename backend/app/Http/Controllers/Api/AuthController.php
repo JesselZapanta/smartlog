@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\UserNotification;
 use App\Services\EmailVerificationService;
 use App\Services\ImageOptimizer;
+use App\Services\PasswordResetService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,7 +21,10 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function __construct(private readonly EmailVerificationService $verification) {}
+    public function __construct(
+        private readonly EmailVerificationService $verification,
+        private readonly PasswordResetService $passwordReset,
+    ) {}
 
     public function referenceData(): JsonResponse
     {
@@ -158,6 +162,68 @@ class AuthController extends Controller
 
         return response()->json([
             'data' => ['message' => 'A new verification code has been sent to your email.'],
+        ]);
+    }
+
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email', 'exists:users,email'],
+        ]);
+
+        $user = User::where('email', $data['email'])->firstOrFail();
+
+        $this->passwordReset->sendOtp($user);
+
+        return response()->json([
+            'data' => ['message' => 'A password reset code has been sent to your email. It expires in 10 minutes.'],
+        ]);
+    }
+
+    public function verifyResetCode(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email', 'exists:users,email'],
+            'code' => ['required', 'string', 'size:6'],
+        ]);
+
+        $user = User::where('email', $data['email'])->firstOrFail();
+
+        if (! $this->passwordReset->verify($user, $data['code'])) {
+            throw ValidationException::withMessages([
+                'code' => ['The code is invalid or has expired.'],
+            ]);
+        }
+
+        return response()->json([
+            'data' => ['message' => 'Code verified. You can now reset your password.'],
+        ]);
+    }
+
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email', 'exists:users,email'],
+            'code' => ['required', 'string', 'size:6'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user = User::where('email', $data['email'])->firstOrFail();
+
+        if (! $this->passwordReset->verify($user, $data['code'])) {
+            throw ValidationException::withMessages([
+                'code' => ['The code is invalid or has expired.'],
+            ]);
+        }
+
+        $user->forceFill([
+            'password' => $data['password'],
+        ])->save();
+
+        $this->passwordReset->clearOtp($user);
+
+        return response()->json([
+            'data' => ['message' => 'Your password has been reset successfully. You can now sign in.'],
         ]);
     }
 

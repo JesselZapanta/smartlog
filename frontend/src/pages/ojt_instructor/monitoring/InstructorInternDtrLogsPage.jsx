@@ -68,8 +68,8 @@ function formatDate(value) {
 function StatusPill({ status }) {
   const tones = {
     pending: "bg-amber-50 text-amber-700 ring-amber-200",
-    verified: "bg-green-50 text-green-700 ring-green-200",
-    checked: "bg-indigo-50 text-indigo-700 ring-indigo-200",
+    verified: "bg-indigo-50 text-indigo-700 ring-indigo-200",
+    checked: "bg-green-50 text-green-700 ring-green-200",
     disapproved: "bg-red-50 text-red-600 ring-red-200",
   };
   const labels = {

@@ -1,8 +1,12 @@
 import { Route, Routes } from "react-router-dom";
 import Landing from "@/pages/Landing.jsx";
+import FeaturesPage from "@/pages/FeaturesPage.jsx";
+import WhoItsForPage from "@/pages/WhoItsForPage.jsx";
+import PolicyPage from "@/pages/PolicyPage.jsx";
 import Login from "@/pages/Login.jsx";
 import RegisterPage from "@/pages/RegisterPage.jsx";
 import VerifyEmailPage from "@/pages/VerifyEmailPage.jsx";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage.jsx";
 import AdminDashboard from "@/pages/admin/AdminDashboard.jsx";
 import InternDashboard from "@/pages/intern/InternDashboard.jsx";
 import ResubmitRegistrationPage from "@/pages/intern/ResubmitRegistrationPage.jsx";
@@ -73,14 +77,47 @@ import InstructorReportPage from "@/pages/ojt_instructor/ReportPage.jsx";
 import InternReportPage from "@/pages/intern/ReportPage.jsx";
 import HteReportPage from "@/pages/hte/ReportPage.jsx";
 import ProtectedRoute from "@/components/ProtectedRoute.jsx";
+import GuestRoute from "@/components/GuestRoute.jsx";
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/features" element={<FeaturesPage />} />
+      <Route path="/who-its-for" element={<WhoItsForPage />} />
+      <Route path="/policy" element={<PolicyPage />} />
+      <Route
+        path="/login"
+        element={
+          <GuestRoute>
+            <Login />
+          </GuestRoute>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <GuestRoute>
+            <RegisterPage />
+          </GuestRoute>
+        }
+      />
+      <Route
+        path="/verify-email"
+        element={
+          <GuestRoute>
+            <VerifyEmailPage />
+          </GuestRoute>
+        }
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          <GuestRoute>
+            <ForgotPasswordPage />
+          </GuestRoute>
+        }
+      />
       <Route
         path="/admin"
         element={

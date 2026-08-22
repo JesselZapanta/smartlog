@@ -19,7 +19,6 @@ import {
   Mail,
   MapPin,
   Phone,
-  ShieldCheck,
   User,
   UserRound,
   X,
@@ -44,7 +43,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
-import { LogoMark } from "@/components/Logo.jsx";
+import { LogoBadge } from "@/components/Logo.jsx";
+import AuthAnimatedSide from "@/components/AuthAnimatedSide.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { getInitials } from "@/pages/admin/users/constants.js";
@@ -470,73 +470,16 @@ export default function RegisterPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <aside className="relative hidden overflow-hidden bg-gradient-to-br from-green-950 via-green-900 to-green-700 lg:flex lg:w-[46%] lg:flex-col lg:justify-between xl:w-1/2">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.07)_1px,transparent_0)] [background-size:22px_22px]" />
-        <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-emerald-400/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-32 -right-20 h-80 w-80 rounded-full bg-white/10 blur-3xl" />
-
-        <div className="relative p-10 xl:p-14">
-          <div className="flex items-center gap-3">
-            <LogoMark size={44} className="drop-shadow-lg" />
-            <div>
-              <div className="font-heading text-lg font-bold leading-tight text-white">SMARTLOG</div>
-              <div className="font-mono text-[11px] font-medium tracking-widest text-emerald-300">
-                OJT MONITORING SYSTEM
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-14 max-w-md">
-            <div className="rounded-2xl border border-white/15 bg-white/10 p-5 shadow-2xl backdrop-blur-sm">
-              <p className="font-heading text-sm font-bold text-white">Begin your OJT journey</p>
-              <p className="mt-1.5 text-xs leading-relaxed text-emerald-100/80">
-                Register once and get access to photo-captured time-in, digital journals, and requirement
-                tracking for Tangub City Global College interns.
-              </p>
-              <div className="mt-4 space-y-2.5">
-                {[
-                  "Account information",
-                  "Your current address",
-                  "Intern and academic details",
-                  "Sign-in credentials",
-                ].map((item, index) => (
-                  <div key={item} className="flex items-center gap-2.5 text-xs text-emerald-100/90">
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-400/20 text-[10px] font-bold text-emerald-300 ring-1 ring-emerald-400/30">
-                      {index + 1}
-                    </span>
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-5 flex flex-wrap gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-medium text-emerald-50 backdrop-blur-sm">
-                <ShieldCheck size={13} className="text-emerald-300" /> Student data stays secure
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="relative border-t border-white/10 px-10 py-5 xl:px-14">
-          <div className="flex gap-10">
-            <div>
-              <div className="font-heading text-xl font-bold text-white">TGCC</div>
-              <div className="text-[11px] font-medium text-emerald-200/70">Tangub City Global College</div>
-            </div>
-            <div className="ml-auto hidden text-right text-[11px] text-emerald-200/60 sm:block">
-              Office of Practicum &amp; Alumni Affairs
-            </div>
-          </div>
-        </div>
-      </aside>
+      <AuthAnimatedSide />
 
       <main className="flex flex-1 items-center justify-center p-4 sm:p-6 lg:p-10">
         <div className="w-full max-w-2xl">
           <div className="relative -mx-4 -mt-4 mb-8 overflow-hidden rounded-b-[2rem] bg-gradient-to-br from-green-700 via-green-600 to-emerald-500 px-6 pb-8 pt-6 sm:mx-0 sm:mt-0 lg:hidden">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.12)_1px,transparent_0)] [background-size:20px_20px]" />
             <div className="relative flex items-center gap-3">
-              <LogoMark size={44} className="drop-shadow-lg" />
+              <Link to="/" aria-label="SMARTLOG — back to landing page" className="flex shrink-0 no-underline">
+              <LogoBadge size={48} className="drop-shadow-lg" />
+            </Link>
               <div>
                 <div className="font-heading text-lg font-bold leading-tight text-white">SMARTLOG</div>
                 <div className="font-mono text-[11px] font-medium tracking-widest text-emerald-100">
