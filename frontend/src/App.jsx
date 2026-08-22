@@ -77,6 +77,7 @@ import InstructorReportPage from "@/pages/ojt_instructor/ReportPage.jsx";
 import InternReportPage from "@/pages/intern/ReportPage.jsx";
 import HteReportPage from "@/pages/hte/ReportPage.jsx";
 import ProtectedRoute from "@/components/ProtectedRoute.jsx";
+import GuestRoute from "@/components/GuestRoute.jsx";
 
 function App() {
   return (
@@ -85,10 +86,38 @@ function App() {
       <Route path="/features" element={<FeaturesPage />} />
       <Route path="/who-its-for" element={<WhoItsForPage />} />
       <Route path="/policy" element={<PolicyPage />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/verify-email" element={<VerifyEmailPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route
+        path="/login"
+        element={
+          <GuestRoute>
+            <Login />
+          </GuestRoute>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <GuestRoute>
+            <RegisterPage />
+          </GuestRoute>
+        }
+      />
+      <Route
+        path="/verify-email"
+        element={
+          <GuestRoute>
+            <VerifyEmailPage />
+          </GuestRoute>
+        }
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          <GuestRoute>
+            <ForgotPasswordPage />
+          </GuestRoute>
+        }
+      />
       <Route
         path="/admin"
         element={

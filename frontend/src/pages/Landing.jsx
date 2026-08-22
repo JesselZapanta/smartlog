@@ -7,12 +7,17 @@ import {
   Clock3,
   ShieldCheck,
   Smartphone,
+  LayoutDashboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LogoMark, LogoBadge } from "@/components/Logo.jsx";
+import { useAuth } from "@/contexts/AuthContext";
+import { homeByRole } from "@/components/ProtectedRoute.jsx";
 
 export default function Landing() {
+  const { user } = useAuth();
+  const dashboardPath = user ? homeByRole[user.role] || "/" : "/login";
   return (
     <div className="flex min-h-screen flex-col bg-white">
       <header className="sticky top-0 z-40 border-b border-gray-100 bg-white/90 backdrop-blur">
@@ -30,17 +35,34 @@ export default function Landing() {
             <Link to="/policy" className="hover:text-green-700">Policy</Link>
           </nav>
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" className="hidden h-11 rounded-xl px-4 text-green-700 hover:bg-green-50 sm:inline-flex">
-              <Link to="/login">Login</Link>
-            </Button>
-            <Button asChild className="h-11 rounded-xl bg-green-600 px-4 font-semibold text-white hover:bg-green-700 sm:hidden">
-              <Link to="/login">Login</Link>
-            </Button>
-            <Button asChild className="hidden h-11 rounded-xl bg-green-600 px-5 font-semibold text-white hover:bg-green-700 sm:inline-flex">
-              <Link to="/login">
-                Get Started <ArrowRight size={16} />
-              </Link>
-            </Button>
+            {user ? (
+              <>
+                <Button asChild className="h-11 rounded-xl bg-green-600 px-4 font-semibold text-white hover:bg-green-700 sm:hidden">
+                  <Link to={dashboardPath}>
+                    <LayoutDashboard size={16} /> Dashboard
+                  </Link>
+                </Button>
+                <Button asChild className="hidden h-11 rounded-xl bg-green-600 px-5 font-semibold text-white hover:bg-green-700 sm:inline-flex">
+                  <Link to={dashboardPath}>
+                    Dashboard <ArrowRight size={16} />
+                  </Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button asChild variant="ghost" className="hidden h-11 rounded-xl px-4 text-green-700 hover:bg-green-50 sm:inline-flex">
+                  <Link to="/login">Login</Link>
+                </Button>
+                <Button asChild className="h-11 rounded-xl bg-green-600 px-4 font-semibold text-white hover:bg-green-700 sm:hidden">
+                  <Link to="/login">Login</Link>
+                </Button>
+                <Button asChild className="hidden h-11 rounded-xl bg-green-600 px-5 font-semibold text-white hover:bg-green-700 sm:inline-flex">
+                  <Link to="/login">
+                    Get Started <ArrowRight size={16} />
+                  </Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -65,11 +87,19 @@ export default function Landing() {
               replacing manual attendance, scattered records, and delayed submissions with one centralized platform.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
-              <Button asChild size="lg" className="h-12 w-full rounded-xl bg-white px-6 font-semibold text-green-700 shadow-sm hover:bg-green-50 sm:w-auto">
-                <Link to="/login">
-                  Get Started <ArrowRight size={16} />
-                </Link>
-              </Button>
+              {user ? (
+                <Button asChild size="lg" className="h-12 w-full rounded-xl bg-white px-6 font-semibold text-green-700 shadow-sm hover:bg-green-50 sm:w-auto">
+                  <Link to={dashboardPath}>
+                    <LayoutDashboard size={18} /> Go to Dashboard
+                  </Link>
+                </Button>
+              ) : (
+                <Button asChild size="lg" className="h-12 w-full rounded-xl bg-white px-6 font-semibold text-green-700 shadow-sm hover:bg-green-50 sm:w-auto">
+                  <Link to="/login">
+                    Get Started <ArrowRight size={16} />
+                  </Link>
+                </Button>
+              )}
             </div>
           </div>
           <div className="relative mx-auto flex w-full max-w-md items-center justify-center lg:max-w-none">

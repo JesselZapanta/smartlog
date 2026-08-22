@@ -476,14 +476,7 @@ export default function ForgotPasswordPage() {
                     )}
                   </Button>
 
-                  <div className="mt-5 flex flex-col items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setStep(2)}
-                      className="inline-flex items-center gap-1 text-sm font-semibold text-gray-500 hover:underline"
-                    >
-                      <ChevronLeft size={14} /> Back to code
-                    </button>
+                  <div className="mt-5 flex justify-center">
                     <Link to="/login" className="text-sm font-semibold text-gray-500 hover:underline">
                       Back to sign in
                     </Link>
