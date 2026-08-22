@@ -11,61 +11,17 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { LogoMark, LogoBadge } from "@/components/Logo.jsx";
+import { LogoMark } from "@/components/Logo.jsx";
 import { useAuth } from "@/contexts/AuthContext";
 import { homeByRole } from "@/components/ProtectedRoute.jsx";
+import PublicHeader from "@/components/PublicHeader.jsx";
 
 export default function Landing() {
   const { user } = useAuth();
   const dashboardPath = user ? homeByRole[user.role] || "/" : "/login";
   return (
     <div className="flex min-h-screen flex-col bg-white">
-      <header className="sticky top-0 z-40 border-b border-gray-100 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link to="/" className="flex items-center gap-2.5 no-underline">
-            <LogoBadge size={44} className="drop-shadow-sm" />
-            <div>
-              <div className="font-heading text-base font-bold leading-tight text-green-900">SMARTLOG</div>
-              <div className="font-mono text-[0.65rem] font-medium text-green-700/75">OJT MONITORING SYSTEM</div>
-            </div>
-          </Link>
-          <nav className="hidden items-center gap-8 text-sm font-medium text-gray-600 md:flex">
-            <Link to="/features" className="hover:text-green-700">Features</Link>
-            <Link to="/who-its-for" className="hover:text-green-700">Who it&apos;s for</Link>
-            <Link to="/policy" className="hover:text-green-700">Policy</Link>
-          </nav>
-          <div className="flex items-center gap-2">
-            {user ? (
-              <>
-                <Button asChild className="h-11 rounded-xl bg-green-600 px-4 font-semibold text-white hover:bg-green-700 sm:hidden">
-                  <Link to={dashboardPath}>
-                    <LayoutDashboard size={16} /> Dashboard
-                  </Link>
-                </Button>
-                <Button asChild className="hidden h-11 rounded-xl bg-green-600 px-5 font-semibold text-white hover:bg-green-700 sm:inline-flex">
-                  <Link to={dashboardPath}>
-                    Dashboard <ArrowRight size={16} />
-                  </Link>
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button asChild variant="ghost" className="hidden h-11 rounded-xl px-4 text-green-700 hover:bg-green-50 sm:inline-flex">
-                  <Link to="/login">Login</Link>
-                </Button>
-                <Button asChild className="h-11 rounded-xl bg-green-600 px-4 font-semibold text-white hover:bg-green-700 sm:hidden">
-                  <Link to="/login">Login</Link>
-                </Button>
-                <Button asChild className="hidden h-11 rounded-xl bg-green-600 px-5 font-semibold text-white hover:bg-green-700 sm:inline-flex">
-                  <Link to="/login">
-                    Get Started <ArrowRight size={16} />
-                  </Link>
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
 
       <section className="relative flex min-h-[calc(100vh-4rem)] items-center overflow-hidden bg-gradient-to-br from-green-950 via-green-900 to-green-700">
         <div className="pointer-events-none absolute -right-16 -top-16 h-72 w-72 rounded-full bg-white/5" />
