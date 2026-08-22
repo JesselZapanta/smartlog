@@ -574,8 +574,8 @@ export default function ProfilePage() {
       ) : (
         <>
           <div className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm ring-1 ring-gray-100 sm:p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-              <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
+            <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <div className="flex min-w-0 flex-1 flex-col items-center gap-3 text-center sm:flex-row sm:items-center sm:gap-4 sm:text-left">
                 <Avatar className="h-14 w-14 shrink-0 sm:h-16 sm:w-16">
                   {(avatarPreview || profile.user.profile_picture) && (
                     <AvatarImage
@@ -588,8 +588,8 @@ export default function ProfilePage() {
                     {getInitials(`${accountForm.watch("firstname") || ""} ${accountForm.watch("lastname") || ""}`)}
                   </AvatarFallback>
                 </Avatar>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-1.5">
+                <div className="min-w-0 flex-1 text-center sm:text-left">
+                  <div className="flex flex-wrap items-center justify-center gap-1.5 sm:justify-start">
                     <h2 className="break-words font-heading text-[15px] font-bold leading-tight text-green-950 sm:truncate sm:text-lg">
                       {profile.user.full_name}
                     </h2>
@@ -598,7 +598,7 @@ export default function ProfilePage() {
                     </span>
                   </div>
                   <p className="mt-0.5 break-all text-xs text-gray-500 sm:truncate sm:text-sm">{profile.user.email}</p>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-400 sm:text-xs">
+                  <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-gray-400 sm:justify-start sm:text-xs">
                     <span className="font-mono">#{profile.user.id}</span>
                     <span className="inline-flex items-center gap-1">
                       <CalendarDays size={12} /> Joined {formatDate(profile.user.created_at)}
@@ -615,23 +615,23 @@ export default function ProfilePage() {
                   </div>
                 </div>
               </div>
-              <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto">
+              <div className="flex w-full shrink-0 items-center justify-end gap-1 sm:w-auto sm:gap-2">
                 <label
                   htmlFor="profile-picture-input"
-                  className="inline-flex h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-green-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-green-700 sm:flex-initial sm:px-4 sm:text-sm"
+                  className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md bg-green-600 text-white shadow-sm transition-colors hover:bg-green-700 sm:h-7 sm:w-auto sm:gap-1 sm:rounded-lg sm:px-2.5 sm:text-[11px] sm:font-semibold"
                 >
-                  <ImagePlus size={15} />
-                  {avatarPreview || profile.user.profile_picture ? "Change" : "Upload photo"}
+                  <ImagePlus size={12} className="sm:h-3 sm:w-3" />
+                  <span className="hidden sm:inline">{avatarPreview || profile.user.profile_picture ? "Change" : "Upload photo"}</span>
                 </label>
                 {(avatarPreview || profile.user.profile_picture) && (
                   <Button
                     type="button"
                     variant="ghost"
                     aria-label="Remove photo"
-                    className="h-11 w-11 shrink-0 rounded-xl px-0 text-red-600 hover:bg-red-50"
+                    className="h-7 w-7 shrink-0 rounded-md px-0 text-red-600 hover:bg-red-50"
                     onClick={removeAvatar}
                   >
-                    <Trash2 size={15} />
+                    <Trash2 size={10} />
                   </Button>
                 )}
                 <input

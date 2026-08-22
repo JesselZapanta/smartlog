@@ -178,6 +178,8 @@ Route::middleware('auth:api')->group(function (): void {
     Route::middleware('role:ojt_instructor')->group(function (): void {
         Route::get('/instructor/interns', [InstructorInternController::class, 'index'])->name('api.instructor.interns.index');
         Route::get('/instructor/interns/{user:uuid}', [InstructorInternController::class, 'show'])->name('api.instructor.interns.show');
+        Route::get('/instructor/interns/{user:uuid}/photo-dtr', [InstructorInternController::class, 'photoDtr'])->name('api.instructor.interns.photo-dtr');
+        Route::get('/instructor/interns/{user:uuid}/ojt-hours', [InstructorInternController::class, 'ojtHours'])->name('api.instructor.interns.ojt-hours');
         Route::get('/instructor/interns/{user:uuid}/monitoring', [InstructorInternMonitoringController::class, 'index'])->name('api.instructor.interns.monitoring');
         Route::post('/instructor/interns/{user:uuid}/monitoring/approve', [InstructorInternMonitoringController::class, 'approve'])->name('api.instructor.interns.monitoring.approve');
         Route::post('/instructor/interns/{user:uuid}/monitoring/reject', [InstructorInternMonitoringController::class, 'reject'])->name('api.instructor.interns.monitoring.reject');

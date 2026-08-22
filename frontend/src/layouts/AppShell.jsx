@@ -390,16 +390,16 @@ export default function AppShell({ children, navItems, bottomNavItems, portalLab
               You will be signed out of your SMARTLOG session. You can sign back in anytime.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <DialogFooter className="flex flex-row gap-2 sm:justify-end">
             <Button
               variant="outline"
-              className="h-11 rounded-xl"
+              className="h-11 flex-1 rounded-xl sm:flex-initial"
               onClick={() => setLogoutOpen(false)}
               disabled={loggingOut}
             >
               Cancel
             </Button>
-            <Button variant="destructive" className="h-11 rounded-xl" disabled={loggingOut} onClick={confirmLogout}>
+            <Button variant="destructive" className="h-11 flex-1 rounded-xl sm:flex-initial" disabled={loggingOut} onClick={confirmLogout}>
               {loggingOut ? (
                 <>
                   <Loader2 size={16} className="animate-spin" /> Logging out…

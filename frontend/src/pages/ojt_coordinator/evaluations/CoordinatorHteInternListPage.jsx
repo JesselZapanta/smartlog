@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Search, X, ArrowDown, ArrowUp, ChevronsUpDown,   Loader2, Users, Eye, Award, UserRound, Briefcase, Lightbulb, Building2, ArrowLeft } from "lucide-react";
+import { Search, X, ArrowDown, ArrowUp, ChevronsUpDown,   Loader2, Users, Eye, Award, UserRound, Briefcase, Lightbulb, ArrowLeft } from "lucide-react";
 import CoordinatorLayout from "@/layouts/CoordinatorLayout.jsx";
 import PageHeader from "@/components/PageHeader.jsx";
 import api from "@/lib/api";
@@ -189,11 +189,16 @@ export default function CoordinatorHteInternListPage() {
 
   function clearFilters() {
     setSearch("");
-    setAcademicYear("all");
+    const active = terms.find((term) => term.status === "active");
+    setAcademicYear(active ? String(active.id) : "all");
     setPage(1);
   }
 
-  const hasFilters = Boolean(search) || academicYear !== "all";
+  const activeAcademicYearId = (() => {
+    const active = terms.find((term) => term.status === "active");
+    return active ? String(active.id) : "all";
+  })();
+  const hasFilters = Boolean(search) || academicYear !== activeAcademicYearId;
 
   return (
     <CoordinatorLayout>
@@ -261,16 +266,10 @@ export default function CoordinatorHteInternListPage() {
             </div>
             <div className="min-w-0 flex-1">
               <h2 className="font-heading text-sm font-bold text-green-950">Evaluation Summary</h2>
-              <p className="text-xs text-gray-500">
-                {summary.hte ? `${summary.hte.name} · ${summary.hte.institute || ""}` : "Total for this HTE"} {academicYear !== "all" ? `· ${terms.find((t) => String(t.id) === academicYear)?.description || academicYear}` : "· All academic years"} · {summary.evaluated_count} of {summary.interns_count} interns evaluated
+              <p className="mt-0.5 break-words text-xs leading-relaxed text-gray-500">
+                {summary.evaluated_count} of {summary.interns_count} interns evaluated
+                {academicYear !== "all" ? ` · ${terms.find((t) => String(t.id) === academicYear)?.description || academicYear}` : ""}
               </p>
-              {summary.hte && (
-                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-gray-400">
-                  <span className="inline-flex items-center gap-1"><Building2 size={10} /> {summary.hte.name}</span>
-                  {summary.hte.program && <span>· {summary.hte.program}</span>}
-                  {summary.hte.institute && <span>· {summary.hte.institute}</span>}
-                </p>
-              )}
             </div>
           </div>
           <div className="grid grid-cols-1 gap-px bg-gray-100 sm:grid-cols-3">

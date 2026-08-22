@@ -325,15 +325,6 @@ export default function InternIssuesListPage() {
                 <SelectItem value="resolve">Resolved</SelectItem>
               </SelectContent>
             </Select>
-            <Button
-              variant="outline"
-              className="h-11 rounded-xl md:hidden"
-              onClick={toggleOrder}
-              aria-label="Toggle sort order"
-            >
-              {order === "desc" ? <ArrowDown size={14} /> : <ArrowUp size={14} />}
-              {order === "desc" ? "Newest first" : "Oldest first"}
-            </Button>
             {hasFilters && (
               <Button
                 variant="ghost"
@@ -455,14 +446,9 @@ export default function InternIssuesListPage() {
             )}
 
             {!loading && meta && meta.total > 0 && (
-              <div className="flex flex-col items-center gap-3 border-t border-gray-100 bg-gray-50/60 px-4 py-4 text-center sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:text-left">
-                <p className="text-sm text-gray-500">
-                  Showing <span className="font-semibold text-gray-700">{meta.from ?? 0}</span>–
-                  <span className="font-semibold text-gray-700">{meta.to ?? 0}</span> of{" "}
-                  <span className="font-semibold text-gray-700">{meta.total}</span> issues
-                </p>
-                <Pagination className="mx-auto w-auto sm:mx-0">
-                  <PaginationContent className="justify-center sm:justify-start">
+              <div className="flex items-center justify-center border-t border-gray-100 bg-gray-50/60 px-4 py-4">
+                <Pagination className="w-auto">
+                  <PaginationContent className="justify-center">
                     <PaginationItem>
                       <PaginationPrevious
                         href="#"

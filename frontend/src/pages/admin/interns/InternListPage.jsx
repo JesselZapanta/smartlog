@@ -176,12 +176,17 @@ export default function InternListPage() {
 
   function clearFilters() {
     setSearch("");
-    setAcademicYear("all");
+    const active = terms.find((term) => term.status === "active");
+    setAcademicYear(active ? String(active.id) : "all");
     setInstituteId("all");
     setPage(1);
   }
 
-  const hasFilters = Boolean(search) || academicYear !== "all" || instituteId !== "all";
+  const activeAcademicYearId = (() => {
+    const active = terms.find((term) => term.status === "active");
+    return active ? String(active.id) : "all";
+  })();
+  const hasFilters = Boolean(search) || academicYear !== activeAcademicYearId || instituteId !== "all";
 
   return (
     <AdminLayout>

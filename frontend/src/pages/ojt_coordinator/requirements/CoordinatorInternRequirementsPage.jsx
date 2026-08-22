@@ -211,7 +211,11 @@ export default function CoordinatorInternRequirementsPage() {
     setPage(1);
   }
 
-  const hasFilters = Boolean(search) || academicYear !== "all";
+  const activeAcademicYearId = (() => {
+    const active = terms.find((term) => term.status === "active");
+    return active ? String(active.id) : "all";
+  })();
+  const hasFilters = Boolean(search) || academicYear !== activeAcademicYearId;
 
   return (
     <CoordinatorLayout>
@@ -238,8 +242,7 @@ export default function CoordinatorInternRequirementsPage() {
           )}
         </div>
         
-        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:gap-3">
-<Select value={academicYear} onValueChange={onAcademicYearChange}>
+        <Select value={academicYear} onValueChange={onAcademicYearChange}>
           <SelectTrigger className="data-[size=default]:h-11 w-full rounded-xl sm:w-52">
             <SelectValue placeholder="All academic years" />
           </SelectTrigger>
@@ -252,7 +255,6 @@ export default function CoordinatorInternRequirementsPage() {
             ))}
           </SelectContent>
         </Select>
-        </div>
         {hasFilters && (
           <Button
             variant="ghost"

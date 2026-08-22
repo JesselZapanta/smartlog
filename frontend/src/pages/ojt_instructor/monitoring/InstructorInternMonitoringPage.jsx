@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Users, Search, BookOpenText, X, ArrowUp, ArrowDown, ChevronsUpDown,   Loader2 } from "lucide-react";
+import { Users, Search, BookOpenText, Clock3, X, ArrowUp, ArrowDown, ChevronsUpDown,   Loader2 } from "lucide-react";
 import InstructorLayout from "@/layouts/InstructorLayout.jsx";
 import PageHeader from "@/components/PageHeader.jsx";
 import api from "@/lib/api";
@@ -161,11 +161,16 @@ export default function InstructorInternMonitoringPage() {
 
   function clearFilters() {
     setSearch("");
-    setAcademicYear("all");
+    const active = terms.find((term) => term.status === "active");
+    setAcademicYear(active ? String(active.id) : "all");
     setPage(1);
   }
 
-  const hasFilters = Boolean(search) || academicYear !== "all";
+  const activeAcademicYearId = (() => {
+    const active = terms.find((term) => term.status === "active");
+    return active ? String(active.id) : "all";
+  })();
+  const hasFilters = Boolean(search) || academicYear !== activeAcademicYearId;
 
   return (
     <InstructorLayout>
@@ -315,7 +320,7 @@ export default function InstructorInternMonitoringPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center justify-end">
+                        <div className="flex items-center justify-end gap-1">
                           <Button
                             asChild
                             variant="ghost"
@@ -325,6 +330,17 @@ export default function InstructorInternMonitoringPage() {
                           >
                             <Link to={`/instructor/monitoring/${intern.uuid}`}>
                               <BookOpenText size={16} />
+                            </Link>
+                          </Button>
+                          <Button
+                            asChild
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`View ${intern.full_name} DTR logs`}
+                            className="h-10 w-10 rounded-xl text-gray-400 transition-colors hover:bg-green-50 hover:text-green-700 group-hover:text-gray-500"
+                          >
+                            <Link to={`/instructor/monitoring/${intern.uuid}/dtr-logs`}>
+                              <Clock3 size={16} />
                             </Link>
                           </Button>
                         </div>

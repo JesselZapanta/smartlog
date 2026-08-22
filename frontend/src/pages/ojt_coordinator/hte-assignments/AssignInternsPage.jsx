@@ -34,7 +34,7 @@ function getInitials(name) {
 function InternRow({ intern, checked, onToggle, highlight }) {
   return (
     <label
-      className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-colors ${
+      className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-colors min-h-11 ${
         checked
           ? "border-green-300 bg-green-50/70"
           : highlight
@@ -48,10 +48,10 @@ function InternRow({ intern, checked, onToggle, highlight }) {
         onChange={onToggle}
         className="h-5 w-5 shrink-0 accent-green-600"
       />
-      <span className="min-w-0">
-        <span className="block truncate text-sm font-semibold text-gray-900">{intern.full_name}</span>
-        <span className="block truncate text-xs text-gray-400">{intern.email}</span>
-        {intern.program && <span className="block truncate text-xs text-gray-500">{intern.program}</span>}
+      <span className="min-w-0 flex-1">
+        <span className="block break-words text-sm font-semibold leading-tight text-gray-900">{intern.full_name}</span>
+        <span className="block break-all text-xs text-gray-400">{intern.email}</span>
+        {intern.program && <span className="block break-words text-xs text-gray-500">{intern.program}</span>}
       </span>
     </label>
   );
@@ -260,10 +260,10 @@ export default function AssignInternsPage() {
 
   return (
     <CoordinatorLayout>
-      <div className="mx-auto w-full max-w-5xl px-4 pb-16 pt-6 sm:px-6">
+      <div className="mx-auto w-full max-w-5xl space-y-4 px-3 pb-[calc(env(safe-area-inset-bottom,0px)+5rem)] pt-3 sm:space-y-5 sm:px-4 sm:pt-6 lg:px-6">
         <Link
           to="/coordinator/hte-assignments"
-          className="inline-flex min-h-11 items-center gap-2 rounded-xl text-sm font-semibold text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl px-1 text-sm font-semibold text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 sm:px-2"
         >
           <ArrowLeft size={16} /> Back to Assigned Interns
         </Link>
@@ -272,36 +272,38 @@ export default function AssignInternsPage() {
           <PageLoader />
         ) : hte ? (
           <>
-            <div className="mt-4 flex items-start gap-3.5 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm ring-1 ring-gray-100 sm:items-center sm:p-5">
-              <Avatar className="h-12 w-12 shrink-0">
-                {hte.profile_picture && <AvatarImage src={hte.profile_picture} alt={hte.contact_person} />}
-                <AvatarFallback className="bg-gradient-to-br from-green-700 to-green-500 text-sm font-bold text-white">
-                  {getInitials(hte.contact_person)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0">
-                <h1 className="font-heading text-lg font-bold text-green-950 sm:text-2xl">{hte.name}</h1>
-                <p className="mt-0.5 text-xs text-gray-400 sm:text-sm">
-                  {hte.program || "—"} · {hte.contact_person}
-                </p>
+            <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm ring-1 ring-gray-100 sm:flex-row sm:items-center sm:gap-3.5 sm:p-5">
+              <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-3.5">
+                <Avatar className="h-12 w-12 shrink-0 sm:h-14 sm:w-14">
+                  {hte.profile_picture && <AvatarImage src={hte.profile_picture} alt={hte.contact_person} className="object-cover" />}
+                  <AvatarFallback className="bg-gradient-to-br from-green-700 to-green-500 text-sm font-bold text-white sm:text-base">
+                    {getInitials(hte.contact_person)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <h1 className="break-words font-heading text-lg font-bold leading-tight text-green-950 sm:truncate sm:text-2xl">{hte.name}</h1>
+                  <p className="mt-0.5 break-words text-xs text-gray-400 sm:truncate sm:text-sm">
+                    {hte.program || "—"} · {hte.contact_person}
+                  </p>
+                </div>
               </div>
             </div>
 
             {yearError ? (
-              <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
+              <div className="mt-4 flex flex-col items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-center sm:mt-6 sm:p-6">
                 <Building2 size={20} className="text-amber-500" />
-                <p className="text-sm font-semibold text-amber-800">{yearError}</p>
+                <p className="break-words text-sm font-semibold text-amber-800">{yearError}</p>
                 <Link to="/coordinator/hte-assignments" className="text-sm font-semibold text-amber-700 underline">
                   Go back and pick an academic year
                 </Link>
               </div>
             ) : (
-              <div className="mt-6 grid items-start gap-6 lg:grid-cols-2">
-                <section className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm ring-1 ring-gray-100 sm:p-5">
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <UserCheck size={16} className="text-green-600" />
-                      <h2 className="text-sm font-bold uppercase tracking-wider text-gray-700">
+              <div className="mt-4 flex flex-col gap-4 sm:mt-6 sm:gap-6 lg:grid lg:grid-cols-2 lg:items-start">
+                <section className="order-2 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm ring-1 ring-gray-100 sm:p-5 lg:order-1">
+                  <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <UserCheck size={16} className="shrink-0 text-green-600" />
+                      <h2 className="break-words text-sm font-bold uppercase tracking-wider text-gray-700">
                         Assigned to this HTE ({assigned.length})
                       </h2>
                     </div>
@@ -309,7 +311,7 @@ export default function AssignInternsPage() {
                       <button
                         type="button"
                         onClick={toggleAllAssigned}
-                        className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-2 text-xs font-semibold text-green-700 transition-colors hover:bg-green-50"
+                        className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 self-start rounded-xl px-2 text-xs font-semibold text-green-700 transition-colors hover:bg-green-50 sm:self-auto"
                       >
                         <CheckSquare size={14} />
                         {selectedAssigned.length === assigned.length ? "Unselect all" : "Select all"}
@@ -325,7 +327,7 @@ export default function AssignInternsPage() {
                     </div>
                   ) : (
                     <>
-                      <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
+                      <div className="max-h-64 space-y-2 overflow-y-auto pr-1 sm:max-h-80">
                         {assigned.map((intern) => (
                           <InternRow
                             key={intern.id}
@@ -350,10 +352,10 @@ export default function AssignInternsPage() {
                   )}
                 </section>
 
-                <section className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm ring-1 ring-gray-100 sm:p-5">
+                <section className="order-1 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm ring-1 ring-gray-100 sm:p-5 lg:order-2">
                   <div className="mb-3 flex items-center gap-2">
-                    <UserCheck size={16} className="text-green-600" />
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-gray-700">Available interns</h2>
+                    <UserCheck size={16} className="shrink-0 text-green-600" />
+                    <h2 className="break-words text-sm font-bold uppercase tracking-wider text-gray-700">Available interns</h2>
                   </div>
 
                   <div className="relative">
@@ -380,20 +382,20 @@ export default function AssignInternsPage() {
                     </div>
                   ) : (
                     <>
-                      <div className="mt-3 mb-2 flex items-center justify-between gap-2">
-                        <p className="text-xs text-gray-400">
+                      <div className="mt-3 mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="break-words text-xs text-gray-400">
                           Showing {interns.length} of {totalAvailable} assignable interns
                         </p>
                         <button
                           type="button"
                           onClick={toggleAllAvailable}
-                          className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl px-2 text-xs font-semibold text-green-700 transition-colors hover:bg-green-50"
+                          className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 self-start rounded-xl px-2 text-xs font-semibold text-green-700 transition-colors hover:bg-green-50 sm:self-auto"
                         >
                           <CheckSquare size={14} />
                           {selected.length === interns.length ? "Unselect all" : "Select all"}
                         </button>
                       </div>
-                      <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+                      <div className="max-h-64 space-y-2 overflow-y-auto pr-1 sm:max-h-[22rem]">
                         {interns.map((intern) => (
                           <InternRow
                             key={intern.id}

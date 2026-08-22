@@ -197,11 +197,16 @@ export default function HteEvaluateInternListPage() {
 
   function clearFilters() {
     setSearch("");
-    setAcademicYear("all");
+    const active = terms.find((term) => term.status === "active");
+    setAcademicYear(active ? String(active.id) : "all");
     setPage(1);
   }
 
-  const hasFilters = Boolean(search) || academicYear !== "all";
+  const activeAcademicYearId = (() => {
+    const active = terms.find((term) => term.status === "active");
+    return active ? String(active.id) : "all";
+  })();
+  const hasFilters = Boolean(search) || academicYear !== activeAcademicYearId;
 
   return (
     <HteLayout>

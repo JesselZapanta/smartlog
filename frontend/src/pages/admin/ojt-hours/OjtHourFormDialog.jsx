@@ -185,14 +185,14 @@ export default function OjtHourFormDialog({ open, onOpenChange, ojtHour, institu
               />
             </div>
 
-            <DialogFooter className="flex-col-reverse gap-2 border-t border-gray-100 pt-4 sm:flex-row sm:justify-end">
-              <Button type="button" variant="outline" className="h-11 rounded-xl" onClick={() => onOpenChange(false)}>
+            <DialogFooter className="flex flex-row gap-2 border-t border-gray-100 pt-4 sm:justify-end">
+              <Button type="button" variant="outline" className="h-11 flex-1 rounded-xl sm:flex-initial" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={submitting}
-                className="h-11 rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700"
+                className="h-11 flex-1 rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700 sm:flex-initial"
               >
                 {submitting ? (
                   <>

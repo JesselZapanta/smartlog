@@ -546,14 +546,14 @@ export default function CoordinatorIssueFormPage() {
 
               </CardContent>
 
-              <div className="flex flex-col-reverse gap-2 border-t border-gray-100 px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
-                <Button type="button" variant="outline" className="h-11 rounded-xl" onClick={() => navigate("/coordinator/issues")}>
+              <div className="flex flex-row gap-2 border-t border-gray-100 px-5 py-4 sm:justify-end sm:px-6">
+                <Button type="button" variant="outline" className="h-11 flex-1 rounded-xl sm:flex-initial" onClick={() => navigate("/coordinator/issues")}>
                   Cancel
                 </Button>
                 <Button
                   type="submit"
                   disabled={submitting}
-                  className="h-11 rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700"
+                  className="h-11 flex-1 rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700 sm:flex-initial"
                 >
                   {submitting ? (
                     <>
