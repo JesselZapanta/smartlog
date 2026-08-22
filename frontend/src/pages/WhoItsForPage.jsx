@@ -57,7 +57,7 @@ const roles = [
   {
     icon: User,
     title: "Intern",
-    subtitle: "Student · BSIT / etc.",
+    subtitle: "Student · BSIT / BSCS / etc.",
     desc: "The actor in the field. Captures attendance, submits journals and requirements, and tracks completion.",
     bullets: ["Photo-captured DTR", "Daily journals & requirements", "View hours & evaluations"],
     accent: "from-emerald-600 to-green-600",
@@ -67,7 +67,7 @@ const roles = [
 
 export default function WhoItsForPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-white">
+    <div className="flex min-h-screen flex-col overflow-x-hidden bg-white">
       <PublicHeader />
 
       <section className="relative overflow-hidden bg-gradient-to-br from-green-950 via-green-900 to-green-700">
@@ -77,8 +77,11 @@ export default function WhoItsForPage() {
         <div className="pointer-events-none absolute right-1/4 top-20 h-1.5 w-1.5 rounded-full bg-emerald-300/30" />
         <div className="relative mx-auto grid w-full max-w-7xl items-center gap-8 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[1.1fr_0.9fr] lg:px-8">
           <div className="text-center lg:text-left">
-            <Badge variant="outline" className="border-white/20 bg-white/10 font-mono text-[0.65rem] tracking-[0.2em] text-[#86efac]">
-              <Users size={12} className="mr-1.5 inline" /> TCGC · OJT, PLACEMENT & ALUMNI AFFAIRS OFFICE
+            <Badge
+              variant="outline"
+              className="border-white/20 bg-white/10 px-2.5 py-1 text-center font-mono text-[0.6rem] leading-tight tracking-[0.15em] text-[#86efac] sm:px-3 sm:text-[0.65rem] sm:tracking-[0.2em]"
+            >
+              <Users size={12} className="mr-1 inline sm:mr-1.5" /> TCGC · OJT, PLACEMENT & ALUMNI AFFAIRS OFFICE
             </Badge>
             <h1 className="mt-4 font-heading text-3xl font-bold leading-tight text-white sm:text-4xl lg:text-[2.5rem]">
               Built for <span className="text-[#86efac]">TCGC.</span>
@@ -102,7 +105,7 @@ export default function WhoItsForPage() {
               </span>
             </div>
           </div>
-          <div className="relative mx-auto flex w-full max-w-sm flex-col items-center gap-4 sm:max-w-md">
+          <div className="relative mx-auto flex w-full max-w-[340px] flex-col items-center gap-4 sm:max-w-sm">
             <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/5 blur-xl" />
             <div className="relative flex w-full flex-col items-center rounded-[1.75rem] border border-white/15 bg-white p-6 shadow-2xl sm:p-7">
               <img
@@ -114,10 +117,12 @@ export default function WhoItsForPage() {
               <div className="mt-4 text-center">
                 <p className="font-heading text-sm font-bold leading-tight text-green-900">TANGUB CITY GLOBAL COLLEGE</p>
                 <p className="font-mono text-[10px] font-semibold tracking-[0.18em] text-green-700">1984 · LUX MUNDI</p>
-                <div className="mx-auto mt-2 flex items-center justify-center gap-1.5 rounded-full bg-green-50 px-3 py-1 ring-1 ring-green-200">
-                  <span className="h-1.5 w-1.5 rounded-full bg-green-600" />
-                  <span className="font-mono text-[10px] font-bold tracking-widest text-green-700">OJT, PLACEMENT & ALUMNI AFFAIRS OFFICE</span>
-                </div>
+                  <div className="mx-auto mt-2 flex max-w-full flex-wrap items-center justify-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1.5 text-center ring-1 ring-green-200 sm:px-3">
+                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-green-600" />
+                    <span className="text-center font-mono text-[9px] font-bold leading-tight tracking-wide text-green-700 sm:text-[10px] sm:tracking-widest">
+                      OJT, PLACEMENT & ALUMNI AFFAIRS OFFICE
+                    </span>
+                  </div>
                 <p className="mt-2 text-[11px] font-medium tracking-widest text-green-700/60">INTEGRITY · COMPASSION · EXCELLENCE</p>
               </div>
             </div>
@@ -130,18 +135,18 @@ export default function WhoItsForPage() {
 
       <section className="border-b border-gray-100 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-gray-50/60 px-5 py-4 sm:flex-row sm:px-6">
-            <div className="flex items-center gap-3">
-              <img src="/tcgc-logo.png" alt="TCGC seal small" className="h-10 w-10 object-contain sm:h-11 sm:w-11" />
-              <div className="text-left">
+          <div className="flex flex-col items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-gray-50/60 px-4 py-4 text-center sm:flex-row sm:px-6 sm:text-left">
+            <div className="flex w-full items-center justify-center gap-3 sm:w-auto sm:justify-start">
+              <img src="/tcgc-logo.png" alt="TCGC seal small" className="h-10 w-10 shrink-0 object-contain sm:h-11 sm:w-11" />
+              <div className="min-w-0 text-center sm:text-left">
                 <p className="font-heading text-sm font-bold leading-tight text-gray-900">Tangub City Global College</p>
                 <p className="font-mono text-xs font-medium text-green-700">OJT, Placement and Alumni Affairs Office</p>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs">
+            <div className="flex w-full flex-wrap items-center justify-center gap-2 text-xs sm:w-auto sm:justify-end">
               <span className="rounded-full bg-white px-3 py-1.5 font-medium text-gray-600 ring-1 ring-gray-200">Est. 1984</span>
               <span className="rounded-full bg-green-600 px-3 py-1.5 font-semibold text-white shadow-sm">Lux Mundi</span>
-              <span className="rounded-full bg-white px-3 py-1.5 font-medium text-gray-600 ring-1 ring-gray-200">Tangub City, Misamis Occidental</span>
+              <span className="rounded-full bg-white px-2.5 py-1.5 text-center font-medium leading-tight text-gray-600 ring-1 ring-gray-200 sm:px-3">Tangub City, Misamis Occidental</span>
             </div>
           </div>
         </div>
@@ -185,9 +190,9 @@ export default function WhoItsForPage() {
       <section className="border-y border-gray-100 bg-gray-50/60">
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl rounded-[1.5rem] border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center">
               <Badge className="bg-green-600 font-mono text-[0.65rem] tracking-widest text-white hover:bg-green-700">HOW IT FLOWS AT TCGC</Badge>
-              <span className="text-xs font-medium text-gray-500">Intern → HTE → Instructor → Coordinator → OPAO</span>
+              <span className="text-[11px] font-medium leading-tight text-gray-500 sm:text-xs">Intern → HTE → Instructor → Coordinator → OPAO</span>
             </div>
             <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-5">
               {[
