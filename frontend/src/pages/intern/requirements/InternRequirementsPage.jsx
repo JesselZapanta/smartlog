@@ -7,6 +7,7 @@ import { firstErrorMessage } from "@/lib/errors";
 import { typeLabel, typeTone } from "@/pages/admin/requirements/constants.js";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { cn } from "@/lib/utils";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
@@ -86,45 +87,63 @@ function StatusTags({ title, approved, pending, rejected }) {
 }
 
 function RequirementCard({ requirement, submittingId, removingId, onFile, onRemove }) {
+  const submission = requirement.submission;
+  const approved = submission?.status === "approved";
+
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm ring-1 ring-gray-100">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-heading text-sm font-bold text-green-950">{requirement.name}</p>
+    <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ring-1 ring-gray-100">
+      <div className="flex items-start gap-3 p-4">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-700 ring-1 ring-green-100">
+          <FileText size={17} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="break-words font-heading text-sm font-bold leading-snug text-green-950">
+            {requirement.name}
+          </p>
+          <div className="mt-2 flex flex-col items-start gap-1.5">
+            {submission && <StatusPill status={submission.status} />}
+            <TypePill type={requirement.type} />
+          </div>
           {requirement.description && (
-            <p className="mt-1 text-xs text-gray-500">{requirement.description}</p>
+            <p className="mt-1.5 text-xs leading-relaxed text-gray-500">{requirement.description}</p>
           )}
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-1.5">
-          <TypePill type={requirement.type} />
-          {requirement.submission && <StatusPill status={requirement.submission.status} />}
         </div>
       </div>
 
-      {requirement.submission?.status === "rejected" && requirement.submission.rejection_reason && (
-        <div className="mt-3 flex items-start gap-2 rounded-xl bg-red-50 p-3 ring-1 ring-red-100">
+      {submission?.status === "rejected" && submission.rejection_reason && (
+        <div className="mx-4 mb-3 flex items-start gap-2 rounded-xl bg-red-50 p-3 ring-1 ring-red-100">
           <AlertTriangle size={15} className="mt-0.5 shrink-0 text-red-600" />
           <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-wide text-red-700">Rejection reason</p>
-            <p className="mt-0.5 text-sm text-red-800">{requirement.submission.rejection_reason}</p>
+            <p className="mt-0.5 break-words text-sm text-red-800">{submission.rejection_reason}</p>
           </div>
         </div>
       )}
 
-      <div className="mt-4 border-t border-gray-50 pt-4">
-        {requirement.submission ? (
-          <div className="flex min-h-11 items-center justify-between gap-2 rounded-xl border border-green-200 bg-green-50 px-3 py-2">
-            <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-green-800">
+      <div className="border-t border-gray-100 bg-gray-50/60 p-3 sm:p-4">
+        {submission ? (
+          <div
+            className={cn(
+              "flex min-h-11 items-center justify-between gap-2 rounded-xl px-3 py-2",
+              approved ? "border border-green-200 bg-green-50" : "border border-gray-200 bg-white"
+            )}
+          >
+            <div
+              className={cn(
+                "flex min-w-0 items-center gap-2 text-sm font-medium",
+                approved ? "text-green-800" : "text-gray-700"
+              )}
+            >
               <FileText size={16} className="shrink-0" />
               <span className="truncate">
-                {requirement.submission.status === "rejected"
+                {submission.status === "rejected"
                   ? "Submitted (needs resubmit)"
-                  : `Submitted ${formatDate(requirement.submission.submitted_at)}`}
+                  : `Submitted ${formatDate(submission.submitted_at)}`}
               </span>
             </div>
             <div className="flex shrink-0 items-center gap-1">
               <a
-                href={requirement.submission.file_url}
+                href={submission.file_url}
                 target="_blank"
                 rel="noreferrer"
                 aria-label="Open submitted PDF"
@@ -132,60 +151,54 @@ function RequirementCard({ requirement, submittingId, removingId, onFile, onRemo
               >
                 <ExternalLink size={16} />
               </a>
-              {requirement.submission.status !== "approved" && (
+              {!approved && (
                 <button
                   type="button"
                   onClick={() => onRemove(requirement)}
                   disabled={removingId === requirement.id}
                   aria-label="Remove submission"
-                  className="-my-2 flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-green-100 hover:text-red-600 disabled:opacity-50"
+                  className="-my-2 flex h-11 w-11 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
                 >
-                  {removingId === requirement.id ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <X size={16} />
-                  )}
+                  {removingId === requirement.id ? <Loader2 size={16} className="animate-spin" /> : <X size={16} />}
                 </button>
               )}
             </div>
           </div>
         ) : (
-          <p className="text-xs text-gray-400">Not yet submitted</p>
+          <p className="px-1 py-2 text-xs font-medium text-gray-400">Not yet submitted</p>
         )}
 
-        <label
-          htmlFor={`req-file-${requirement.id}`}
-          className={`mt-3 flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed px-4 py-3 text-sm font-semibold transition-colors ${
-            requirement.submission?.status === "approved"
-              ? "cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400"
-              : "border-gray-300 bg-white text-gray-600 hover:border-green-500 hover:bg-green-50 hover:text-green-700"
-          }`}
-        >
-          {submittingId === requirement.id ? (
-            <>
-              <Loader2 size={16} className="animate-spin" /> Uploading…
-            </>
-          ) : (
-            <>
-              <Upload size={16} />
-              {requirement.submission?.status === "approved"
-                ? "Approved"
-                : requirement.submission?.status === "rejected"
-                  ? "Resubmit PDF"
-                  : requirement.submission
-                    ? "Replace PDF"
-                    : "Upload PDF"}
-            </>
-          )}
-        </label>
-        <input
-          id={`req-file-${requirement.id}`}
-          type="file"
-          accept="application/pdf,.pdf"
-          className="hidden"
-          disabled={submittingId === requirement.id || requirement.submission?.status === "approved"}
-          onChange={(event) => onFile(event, requirement)}
-        />
+        {!approved && (
+          <>
+            <label
+              htmlFor={`req-file-${requirement.id}`}
+              className={`mt-2.5 flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${
+                submission?.status === "rejected"
+                  ? "bg-red-600 text-white hover:bg-red-700 active:scale-[0.99]"
+                  : "border border-dashed border-gray-300 bg-white text-gray-600 hover:border-green-500 hover:bg-green-50 hover:text-green-700"
+              }`}
+            >
+              {submittingId === requirement.id ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" /> Uploading…
+                </>
+              ) : (
+                <>
+                  <Upload size={16} />
+                  {submission?.status === "rejected" ? "Resubmit PDF" : submission ? "Replace PDF" : "Upload PDF"}
+                </>
+              )}
+            </label>
+            <input
+              id={`req-file-${requirement.id}`}
+              type="file"
+              accept="application/pdf,.pdf"
+              className="hidden"
+              disabled={submittingId === requirement.id}
+              onChange={(event) => onFile(event, requirement)}
+            />
+          </>
+        )}
       </div>
     </div>
   );

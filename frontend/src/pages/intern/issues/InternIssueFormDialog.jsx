@@ -211,7 +211,7 @@ export default function InternIssueFormDialog({ open, onOpenChange, onSaved, iss
               </div>
             </div>
 
-            <DialogFooter className="flex-col-reverse gap-2 border-t border-gray-100 pt-4 sm:flex-row sm:justify-end">
+            <DialogFooter className="flex-row justify-end gap-2 border-t border-gray-100 pt-4">
               <Button type="button" variant="outline" className="h-11 rounded-xl" onClick={() => onOpenChange(false)}>
                 {isView ? "Close" : "Cancel"}
               </Button>
