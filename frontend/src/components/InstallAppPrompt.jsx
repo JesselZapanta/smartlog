@@ -2,57 +2,34 @@ import { useEffect, useState } from "react";
 import { Share, X, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LogoBadge } from "@/components/Logo.jsx";
+import {
+  clearDeferredPrompt,
+  getDeferredPrompt,
+  isIosDevice,
+  isStandaloneDisplay,
+} from "@/lib/pwaInstall";
 
 const DISMISS_KEY = "smartlog_install_dismissed_at";
 const DISMISS_TTL = 7 * 24 * 60 * 60 * 1000;
-
-let deferredPrompt = null;
-let promptCaptured = false;
-
-if (typeof window !== "undefined") {
-  window.addEventListener("beforeinstallprompt", (event) => {
-    event.preventDefault();
-    deferredPrompt = event;
-    promptCaptured = true;
-    window.dispatchEvent(new Event("smartlog:pwa-installable"));
-  });
-  window.addEventListener("appinstalled", () => {
-    deferredPrompt = null;
-    window.dispatchEvent(new Event("smartlog:pwa-installed"));
-  });
-}
-
-function isStandalone() {
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    window.matchMedia("(display-mode: minimal-ui)").matches ||
-    window.navigator.standalone === true
-  );
-}
-
-function isIos() {
-  const ua = window.navigator.userAgent;
-  return /iphone|ipad|ipod/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-}
 
 export default function InstallAppPrompt() {
   const [visible, setVisible] = useState(false);
   const [platform, setPlatform] = useState("android");
 
   useEffect(() => {
-    if (isStandalone()) return undefined;
+    if (isStandaloneDisplay()) return undefined;
 
     const recentlyDismissed =
       Date.now() - Number(localStorage.getItem(DISMISS_KEY) || 0) < DISMISS_TTL;
     if (recentlyDismissed) return undefined;
 
-    if (isIos()) {
+    if (isIosDevice()) {
       setPlatform("ios");
       setVisible(true);
       return undefined;
     }
 
-    if (promptCaptured) {
+    if (getDeferredPrompt()) {
       setVisible(true);
       return undefined;
     }
@@ -74,14 +51,15 @@ export default function InstallAppPrompt() {
   }
 
   async function installClick() {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
+    const promptEvent = getDeferredPrompt();
+    if (!promptEvent) return;
+    promptEvent.prompt();
     try {
-      await deferredPrompt.userChoice;
+      await promptEvent.userChoice;
     } catch {
-      /* user dismissed the native dialog */
+      /* user closed the native dialog */
     }
-    deferredPrompt = null;
+    clearDeferredPrompt();
     setVisible(false);
   }
 
