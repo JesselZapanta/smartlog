@@ -104,13 +104,13 @@ export default function FeaturesPage() {
                 <Smartphone size={12} className="text-emerald-300" /> Works on mobile
               </span>
             </div>
-            <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
-              <Button asChild size="lg" className="h-11 w-full rounded-xl bg-white px-6 font-semibold text-green-700 hover:bg-green-50 sm:w-auto">
+            <div className="mt-8 flex flex-row items-center justify-center gap-2 lg:justify-start">
+              <Button asChild size="lg" className="h-11 rounded-xl bg-white px-4 font-semibold text-green-700 hover:bg-green-50 sm:px-6">
                 <Link to="/register">
                   Create intern account <ArrowRight size={16} />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="h-11 w-full rounded-xl border-white/20 bg-white/5 text-white hover:bg-white/10 sm:w-auto">
+              <Button asChild variant="outline" size="lg" className="h-11 rounded-xl border-white/20 bg-white/5 px-4 text-white hover:bg-white/10 sm:px-6">
                 <Link to="/who-its-for">See who it&apos;s for</Link>
               </Button>
             </div>
@@ -217,11 +217,11 @@ export default function FeaturesPage() {
                 Create an intern account in 2 minutes or sign in with a demo role. No setup — we assign you to the active academic year.
               </p>
             </div>
-            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-              <Button asChild size="lg" className="h-11 rounded-xl bg-white px-6 font-semibold text-green-700 hover:bg-green-50">
+            <div className="flex w-full flex-row gap-2 sm:w-auto">
+              <Button asChild size="lg" className="h-11 flex-1 rounded-xl bg-white px-4 font-semibold text-green-700 hover:bg-green-50 sm:flex-initial sm:px-6">
                 <Link to="/register">Create account</Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="h-11 rounded-xl border-white/30 bg-white/5 px-6 font-semibold text-white hover:bg-white/10">
+              <Button asChild size="lg" variant="outline" className="h-11 flex-1 rounded-xl border-white/30 bg-white/5 px-4 font-semibold text-white hover:bg-white/10 sm:flex-initial sm:px-6">
                 <Link to="/login">Sign in</Link>
               </Button>
             </div>

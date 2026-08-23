@@ -67,7 +67,7 @@ const roles = [
 
 export default function WhoItsForPage() {
   return (
-    <div className="flex min-h-screen flex-col overflow-x-hidden bg-white">
+    <div className="flex min-h-screen flex-col bg-white">
       <PublicHeader />
 
       <section className="relative overflow-hidden bg-gradient-to-br from-green-950 via-green-900 to-green-700">
@@ -242,11 +242,11 @@ export default function WhoItsForPage() {
                 </p>
               </div>
             </div>
-            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-              <Button asChild size="lg" className="h-11 rounded-xl bg-white px-6 font-semibold text-green-700 hover:bg-green-50">
+            <div className="flex w-full flex-row gap-2 sm:w-auto">
+              <Button asChild size="lg" className="h-11 flex-1 rounded-xl bg-white px-4 font-semibold text-green-700 hover:bg-green-50 sm:flex-initial sm:px-6">
                 <Link to="/login">Go to login</Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="h-11 rounded-xl border-white/30 bg-white/5 px-6 font-semibold text-white hover:bg-white/10">
+              <Button asChild size="lg" variant="outline" className="h-11 flex-1 rounded-xl border-white/30 bg-white/5 px-4 font-semibold text-white hover:bg-white/10 sm:flex-initial sm:px-6">
                 <Link to="/register">Create account</Link>
               </Button>
             </div>
