@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, ArrowRight, LayoutDashboard } from "lucide-react";
+import { Menu, ArrowRight, LayoutDashboard, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetClose, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { LogoBadge } from "@/components/Logo.jsx";
+import InstallAppButton from "@/components/InstallAppButton.jsx";
 import { useAuth } from "@/contexts/AuthContext";
 import { homeByRole } from "@/components/ProtectedRoute.jsx";
 
@@ -56,6 +57,12 @@ export default function PublicHeader() {
             </Button>
           ) : (
             <>
+              <InstallAppButton
+                ariaLabel="Install SMARTLOG app"
+                className="hidden h-11 items-center gap-1.5 rounded-xl border border-green-200 px-4 text-sm font-semibold text-green-700 transition-colors hover:bg-green-50 lg:inline-flex"
+              >
+                <Download size={16} /> Install App
+              </InstallAppButton>
               <Button asChild variant="ghost" className="h-11 rounded-xl px-4 text-green-700 hover:bg-green-50">
                 <Link to="/login">Login</Link>
               </Button>
@@ -69,6 +76,14 @@ export default function PublicHeader() {
         </div>
 
         <div className="flex items-center gap-2 md:hidden">
+          {!user && (
+            <InstallAppButton
+              ariaLabel="Install SMARTLOG app"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-50"
+            >
+              <Download size={17} />
+            </InstallAppButton>
+          )}
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50">
@@ -107,6 +122,18 @@ export default function PublicHeader() {
               </nav>
 
               <div className="mt-auto border-t border-gray-100 p-4">
+                <div className="mb-3">
+                  {!user && (
+                    <SheetClose asChild>
+                      <InstallAppButton
+                        ariaLabel="Install SMARTLOG app"
+                        className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 font-semibold text-green-700"
+                      >
+                        <Download size={16} /> Install App
+                      </InstallAppButton>
+                    </SheetClose>
+                  )}
+                </div>
                 {user ? (
                   <SheetClose asChild>
                     <Button asChild className="h-12 w-full rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700">
