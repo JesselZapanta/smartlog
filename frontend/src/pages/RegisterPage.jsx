@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import PasswordInput from "@/components/PasswordInput.jsx";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -882,8 +883,7 @@ export default function RegisterPage() {
                                 <FormControl>
                                   <div className="relative">
                                     <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                                    <Input
-                                      type="password"
+                                    <PasswordInput
                                       placeholder="At least 8 characters"
                                       className="h-11 rounded-xl pl-10"
                                       {...field}
@@ -906,7 +906,7 @@ export default function RegisterPage() {
                                 <FormControl>
                                   <div className="relative">
                                     <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                                    <Input type="password" placeholder="Repeat password" className="h-11 rounded-xl pl-10" {...field} />
+                                    <PasswordInput placeholder="Repeat password" className="h-11 rounded-xl pl-10" {...field} />
                                   </div>
                                 </FormControl>
                                 <div className="min-h-[1.25rem]"><FormMessage /></div>
