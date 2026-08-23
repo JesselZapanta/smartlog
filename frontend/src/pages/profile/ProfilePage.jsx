@@ -40,6 +40,7 @@ import {
 } from "@/lib/psgc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import PasswordInput from "@/components/PasswordInput.jsx";
 import {
   Form,
   FormControl,
@@ -939,7 +940,7 @@ export default function ProfilePage() {
                           <FormItem className="sm:col-span-2">
                             <FormLabel className={labelClass}>Current password *</FormLabel>
                             <FormControl>
-                              <Input type="password" placeholder="Your current password" className="h-11 rounded-xl" {...field} />
+                              <PasswordInput placeholder="Your current password" className="h-11 rounded-xl" {...field} />
                             </FormControl>
                             <div className="min-h-[1.25rem]"><FormMessage /></div>
                           </FormItem>
@@ -952,7 +953,7 @@ export default function ProfilePage() {
                           <FormItem>
                             <FormLabel className={labelClass}>New password *</FormLabel>
                             <FormControl>
-                              <Input type="password" placeholder="At least 8 characters" className="h-11 rounded-xl" {...field} />
+                              <PasswordInput placeholder="At least 8 characters" className="h-11 rounded-xl" {...field} />
                             </FormControl>
                             <div className="min-h-[1.25rem]"><FormMessage /></div>
                           </FormItem>
@@ -965,7 +966,7 @@ export default function ProfilePage() {
                           <FormItem>
                             <FormLabel className={labelClass}>Confirm new password *</FormLabel>
                             <FormControl>
-                              <Input type="password" placeholder="Repeat new password" className="h-11 rounded-xl" {...field} />
+                              <PasswordInput placeholder="Repeat new password" className="h-11 rounded-xl" {...field} />
                             </FormControl>
                             <div className="min-h-[1.25rem]"><FormMessage /></div>
                           </FormItem>

@@ -35,6 +35,7 @@ import {
 } from "@/lib/psgc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import PasswordInput from "@/components/PasswordInput.jsx";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Card,
@@ -975,7 +976,7 @@ export default function CoordinatorHteFormPage() {
                                 <FormItem>
                                   <FormLabel className={labelClass}>Password *</FormLabel>
                                   <FormControl>
-                                    <Input className="h-11 rounded-xl" type="password" placeholder="Min 8 characters" {...field} />
+                                    <PasswordInput className="h-11 rounded-xl" placeholder="Min 8 characters" {...field} />
                                   </FormControl>
                                   <div className="min-h-[1.25rem]"><FormMessage /></div>
                                 </FormItem>
@@ -988,7 +989,7 @@ export default function CoordinatorHteFormPage() {
                                 <FormItem>
                                   <FormLabel className={labelClass}>Confirm password *</FormLabel>
                                   <FormControl>
-                                    <Input className="h-11 rounded-xl" type="password" placeholder="Repeat password" {...field} />
+                                    <PasswordInput className="h-11 rounded-xl" placeholder="Repeat password" {...field} />
                                   </FormControl>
                                   <div className="min-h-[1.25rem]"><FormMessage /></div>
                                 </FormItem>
@@ -1005,7 +1006,7 @@ export default function CoordinatorHteFormPage() {
                                 <FormItem className="sm:col-span-2">
                                   <FormLabel className={labelClass}>New password (optional)</FormLabel>
                                   <FormControl>
-                                    <Input className="h-11 rounded-xl" type="password" placeholder="Leave blank to keep current password" {...field} />
+                                    <PasswordInput className="h-11 rounded-xl" placeholder="Leave blank to keep current password" {...field} />
                                   </FormControl>
                                   <div className="min-h-[1.25rem]"><FormMessage /></div>
                                 </FormItem>
@@ -1018,7 +1019,7 @@ export default function CoordinatorHteFormPage() {
                                 <FormItem className="sm:col-span-2">
                                   <FormLabel className={labelClass}>Confirm new password</FormLabel>
                                   <FormControl>
-                                    <Input className="h-11 rounded-xl" type="password" placeholder="Repeat new password" {...field} />
+                                    <PasswordInput className="h-11 rounded-xl" placeholder="Repeat new password" {...field} />
                                   </FormControl>
                                   <div className="min-h-[1.25rem]"><FormMessage /></div>
                                 </FormItem>
