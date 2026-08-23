@@ -60,7 +60,7 @@ export default function PublicHeader() {
                 <Link to="/login">Login</Link>
               </Button>
               <Button asChild className="h-11 rounded-xl bg-green-600 px-5 font-semibold text-white hover:bg-green-700">
-                <Link to="/login">
+                <Link to="/register">
                   Get Started <ArrowRight size={16} />
                 </Link>
               </Button>
@@ -69,12 +69,6 @@ export default function PublicHeader() {
         </div>
 
         <div className="flex items-center gap-2 md:hidden">
-          {!user && (
-            <Button asChild size="sm" className="h-9 rounded-xl bg-green-600 px-3.5 text-sm font-semibold text-white hover:bg-green-700">
-              <Link to="/login">Login</Link>
-            </Button>
-          )}
-
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50">
@@ -132,15 +126,8 @@ export default function PublicHeader() {
                     </SheetClose>
                     <SheetClose asChild>
                       <Button asChild className="h-12 rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700">
-                        <Link to="/login" onClick={() => setOpen(false)} className="inline-flex items-center justify-center gap-1.5">
+                        <Link to="/register" onClick={() => setOpen(false)} className="inline-flex items-center justify-center gap-1.5">
                           Get Started <ArrowRight size={14} />
-                        </Link>
-                      </Button>
-                    </SheetClose>
-                    <SheetClose asChild>
-                      <Button asChild variant="ghost" className="col-span-2 h-11 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50">
-                        <Link to="/register" onClick={() => setOpen(false)} className="inline-flex items-center justify-center">
-                          Create intern account
                         </Link>
                       </Button>
                     </SheetClose>

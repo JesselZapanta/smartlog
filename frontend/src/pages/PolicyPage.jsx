@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ShieldCheck, Clock3, Building2, Smartphone, FileText, Lock, Scale, Eye, CheckCircle2, Mail, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +7,7 @@ import { LogoBadge } from "@/components/Logo.jsx";
 import PublicHeader from "@/components/PublicHeader.jsx";
 
 export default function PolicyPage() {
+  const [tab, setTab] = useState("terms");
   return (
     <div className="flex min-h-screen flex-col bg-white">
       <PublicHeader />
@@ -46,23 +48,33 @@ export default function PolicyPage() {
               </div>
               <div className="mt-4 space-y-3">
                 {[
-                  { icon: FileText, title: "Terms of Service", desc: "Accounts, use & responsibilities", active: true },
-                  { icon: ShieldCheck, title: "Privacy Policy", desc: "Collection, use & your rights", active: false },
-                ].map(({ icon: Icon, title, desc, active }) => (
-                  <div
-                    key={title}
-                    className={`flex items-center gap-3 rounded-xl border px-3 py-3 ${active ? "border-white/20 bg-white text-green-900 shadow-sm" : "border-white/10 bg-white/5 text-white"}`}
-                  >
-                    <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${active ? "bg-green-600 text-white" : "bg-white/10 text-emerald-200"}`}>
-                      <Icon size={16} />
-                    </span>
-                    <div className="min-w-0 flex-1 text-left">
-                      <p className={`text-xs font-bold leading-none ${active ? "text-green-900" : "text-white"}`}>{title}</p>
-                      <p className={`text-[11px] ${active ? "text-gray-500" : "text-emerald-100/70"}`}>{desc}</p>
-                    </div>
-                    {active && <CheckCircle2 size={16} className="shrink-0 text-green-600" />}
-                  </div>
-                ))}
+                  { icon: FileText, title: "Terms of Service", desc: "Accounts, use & responsibilities", value: "terms" },
+                  { icon: ShieldCheck, title: "Privacy Policy", desc: "Collection, use & your rights", value: "privacy" },
+                ].map(({ icon: Icon, title, desc, value }) => {
+                  const active = tab === value;
+                  return (
+                    <button
+                      key={title}
+                      type="button"
+                      onClick={() => setTab(value)}
+                      aria-pressed={active}
+                      className={`flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors ${
+                        active
+                          ? "border-white/20 bg-white text-green-900 shadow-sm"
+                          : "border-white/10 bg-white/5 text-white hover:bg-white/10"
+                      }`}
+                    >
+                      <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${active ? "bg-green-600 text-white" : "bg-white/10 text-emerald-200"}`}>
+                        <Icon size={16} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className={`block text-xs font-bold leading-none ${active ? "text-green-900" : "text-white"}`}>{title}</span>
+                        <span className={`mt-0.5 block text-[11px] ${active ? "text-gray-500" : "text-emerald-100/70"}`}>{desc}</span>
+                      </span>
+                      {active && <CheckCircle2 size={16} className="shrink-0 text-green-600" />}
+                    </button>
+                  );
+                })}
               </div>
               <div className="mt-4 flex items-center gap-2 rounded-xl bg-white px-3 py-2.5 text-xs text-gray-600 shadow-sm">
                 <Mail size={14} className="text-green-600" /> Questions? <span className="font-semibold text-green-700">opao@tcgc.edu.ph</span>
@@ -73,7 +85,7 @@ export default function PolicyPage() {
       </section>
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-        <Tabs defaultValue="terms" className="w-full">
+        <Tabs value={tab} onValueChange={setTab} className="w-full">
           <div className="sticky top-[65px] z-20 -mx-4 border-b border-gray-100 bg-white/90 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-xl sm:border sm:px-3">
             <TabsList className="grid h-11 w-full grid-cols-2 rounded-xl bg-gray-100 p-1 sm:inline-flex sm:w-auto">
               <TabsTrigger value="terms" className="rounded-lg font-semibold data-[state=active]:bg-white data-[state=active]:shadow-sm">

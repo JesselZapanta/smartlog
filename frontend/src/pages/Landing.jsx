@@ -51,7 +51,7 @@ export default function Landing() {
                 </Button>
               ) : (
                 <Button asChild size="lg" className="h-12 w-full rounded-xl bg-white px-6 font-semibold text-green-700 shadow-sm hover:bg-green-50 sm:w-auto">
-                  <Link to="/login">
+                  <Link to="/register">
                     Get Started <ArrowRight size={16} />
                   </Link>
                 </Button>
