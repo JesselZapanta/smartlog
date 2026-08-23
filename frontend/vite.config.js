@@ -35,6 +35,7 @@ export default defineConfig({
         description:
           "Cross-platform OJT monitoring for Tangub City Global College — photo-captured DTR, journals, requirements, evaluations, and reports.",
         lang: "en",
+        id: "/",
         start_url: "/",
         scope: "/",
         display: "standalone",
