@@ -507,9 +507,10 @@ export default function UserFormPage() {
       form.setValue("mothers_name", record.mothers_name || "");
       form.setValue("mothers_occupation", record.mothers_occupation || "");
       form.setValue("mothers_contact", record.mothers_contact || "");
-      form.setValue("parents_guardian_address", record.parents_guardian_address || "");
-      form.setValue("practicum_instructor", record.practicum_instructor || "");
-      setExistingCorUrl(record.cor || null);
+        form.setValue("parents_guardian_address", record.parents_guardian_address || "");
+        form.setValue("practicum_instructor", record.practicum_instructor || "");
+        form.setValue("cor", record.cor || "");
+        setExistingCorUrl(record.cor || null);
     } else if (type === "hte") {
       form.setValue("name", record.name || "");
       form.setValue("institute_id", record.institute_id ? String(record.institute_id) : "");

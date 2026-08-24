@@ -104,4 +104,20 @@ class UserNotification extends Model
 
         return $coordinators->count();
     }
+
+    /**
+     * Notify every admin (OPAO).
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public static function notifyAdmins(string $type, string $title, string $message, array $data = []): int
+    {
+        $admins = User::where('role', 'admin')->get();
+
+        foreach ($admins as $admin) {
+            self::notify($admin, $type, $title, $message, $data);
+        }
+
+        return $admins->count();
+    }
 }

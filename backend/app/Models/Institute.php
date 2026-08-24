@@ -26,6 +26,11 @@ class Institute extends Model
         return $this->hasMany(Program::class);
     }
 
+    public function interns(): HasMany
+    {
+        return $this->hasMany(Intern::class);
+    }
+
     public function ojtHour(): HasOne
     {
         return $this->hasOne(OjtHour::class);

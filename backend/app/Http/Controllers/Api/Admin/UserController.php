@@ -43,7 +43,7 @@ class UserController extends Controller
         $sort = $request->string('sort', 'id')->trim()->toString();
         $order = $request->string('order', 'desc')->trim()->toString();
 
-        if (! in_array($sort, ['id', 'firstname', 'lastname', 'email', 'role', 'created_at'], true)) {
+        if (! in_array($sort, ['id', 'firstname', 'lastname', 'email', 'role', 'created_at', 'email_verified_at'], true)) {
             $sort = 'id';
         }
 

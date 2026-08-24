@@ -7,6 +7,7 @@ use App\Http\Requests\OjtCoordinator\CoordinatorStoreRequirementRequest;
 use App\Http\Requests\OjtCoordinator\CoordinatorUpdateRequirementRequest;
 use App\Http\Resources\Admin\RequirementResource;
 use App\Models\Requirement;
+use App\Models\UserNotification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -110,8 +111,17 @@ class RequirementController extends Controller
             'institute_id' => $instituteId,
         ]);
 
+        $requirement->load('institute');
+
+        UserNotification::notifyAdmins(
+            'admin_requirement_created',
+            'New requirement added',
+            "{$request->user()->full_name} added \"{$data['name']}\" for {$requirement->institute->name}.",
+            ['requirement_id' => $requirement->id, 'institute_id' => $instituteId],
+        );
+
         return response()->json([
-            'data' => new RequirementResource($requirement->load('institute')),
+            'data' => new RequirementResource($requirement),
         ], 201);
     }
 

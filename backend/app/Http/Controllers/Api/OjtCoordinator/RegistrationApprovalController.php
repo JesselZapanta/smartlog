@@ -131,6 +131,13 @@ class RegistrationApprovalController extends Controller
             ['uuid' => $user->uuid],
         );
 
+        UserNotification::notifyAdmins(
+            'admin_intern_approved',
+            'New intern approved',
+            "{$user->full_name} was approved by {$request->user()->full_name} and is now pending deployment.",
+            ['uuid' => $user->uuid, 'institute_id' => $intern->institute_id],
+        );
+
         return response()->json([
             'data' => $this->row($intern->refresh()),
         ]);

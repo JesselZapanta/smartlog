@@ -25,6 +25,12 @@ export function routeFor(notification) {
     case "journal_approved":
     case "journal_rejected":
       return `/intern/journals/${notification.data?.date || ""}`;
+    case "admin_intern_approved":
+      return `/admin/interns/${notification.data?.uuid || ""}`;
+    case "admin_hte_created":
+      return `/admin/htes/${notification.data?.hte_uuid || ""}`;
+    case "admin_requirement_created":
+      return "/admin/requirements";
     default:
       return null;
   }
@@ -33,6 +39,7 @@ export function routeFor(notification) {
 export function notificationIcon(type) {
   switch (type) {
     case "registration_approved":
+    case "admin_intern_approved":
       return CheckCircle2;
     case "registration_rejected":
       return XCircle;
@@ -40,6 +47,7 @@ export function notificationIcon(type) {
     case "registration_resubmitted":
       return RefreshCw;
     case "hte_assigned":
+    case "admin_hte_created":
       return Building2;
     case "intern_deployed":
       return Rocket;
@@ -51,6 +59,7 @@ export function notificationIcon(type) {
     case "journal_rejected":
       return XCircle;
     case "requirement_submitted":
+    case "admin_requirement_created":
     case "journal_submitted":
       return FileText;
     case "journal_flagged":
@@ -63,6 +72,7 @@ export function notificationIcon(type) {
 export function notificationStyles(type) {
   switch (type) {
     case "registration_approved":
+    case "admin_intern_approved":
       return "bg-green-50 text-green-700";
     case "registration_rejected":
       return "bg-red-50 text-red-600";
@@ -72,6 +82,8 @@ export function notificationStyles(type) {
       return "bg-amber-50 text-amber-600";
     case "hte_assigned":
       return "bg-green-50 text-green-700";
+    case "admin_hte_created":
+      return "bg-sky-50 text-sky-600";
     case "intern_deployed":
       return "bg-green-50 text-green-700";
     case "requirement_approved":
@@ -79,6 +91,7 @@ export function notificationStyles(type) {
     case "requirement_rejected":
       return "bg-red-50 text-red-600";
     case "requirement_submitted":
+    case "admin_requirement_created":
       return "bg-sky-50 text-sky-600";
     case "journal_submitted":
       return "bg-sky-50 text-sky-600";

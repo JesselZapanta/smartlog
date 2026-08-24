@@ -4,6 +4,8 @@ use App\Models\AcademicTerm;
 use App\Models\Hte;
 use App\Models\Institute;
 use App\Models\Intern;
+use App\Models\Issue;
+use App\Models\PhotoDtr;
 use App\Models\Program;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -39,6 +41,106 @@ test('admin dashboard exposes overview stats', function () {
     expect($response->json('data.stats.htes'))->toBe(2);
     expect($response->json('data.stats.unverified_users'))->toBe(1);
     expect($response->json('data.recent_interns'))->toHaveCount(4);
+});
+
+test('admin dashboard exposes analytics aggregates', function () {
+    $institute = Institute::create(['name' => 'Institute of Computing']);
+    $otherInstitute = Institute::create(['name' => 'Institute of Education']);
+    $program = Program::create(['institute_id' => $institute->id, 'name' => 'BS Computer Science']);
+    AcademicTerm::create(['code' => '2025-2026', 'description' => 'First Semester', 'status' => 'active']);
+
+    $approved = User::factory()->create(['role' => 'intern']);
+    $pendingInternUser = User::factory()->create(['role' => 'intern']);
+    $term = AcademicTerm::where('code', '2025-2026')->firstOrFail();
+    $approvedIntern = Intern::create([
+        'user_id' => $approved->id,
+        'program_id' => $program->id,
+        'institute_id' => $institute->id,
+        'academic_year_id' => $term->id,
+    ]);
+    $approvedIntern->status = 'approved';
+    $approvedIntern->save();
+    $pendingIntern = Intern::create([
+        'user_id' => $pendingInternUser->id,
+        'program_id' => $program->id,
+        'institute_id' => $otherInstitute->id,
+        'academic_year_id' => $term->id,
+        'status' => 'pending',
+    ]);
+
+    $hteUser = User::factory()->create(['role' => 'hte']);
+    $hte = Hte::create([
+        'user_id' => $hteUser->id,
+        'name' => 'Test Corporation',
+        'institute_id' => $institute->id,
+        'program_id' => $program->id,
+        'status' => 'active',
+    ]);
+
+    PhotoDtr::create([
+        'intern_id' => $approved->intern->id,
+        'dtr_date' => now()->toDateString(),
+        'status' => 'checked',
+    ]);
+
+    Issue::create([
+        'intern_id' => $approved->intern->id,
+        'hte_id' => $hte->id,
+        'type' => 'intern',
+        'issues' => 'My supervisor is unreachable.',
+        'status' => 'pending',
+    ]);
+
+    $response = $this->actingAs(User::factory()->create(['role' => 'admin']), 'api')
+        ->getJson('/api/dashboard')
+        ->assertOk()
+        ->assertJsonPath('data.role', 'admin')
+        ->assertJsonStructure([
+            'data' => [
+                'active_academic_year',
+                'intern_status_breakdown',
+                'pending_registrations',
+                'approved_interns',
+                'rejected_interns',
+                'filters' => ['academic_year_id', 'days'],
+                'filtered_interns_total',
+                'interns_by_institute',
+                'top_programs',
+                'dtr_status_breakdown',
+                'pending_dtr_reviews',
+                'attendance_trend',
+                'requirement_submissions' => ['total', 'pending', 'approved', 'rejected'],
+                'issues' => ['pending', 'resolved'],
+                'recent_issues',
+                'evaluations' => ['intern_ratings', 'hte_ratings', 'interns_evaluated_by_hte'],
+            ],
+        ]);
+
+    expect($response->json('data.active_academic_year.code'))->toBe('2025-2026');
+    expect($response->json('data.pending_registrations'))->toBe(1);
+    expect($response->json('data.approved_interns'))->toBe(1);
+    expect($response->json('data.pending_dtr_reviews'))->toBe(0);
+    expect($response->json('data.issues.pending'))->toBe(1);
+    expect($response->json('data.attendance_trend'))->toHaveCount(30);
+    expect($response->json('data.filters.days'))->toBe(30);
+
+    $statuses = collect($response->json('data.intern_status_breakdown'))->pluck('count', 'status');
+    expect($statuses['pending'])->toBe(1);
+    expect($statuses['approved'])->toBe(1);
+
+    $institutes = collect($response->json('data.interns_by_institute'))->pluck('count', 'name');
+    expect($institutes['Institute of Computing'])->toBe(1);
+    expect($institutes['Institute of Education'])->toBe(1);
+
+    $recentIssues = $response->json('data.recent_issues');
+    expect($recentIssues)->toHaveCount(1);
+    expect($recentIssues[0]['raised_by'])->toBe($approved->full_name);
+
+    $response2 = $this->actingAs(User::factory()->create(['role' => 'admin']), 'api')
+        ->getJson('/api/dashboard?days=15')
+        ->assertOk();
+    expect($response2->json('data.attendance_trend'))->toHaveCount(15);
+    expect($response2->json('data.filters.days'))->toBe(15);
 });
 
 test('coordinator dashboard exposes intern and hte overview', function () {
@@ -97,6 +199,98 @@ test('instructor dashboard includes intern count per program', function () {
         ])
         ->assertJsonPath('data.programs.0.name', $program->name)
         ->assertJsonPath('data.programs.0.intern_count', 1);
+});
+
+test('instructor dashboard exposes analytics aggregates', function () {
+    $institute = Institute::create(['name' => 'Institute of Computing']);
+    $program = Program::create(['institute_id' => $institute->id, 'name' => 'BS Computer Science']);
+    AcademicTerm::create(['code' => '2025-2026', 'description' => 'First Semester', 'status' => 'active']);
+
+    $approved = User::factory()->create(['role' => 'intern']);
+    $pendingInternUser = User::factory()->create(['role' => 'intern']);
+    $term = AcademicTerm::where('code', '2025-2026')->firstOrFail();
+    $approvedIntern = Intern::create([
+        'user_id' => $approved->id,
+        'program_id' => $program->id,
+        'institute_id' => $institute->id,
+        'academic_year_id' => $term->id,
+    ]);
+    $approvedIntern->status = 'approved';
+    $approvedIntern->save();
+    Intern::create([
+        'user_id' => $pendingInternUser->id,
+        'program_id' => $program->id,
+        'institute_id' => $institute->id,
+        'academic_year_id' => $term->id,
+        'status' => 'pending',
+    ]);
+
+    $hteUser = User::factory()->create(['role' => 'hte']);
+    $hte = Hte::create([
+        'user_id' => $hteUser->id,
+        'name' => 'Test Corporation',
+        'institute_id' => $institute->id,
+        'program_id' => $program->id,
+        'status' => 'active',
+    ]);
+
+    PhotoDtr::create([
+        'intern_id' => $approved->intern->id,
+        'dtr_date' => now()->toDateString(),
+        'status' => 'checked',
+    ]);
+
+    Issue::create([
+        'intern_id' => $approved->intern->id,
+        'hte_id' => $hte->id,
+        'type' => 'intern',
+        'issues' => 'My supervisor is unreachable.',
+        'status' => 'pending',
+    ]);
+
+    $response = $this->actingAs(User::factory()->create(['role' => 'ojt_instructor']), 'api')
+        ->getJson('/api/dashboard')
+        ->assertOk()
+        ->assertJsonPath('data.role', 'ojt_instructor')
+        ->assertJsonStructure([
+            'data' => [
+                'stats' => ['interns', 'verified_interns', 'htes', 'programs', 'pending_registrations', 'approved_interns', 'rejected_interns', 'pending_dtr_reviews', 'unresolved_issues', 'unverified_users'],
+                'programs',
+                'recent_interns',
+                'filters' => ['academic_year_id', 'days'],
+                'active_academic_year',
+                'kpi_trends',
+                'intern_status_breakdown',
+                'ojt_status_breakdown',
+                'dtr_status_breakdown',
+                'pending_registrations',
+                'approved_interns',
+                'rejected_interns',
+                'filtered_interns_total',
+                'top_programs',
+                'attendance_trend',
+                'pending_dtr_reviews',
+                'requirement_submissions' => ['total', 'pending', 'approved', 'rejected'],
+                'issues' => ['pending', 'resolved'],
+                'recent_issues',
+                'evaluations' => ['intern_ratings', 'hte_ratings', 'interns_evaluated_by_hte'],
+            ],
+        ]);
+
+    expect($response->json('data.stats.interns'))->toBe(2);
+    expect($response->json('data.stats.pending_registrations'))->toBe(1);
+    expect($response->json('data.stats.approved_interns'))->toBe(1);
+    expect($response->json('data.issues.pending'))->toBe(1);
+    expect($response->json('data.attendance_trend'))->toHaveCount(30);
+    expect($response->json('data.filters.days'))->toBe(30);
+
+    $statuses = collect($response->json('data.intern_status_breakdown'))->pluck('count', 'status');
+    expect($statuses['pending'])->toBe(1);
+    expect($statuses['approved'])->toBe(1);
+
+    $topPrograms = $response->json('data.top_programs');
+    expect($topPrograms[0]['name'])->toBe($program->name);
+    expect($topPrograms[0]['count'])->toBe(2);
 });
 
 test('intern dashboard exposes profile and intern record', function () {
