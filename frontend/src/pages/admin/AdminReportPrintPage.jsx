@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
+import { useAuth } from "@/contexts/AuthContext";
 
 const REPORT_TITLES = {
   overview: "Executive Overview Report",
@@ -87,6 +88,7 @@ function shouldShow(report, key) {
 }
 
 export default function AdminReportPrintPage() {
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const academicYearId = searchParams.get("academic_year_id") || "";
   const report = searchParams.get("report") || "overview";
@@ -118,10 +120,11 @@ export default function AdminReportPrintPage() {
     minute: "2-digit",
   });
   const title = REPORT_TITLES[report] || "SMARTLOG System Report";
+  const preparedName = user?.full_name || [user?.firstname, user?.middlename, user?.lastname, user?.extension].filter(Boolean).join(" ") || "—";
 
   return (
     <div className="bg-gray-100">
-      <style>{`@media print { @page { size: Letter portrait; margin: 8mm; } html, body { margin: 0 !important; padding: 0 !important; } .no-print { display: none !important; } body { background: white !important; } }`}</style>
+      <style>{`@media print { @page { size: Letter portrait; margin: 8mm; } html, body { margin: 0 !important; padding: 0 !important; } .no-print { display: none !important; } body { background: white !important; } * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } .break-inside-avoid { break-inside: avoid !important; page-break-inside: avoid !important; } }`}</style>
 
       <div className="no-print sticky top-0 z-10 flex items-center justify-center gap-3 border-b border-gray-200 bg-white px-4 py-3">
         <button
@@ -370,6 +373,15 @@ export default function AdminReportPrintPage() {
                 </div>
               </div>
             )}
+
+            <div className="mt-10 flex justify-end break-inside-avoid" style={{ breakInside: "avoid", pageBreakInside: "avoid" }}>
+              <div className="w-[42%] text-[9px] sm:w-[36%] sm:text-xs" style={{ breakInside: "avoid", pageBreakInside: "avoid" }}>
+                <p className="text-gray-600">Prepared by:</p>
+                <div className="mt-8 border-b border-gray-800 sm:mt-12" />
+                <p className="mt-1.5 text-center font-heading text-[10px] font-bold uppercase tracking-wide text-gray-900 sm:text-xs">{preparedName}</p>
+                <p className="text-center text-[9px] text-gray-500 sm:text-[10px]">Administrator</p>
+              </div>
+            </div>
 
             <div className="mt-6 border-t border-gray-200 pt-3 text-center text-[8px] text-gray-400">
               <p>SMARTLOG OJT Monitoring System · Tangub City Global College · Confidential</p>
