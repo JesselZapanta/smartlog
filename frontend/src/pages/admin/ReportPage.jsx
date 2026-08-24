@@ -38,7 +38,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import AdminLayout from "@/layouts/AdminLayout.jsx";
 import PageHeader from "@/components/PageHeader.jsx";
 import StatCard from "@/components/StatCard.jsx";
@@ -807,21 +806,6 @@ export default function AdminReportPage() {
           </div>
 
           <ActiveView data={data} />
-
-          <Card className="rounded-2xl border-dashed bg-gray-50/50">
-            <div className="flex flex-col items-center gap-3 p-6 text-center sm:flex-row sm:text-left">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-gray-500 shadow-sm ring-1 ring-gray-200">
-                <Printer size={18} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-heading text-sm font-bold text-gray-900">Need a hard copy?</p>
-                <p className="text-xs text-gray-500 sm:text-sm">Every report above is printable — same layout used in DTR print via the browser’s print dialog. Filter by academic year first, then print.</p>
-              </div>
-              <Button onClick={() => handlePrint()} className="h-11 shrink-0 rounded-xl bg-green-600 font-semibold hover:bg-green-700">
-                <Printer size={16} /> Print {activeMeta?.label}
-              </Button>
-            </div>
-          </Card>
         </>
       )}
     </AdminLayout>
