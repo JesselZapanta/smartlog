@@ -5,6 +5,17 @@ import { Loader2 } from "lucide-react";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 
+const REPORT_TITLES = {
+  overview: "Executive Overview Report",
+  interns: "Intern Deployment Report",
+  htes: "HTE Partners Report",
+  academic: "Academic Setup Report",
+  requirements: "Requirements Compliance Report",
+  dtr: "Attendance & DTR Report",
+  users: "User Accounts Report",
+  issues: "Issues & Evaluations Report",
+};
+
 function StatusBadge({ value }) {
   const colors = {
     pending: "bg-amber-100 text-amber-700",
@@ -15,14 +26,12 @@ function StatusBadge({ value }) {
     open: "bg-amber-100 text-amber-700",
     resolved: "bg-green-100 text-green-700",
     closed: "bg-gray-100 text-gray-600",
-    "in-progress": "bg-blue-100 text-blue-700",
-    deployed: "bg-green-100 text-green-700",
-    "not-deployed": "bg-gray-100 text-gray-600",
     active: "bg-green-100 text-green-700",
     inactive: "bg-gray-100 text-gray-600",
+    deployed: "bg-green-100 text-green-700",
   };
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${colors[value] || "bg-gray-100 text-gray-600"}`}>
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${colors[String(value)] || "bg-gray-100 text-gray-600"}`}>
       {String(value).replace(/-/g, " ")}
     </span>
   );
@@ -64,24 +73,23 @@ function DataTable({ columns, rows }) {
   );
 }
 
-function StatusTable({ byStatus }) {
-  const entries = Object.entries(byStatus || {});
-  if (entries.length === 0) return <p className="py-2 text-[10px] text-gray-400">No data</p>;
+function miniStatsBox(label, value, tone = "text-gray-900") {
   return (
-    <div className="flex flex-wrap gap-2">
-      {entries.map(([status, count]) => (
-        <div key={status} className="flex items-center gap-1.5 rounded border border-gray-200 px-2 py-1">
-          <StatusBadge value={status} />
-          <span className="font-mono text-[10px] font-bold text-gray-800">{count}</span>
-        </div>
-      ))}
+    <div className="rounded border border-gray-200 p-2 text-center">
+      <p className="text-[9px] uppercase tracking-wider text-gray-500">{label}</p>
+      <p className={`font-heading text-base font-bold ${tone}`}>{value}</p>
     </div>
   );
+}
+
+function shouldShow(report, key) {
+  return !report || report === "overview" || report === key;
 }
 
 export default function AdminReportPrintPage() {
   const [searchParams] = useSearchParams();
   const academicYearId = searchParams.get("academic_year_id") || "";
+  const report = searchParams.get("report") || "overview";
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -109,6 +117,7 @@ export default function AdminReportPrintPage() {
     hour: "2-digit",
     minute: "2-digit",
   });
+  const title = REPORT_TITLES[report] || "SMARTLOG System Report";
 
   return (
     <div className="bg-gray-100">
@@ -132,177 +141,238 @@ export default function AdminReportPrintPage() {
         <div className="mx-auto max-w-md px-4 py-24 text-center text-sm text-gray-600">Failed to load report data.</div>
       ) : (
         <div className="mx-auto max-w-[8.5in] bg-white p-6">
-          <div className="mb-6 text-center">
-            <h1 className="font-heading text-lg font-bold text-gray-900">SMARTLOG System Report</h1>
-            <p className="text-[10px] text-gray-500">Tangub City Global College</p>
-            <p className="mt-1 text-[10px] text-gray-600">Academic Year: <strong>{yearLabel}</strong></p>
-            <p className="text-[9px] text-gray-400">Generated: {generatedAt}</p>
+          <div className="mb-6 border-b border-gray-200 pb-4 text-center">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-green-700">Tangub City Global College</p>
+            <h1 className="mt-1 font-heading text-lg font-bold text-gray-900">{title}</h1>
+            <p className="text-[10px] text-gray-500">SMARTLOG OJT Monitoring System</p>
+            <p className="mt-2 inline-flex items-center rounded-full bg-green-50 px-3 py-1 text-[10px] font-semibold text-green-700 ring-1 ring-green-100">AY: {yearLabel}</p>
+            <p className="mt-1 text-[9px] text-gray-400">Generated: {generatedAt}</p>
           </div>
 
-          <div className="space-y-5">
-            <div>
-              <SectionTitle>User Summary</SectionTitle>
-              <div className="grid grid-cols-3 gap-3 text-[10px]">
-                <div className="rounded border border-gray-200 p-2 text-center">
-                  <p className="text-[9px] uppercase text-gray-500">Total Users</p>
-                  <p className="font-heading text-base font-bold text-gray-900">{data.users.total}</p>
+          <div className="space-y-6">
+            {shouldShow(report, "overview") && (
+              <div>
+                <SectionTitle>Executive Overview</SectionTitle>
+                <div className="grid grid-cols-4 gap-2">
+                  {miniStatsBox("Total Users", data.users.total)}
+                  {miniStatsBox("Total Interns", data.interns.total, "text-green-700")}
+                  {miniStatsBox("HTE Partners", data.htes.total, "text-blue-700")}
+                  {miniStatsBox("DTR Submissions", data.dtr.total, "text-teal-700")}
                 </div>
-                <div className="rounded border border-gray-200 p-2 text-center">
-                  <p className="text-[9px] uppercase text-gray-500">Verified</p>
-                  <p className="font-heading text-base font-bold text-green-700">{data.users.verified}</p>
+                <div className="mt-2 grid grid-cols-4 gap-2">
+                  {miniStatsBox("Journals", data.journals.total)}
+                  {miniStatsBox("Requirements", data.requirements.total)}
+                  {miniStatsBox("Issues", data.issues.total, "text-red-700")}
+                  {miniStatsBox("Evaluations", data.evaluations.total)}
                 </div>
-                <div className="rounded border border-gray-200 p-2 text-center">
-                  <p className="text-[9px] uppercase text-gray-500">Unverified</p>
-                  <p className="font-heading text-base font-bold text-amber-700">{data.users.unverified}</p>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <DataTable
+                    columns={[{ key: "role", label: "Role", bold: true }, { key: "count", label: "Count", align: "right" }]}
+                    rows={Object.entries(data.users.by_role).map(([role, count]) => ({ role: role.replace(/_/g, " "), count }))}
+                  />
+                  <DataTable
+                    columns={[{ key: "institute", label: "Institute", bold: true }, { key: "count", label: "Count", align: "right" }]}
+                    rows={data.interns.by_institute.map((r) => ({ institute: r.institute, count: r.total }))}
+                  />
                 </div>
               </div>
-              <div className="mt-2">
-                <DataTable
-                  columns={[
-                    { key: "role", label: "Role", bold: true },
-                    { key: "count", label: "Count", align: "right" },
-                  ]}
-                  rows={Object.entries(data.users.by_role).map(([role, count]) => ({
-                    role: role.replace(/_/g, " "),
-                    count,
-                  }))}
-                />
-              </div>
-            </div>
+            )}
 
-            <div>
-              <SectionTitle>Intern Summary</SectionTitle>
-              <div className="grid grid-cols-4 gap-2 text-[10px]">
-                <div className="rounded border border-gray-200 p-2 text-center">
-                  <p className="text-[9px] uppercase text-gray-500">Total</p>
-                  <p className="font-heading text-base font-bold text-gray-900">{data.interns.total}</p>
+            {shouldShow(report, "interns") && (
+              <div>
+                <SectionTitle>Intern Deployment Report</SectionTitle>
+                <div className="grid grid-cols-4 gap-2">
+                  {miniStatsBox("Total", data.interns.total)}
+                  {miniStatsBox("Approved", data.interns.approved, "text-green-700")}
+                  {miniStatsBox("Pending", data.interns.pending, "text-amber-700")}
+                  {miniStatsBox("Rejected", data.interns.rejected, "text-red-700")}
                 </div>
-                <div className="rounded border border-gray-200 p-2 text-center">
-                  <p className="text-[9px] uppercase text-gray-500">Approved</p>
-                  <p className="font-heading text-base font-bold text-green-700">{data.interns.approved}</p>
+                <div className="mt-2">
+                  <DataTable
+                    columns={[{ key: "institute", label: "Institute", bold: true }, { key: "count", label: "Count", align: "right" }]}
+                    rows={data.interns.by_institute.map((r) => ({ institute: r.institute, count: r.total }))}
+                  />
                 </div>
-                <div className="rounded border border-gray-200 p-2 text-center">
-                  <p className="text-[9px] uppercase text-gray-500">Pending</p>
-                  <p className="font-heading text-base font-bold text-amber-700">{data.interns.pending}</p>
+                <div className="mt-2">
+                  <DataTable
+                    columns={[{ key: "program", label: "Program", bold: true }, { key: "count", label: "Count", align: "right" }]}
+                    rows={data.interns.by_program.map((r) => ({ program: r.program, count: r.total }))}
+                  />
                 </div>
-                <div className="rounded border border-gray-200 p-2 text-center">
-                  <p className="text-[9px] uppercase text-gray-500">Rejected</p>
-                  <p className="font-heading text-base font-bold text-red-700">{data.interns.rejected}</p>
+                <div className="mt-2">
+                  <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">OJT Status</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {Object.entries(data.interns.by_ojt_status).map(([s, c]) => (
+                      <span key={s} className="inline-flex items-center gap-1 rounded border border-gray-200 px-2 py-1 text-[9px]">
+                        <StatusBadge value={s} /> <span className="font-mono font-bold">{c}</span>
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
-              <div className="mt-2">
-                <DataTable
-                  columns={[
-                    { key: "institute", label: "Institute", bold: true },
-                    { key: "count", label: "Count", align: "right" },
-                  ]}
-                  rows={data.interns.by_institute.map((r) => ({
-                    institute: r.institute,
-                    count: r.total,
-                  }))}
-                />
-              </div>
-              <div className="mt-2">
-                <DataTable
-                  columns={[
-                    { key: "program", label: "Program", bold: true },
-                    { key: "count", label: "Count", align: "right" },
-                  ]}
-                  rows={data.interns.by_program.map((r) => ({
-                    program: r.program,
-                    count: r.total,
-                  }))}
-                />
-              </div>
-              <div className="mt-2">
-                <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">OJT Status</p>
-                <StatusTable byStatus={data.interns.by_ojt_status} />
-              </div>
-            </div>
+            )}
 
-            <div>
-              <SectionTitle>HTE Summary</SectionTitle>
-              <div className="mb-2 flex gap-3 text-[10px]">
-                <div className="rounded border border-gray-200 p-2 text-center">
-                  <p className="text-[9px] uppercase text-gray-500">Total HTEs</p>
-                  <p className="font-heading text-base font-bold text-gray-900">{data.htes.total}</p>
+            {shouldShow(report, "htes") && (
+              <div>
+                <SectionTitle>HTE Partners Report</SectionTitle>
+                <div className="mb-2 grid grid-cols-3 gap-2">
+                  {miniStatsBox("Total HTEs", data.htes.total)}
+                  {miniStatsBox("Institutes", data.institutes.total)}
+                  {miniStatsBox("Programs", data.programs.total)}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(data.htes.by_status).map(([s, c]) => (
+                    <span key={s} className="inline-flex items-center gap-1 rounded border border-gray-200 px-2 py-1 text-[9px]">
+                      <StatusBadge value={s} /> <span className="font-mono font-bold">{c}</span>
+                    </span>
+                  ))}
+                  {Object.keys(data.htes.by_status).length === 0 && <span className="text-[10px] text-gray-400">No HTE data</span>}
+                </div>
+                <div className="mt-3">
+                  <DataTable
+                    columns={[
+                      { key: "name", label: "Institute", bold: true },
+                      { key: "programs", label: "Programs", align: "right" },
+                      { key: "status", label: "Status", align: "right" },
+                    ]}
+                    rows={(data.institutes.list || []).map((r) => ({ name: r.name, programs: r.programs_count, status: r.is_active ? "active" : "inactive" }))}
+                  />
                 </div>
               </div>
-              <StatusTable byStatus={data.htes.by_status} />
-            </div>
+            )}
 
-            <div>
-              <SectionTitle>Photo DTR Summary</SectionTitle>
-              <div className="mb-2 flex gap-3 text-[10px]">
-                <div className="rounded border border-gray-200 p-2 text-center">
-                  <p className="text-[9px] uppercase text-gray-500">Total Submissions</p>
-                  <p className="font-heading text-base font-bold text-gray-900">{data.dtr.total}</p>
+            {shouldShow(report, "academic") && (
+              <div>
+                <SectionTitle>Academic Setup Report</SectionTitle>
+                <div className="grid grid-cols-4 gap-2">
+                  {miniStatsBox("Institutes", data.institutes.total)}
+                  {miniStatsBox("Programs", data.programs.total)}
+                  {miniStatsBox("Academic Years", data.academic_terms.total)}
+                  {miniStatsBox("OJT Configs", (data.ojt_hours || []).length)}
+                </div>
+                <div className="mt-2">
+                  <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Academic Years</p>
+                  <DataTable
+                    columns={[
+                      { key: "code", label: "Code", bold: true },
+                      { key: "desc", label: "Description" },
+                      { key: "status", label: "Status" },
+                    ]}
+                    rows={(data.academic_terms.list || []).map((r) => ({ code: r.code, desc: r.description, status: r.status }))}
+                  />
+                </div>
+                <div className="mt-2">
+                  <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Programs</p>
+                  <DataTable
+                    columns={[
+                      { key: "program", label: "Program", bold: true },
+                      { key: "institute", label: "Institute" },
+                      { key: "status", label: "Status" },
+                    ]}
+                    rows={(data.programs_list || []).map((r) => ({ program: r.name, institute: r.institute?.name || "—", status: r.is_active ? "active" : "inactive" }))}
+                  />
+                </div>
+                <div className="mt-2">
+                  <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">OJT Hours</p>
+                  <DataTable
+                    columns={[
+                      { key: "institute", label: "Institute", bold: true },
+                      { key: "hours", label: "Hours", align: "right" },
+                    ]}
+                    rows={(data.ojt_hours || []).map((r) => ({ institute: r.institute?.name || "—", hours: r.hours }))}
+                  />
                 </div>
               </div>
-              <StatusTable byStatus={data.dtr.by_status} />
-            </div>
+            )}
 
-            <div>
-              <SectionTitle>Requirements Summary</SectionTitle>
-              <div className="mb-2 flex gap-3 text-[10px]">
-                <div className="rounded border border-gray-200 p-2 text-center">
-                  <p className="text-[9px] uppercase text-gray-500">Total Submissions</p>
-                  <p className="font-heading text-base font-bold text-gray-900">{data.requirements.total}</p>
+            {shouldShow(report, "requirements") && (
+              <div>
+                <SectionTitle>Requirements Compliance Report</SectionTitle>
+                <div className="grid grid-cols-3 gap-2">
+                  {miniStatsBox("Types", data.requirements.definitions_total)}
+                  {miniStatsBox("Submissions", data.requirements.total)}
+                  {miniStatsBox("Approved", data.requirements.by_status.approved || 0, "text-green-700")}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {Object.entries(data.requirements.by_status).map(([s, c]) => (
+                    <span key={s} className="inline-flex items-center gap-1 rounded border border-gray-200 px-2 py-1 text-[9px]">
+                      <StatusBadge value={s} /> <span className="font-mono font-bold">{c}</span>
+                    </span>
+                  ))}
                 </div>
               </div>
-              <StatusTable byStatus={data.requirements.by_status} />
-            </div>
+            )}
 
-            <div>
-              <SectionTitle>Issues Summary</SectionTitle>
-              <div className="grid grid-cols-3 gap-2 text-[10px]">
-                <div className="rounded border border-gray-200 p-2 text-center">
-                  <p className="text-[9px] uppercase text-gray-500">Total</p>
-                  <p className="font-heading text-base font-bold text-gray-900">{data.issues.total}</p>
+            {shouldShow(report, "dtr") && (
+              <div>
+                <SectionTitle>Attendance & DTR Report</SectionTitle>
+                <div className="grid grid-cols-3 gap-2">
+                  {miniStatsBox("DTR Submissions", data.dtr.total)}
+                  {miniStatsBox("Journals", data.journals.total)}
+                  {miniStatsBox("Evaluations", data.evaluations.total)}
                 </div>
-                <div className="rounded border border-gray-200 p-2 text-center">
-                  <p className="text-[9px] uppercase text-gray-500">Open</p>
-                  <p className="font-heading text-base font-bold text-amber-700">{data.issues.by_status.open || 0}</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {Object.entries(data.dtr.by_status).map(([s, c]) => (
+                    <span key={s} className="inline-flex items-center gap-1 rounded border border-gray-200 px-2 py-1 text-[9px]">
+                      <StatusBadge value={s} /> <span className="font-mono font-bold">{c}</span>
+                    </span>
+                  ))}
+                  {Object.keys(data.dtr.by_status).length === 0 && <span className="text-[10px] text-gray-400">No DTR data</span>}
                 </div>
-                <div className="rounded border border-gray-200 p-2 text-center">
-                  <p className="text-[9px] uppercase text-gray-500">Resolved</p>
-                  <p className="font-heading text-base font-bold text-green-700">{data.issues.by_status.resolved || 0}</p>
+                <div className="mt-2">
+                  <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">OJT Hours per Institute</p>
+                  <DataTable
+                    columns={[
+                      { key: "institute", label: "Institute", bold: true },
+                      { key: "hours", label: "Required Hours", align: "right" },
+                    ]}
+                    rows={(data.ojt_hours || []).map((r) => ({ institute: r.institute?.name || "—", hours: r.hours }))}
+                  />
                 </div>
               </div>
-              <div className="mt-2">
-                <DataTable
-                  columns={[
-                    { key: "type", label: "Type", bold: true },
-                    { key: "count", label: "Count", align: "right" },
-                  ]}
-                  rows={Object.entries(data.issues.by_type).map(([type, count]) => ({
-                    type: (type || "N/A").replace(/_/g, " "),
-                    count,
-                  }))}
-                />
-              </div>
-            </div>
+            )}
 
-            <div>
-              <SectionTitle>Programs &amp; Evaluations</SectionTitle>
-              <div className="grid grid-cols-3 gap-2 text-[10px]">
-                <div className="rounded border border-gray-200 p-2 text-center">
-                  <p className="text-[9px] uppercase text-gray-500">Total Programs</p>
-                  <p className="font-heading text-base font-bold text-gray-900">{data.programs.total}</p>
+            {shouldShow(report, "users") && (
+              <div>
+                <SectionTitle>User Accounts Report</SectionTitle>
+                <div className="grid grid-cols-3 gap-2">
+                  {miniStatsBox("Total Users", data.users.total)}
+                  {miniStatsBox("Verified", data.users.verified, "text-green-700")}
+                  {miniStatsBox("Unverified", data.users.unverified, "text-amber-700")}
                 </div>
-                <div className="rounded border border-gray-200 p-2 text-center">
-                  <p className="text-[9px] uppercase text-gray-500">Total Evaluations</p>
-                  <p className="font-heading text-base font-bold text-gray-900">{data.evaluations.total}</p>
-                </div>
-                <div className="rounded border border-gray-200 p-2 text-center">
-                  <p className="text-[9px] uppercase text-gray-500">Journals</p>
-                  <p className="font-heading text-base font-bold text-gray-900">{data.journals.total}</p>
+                <div className="mt-2">
+                  <DataTable
+                    columns={[{ key: "role", label: "Role", bold: true }, { key: "count", label: "Count", align: "right" }]}
+                    rows={Object.entries(data.users.by_role).map(([role, count]) => ({ role: role.replace(/_/g, " "), count }))}
+                  />
                 </div>
               </div>
-            </div>
+            )}
+
+            {shouldShow(report, "issues") && (
+              <div>
+                <SectionTitle>Issues & Evaluations Report</SectionTitle>
+                <div className="grid grid-cols-4 gap-2">
+                  {miniStatsBox("Issues", data.issues.total, "text-red-700")}
+                  {miniStatsBox("Open", data.issues.by_status.open || 0, "text-amber-700")}
+                  {miniStatsBox("Resolved", data.issues.by_status.resolved || 0, "text-green-700")}
+                  {miniStatsBox("Evaluations", data.evaluations.total)}
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-3">
+                  <DataTable
+                    columns={[{ key: "status", label: "Status", bold: true }, { key: "count", label: "Count", align: "right" }]}
+                    rows={Object.entries(data.issues.by_status).map(([s, c]) => ({ status: s, count: c }))}
+                  />
+                  <DataTable
+                    columns={[{ key: "type", label: "Type", bold: true }, { key: "count", label: "Count", align: "right" }]}
+                    rows={Object.entries(data.issues.by_type).map(([t, c]) => ({ type: (t || "N/A").replace(/_/g, " "), count: c }))}
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="mt-6 border-t border-gray-200 pt-3 text-center text-[8px] text-gray-400">
-              <p>SMARTLOG OJT Monitoring System &middot; Tangub City Global College</p>
+              <p>SMARTLOG OJT Monitoring System · Tangub City Global College · Confidential</p>
             </div>
           </div>
         </div>

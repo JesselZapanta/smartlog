@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\AcademicTerm;
 use App\Models\DailyJournal;
 use App\Models\Hte;
+use App\Models\Institute;
 use App\Models\Intern;
 use App\Models\InternEvaluation;
 use App\Models\Issue;
+use App\Models\OjtHour;
 use App\Models\PhotoDtr;
 use App\Models\Program;
+use App\Models\Requirement;
 use App\Models\RequirementSubmission;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -114,7 +117,15 @@ class ReportController extends Controller
             ->pluck('total', 'status');
 
         $totalPrograms = Program::count();
+        $totalInstitutes = Institute::count();
+        $totalAcademicTerms = AcademicTerm::count();
+        $totalRequirementsDef = Requirement::count();
         $totalInternsAll = Intern::count();
+
+        $institutes = Institute::select('id', 'name', 'is_active')->withCount('programs')->get();
+        $programsList = Program::with('institute:id,name')->select('id', 'institute_id', 'name', 'is_active')->get();
+        $academicTerms = AcademicTerm::select('id', 'code', 'description', 'status', 'start_at', 'end_at')->orderByDesc('id')->get();
+        $ojtHours = OjtHour::with('institute:id,name')->get();
 
         return response()->json([
             'data' => [
@@ -148,6 +159,7 @@ class ReportController extends Controller
                 'requirements' => [
                     'total' => $totalRequirements,
                     'by_status' => $requirementsByStatus->toArray(),
+                    'definitions_total' => $totalRequirementsDef,
                 ],
                 'issues' => [
                     'total' => $totalIssues,
@@ -160,6 +172,16 @@ class ReportController extends Controller
                 'programs' => [
                     'total' => $totalPrograms,
                 ],
+                'institutes' => [
+                    'total' => $totalInstitutes,
+                    'list' => $institutes,
+                ],
+                'programs_list' => $programsList,
+                'academic_terms' => [
+                    'total' => $totalAcademicTerms,
+                    'list' => $academicTerms,
+                ],
+                'ojt_hours' => $ojtHours,
                 'totals_all_time' => [
                     'interns' => $totalInternsAll,
                 ],
