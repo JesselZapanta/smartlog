@@ -194,7 +194,7 @@ export default function CoordinatorDashboard() {
             onValueChange={(value) => setFilters((prev) => ({ ...prev, academicYearId: value }))}
             disabled={termsLoading}
           >
-            <SelectTrigger className="h-10 w-full rounded-xl bg-white sm:w-[220px]">
+            <SelectTrigger className="h-11 w-full rounded-xl bg-white sm:w-[240px]">
               <SelectValue placeholder={termsLoading ? "Loading years…" : "Academic Year"} />
             </SelectTrigger>
             <SelectContent>

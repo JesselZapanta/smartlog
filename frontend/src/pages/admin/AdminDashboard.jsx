@@ -173,7 +173,7 @@ export default function AdminDashboard() {
           onValueChange={(value) => setFilters((prev) => ({ ...prev, academicYearId: value }))}
           disabled={termsLoading}
         >
-          <SelectTrigger className="h-10 w-full rounded-xl sm:w-[220px]">
+          <SelectTrigger className="h-11 w-full rounded-xl sm:w-[240px]">
             <SelectValue placeholder={termsLoading ? "Loading years\u2026" : "Academic Year"} />
           </SelectTrigger>
           <SelectContent>
