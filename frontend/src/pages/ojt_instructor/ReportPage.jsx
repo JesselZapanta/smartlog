@@ -71,28 +71,12 @@ const REPORTS = [
     statKey: "htes.total",
   },
   {
-    key: "requirements",
-    label: "Requirements",
-    desc: "Compliance & submissions",
-    icon: FileCheck,
-    tone: "violet",
-    statKey: "requirements.total",
-  },
-  {
     key: "dtr",
     label: "Attendance & DTR",
     desc: "Photo DTR, journals & hours",
     icon: CalendarCheck,
     tone: "teal",
     statKey: "dtr.total",
-  },
-  {
-    key: "issues",
-    label: "Issues & Evaluations",
-    desc: "Concerns and ratings",
-    icon: AlertTriangle,
-    tone: "red",
-    statKey: "issues.total",
   },
 ];
 
@@ -908,9 +892,7 @@ const viewMap = {
   overview: OverviewView,
   interns: InternsView,
   htes: HtesView,
-  requirements: RequirementsView,
   dtr: DtrView,
-  issues: IssuesView,
 };
 
 export default function InstructorReportPage() {
