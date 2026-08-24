@@ -156,11 +156,11 @@ function miniStat(label, value) {
 
 function ReportPrintBar({ onPrint, reportKey, isPrinting, label }) {
   return (
-    <div className="flex justify-end">
+    <div className="flex">
       <Button
         onClick={() => onPrint(reportKey)}
         disabled={isPrinting}
-        className="h-11 whitespace-nowrap rounded-xl bg-green-600 px-5 font-semibold text-white hover:bg-green-700 disabled:opacity-60"
+        className="h-11 w-full justify-center whitespace-nowrap rounded-xl bg-green-600 px-5 font-semibold text-white hover:bg-green-700 disabled:opacity-60 sm:ml-auto sm:w-auto"
       >
         {isPrinting ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
         {isPrinting ? "Preparing…" : label || "Print Report"}
@@ -802,13 +802,13 @@ function StudentPlacementView({ academicYearId, onPrint, isPrinting }) {
         title="Student Placement Roster"
         subtitle={`${meta?.institute?.name || "Institute"} · ${meta?.academic_year?.description || meta?.academic_year?.code || "Selected AY"} · Official per-student deployment records`}
       >
-        <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative w-full sm:max-w-sm">
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full min-w-0 sm:max-w-sm">
             <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search student, program, company, supervisor…" className="h-11 rounded-xl pl-9" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search student, program, company…" className="h-11 rounded-xl pl-9" />
           </div>
-          <p className="text-xs font-medium text-gray-500">
-            Showing <span className="font-heading font-bold text-gray-900">{filtered.length}</span> of {rows.length} students
+          <p className="shrink-0 text-xs font-medium text-gray-500 sm:text-right">
+            Showing <span className="font-heading font-bold text-gray-900">{filtered.length}</span> of {rows.length}
           </p>
         </div>
 
