@@ -639,6 +639,7 @@ export default function AdminReportPage() {
   const [academicYearId, setAcademicYearId] = useState("");
   const [termsLoading, setTermsLoading] = useState(true);
   const [activeReport, setActiveReport] = useState("overview");
+  const [isPrinting, setIsPrinting] = useState(false);
   const iframeRef = useRef(null);
 
   useEffect(() => {
@@ -671,6 +672,8 @@ export default function AdminReportPage() {
   }, [loadReport]);
 
   const handlePrintExecutive = () => {
+    if (isPrinting) return;
+    setIsPrinting(true);
     const params = new URLSearchParams();
     if (academicYearId) params.set("academic_year_id", academicYearId);
     params.set("report", "overview");
@@ -693,21 +696,31 @@ export default function AdminReportPage() {
     const iframe = ensureIframe();
     iframe.src = printUrl;
 
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      setIsPrinting(false);
+    };
+
     const handler = (e) => {
       if (e.data?.type === "smartlog-report-print-ready") {
         setTimeout(() => {
           try {
             iframeRef.current?.contentWindow?.print();
           } catch {}
+          finish();
         }, 250);
         window.removeEventListener("message", handler);
+        clearTimeout(fallback);
       }
     };
     window.addEventListener("message", handler);
+    const fallback = setTimeout(finish, 8000);
+    iframe.addEventListener("load", () => setTimeout(finish, 3000), { once: true });
   };
 
   const ActiveView = viewMap[activeReport];
-  const yearLabel = academicYears.find((t) => String(t.id) === academicYearId);
   const activeMeta = REPORTS.find((r) => r.key === activeReport);
 
   return (
@@ -719,35 +732,29 @@ export default function AdminReportPage() {
         action={
           <Button
             onClick={handlePrintExecutive}
-            className="h-11 rounded-xl bg-white font-semibold text-green-700 shadow-sm hover:bg-green-50"
+            disabled={isPrinting}
+            className="h-11 rounded-xl bg-white font-semibold text-green-700 shadow-sm hover:bg-green-50 disabled:opacity-60"
           >
-            <Printer size={16} />
-            Print Executive Report
+            {isPrinting ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
+            {isPrinting ? "Preparing…" : "Print Executive Report"}
           </Button>
         }
       />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <Select value={academicYearId} onValueChange={setAcademicYearId} disabled={termsLoading}>
-            <SelectTrigger className="h-10 w-full rounded-xl sm:w-[240px]">
-              <SelectValue placeholder={termsLoading ? "Loading years…" : "Academic Year"} />
-            </SelectTrigger>
-            <SelectContent>
-              {academicYears.map((term) => (
-                <SelectItem key={term.id} value={String(term.id)}>
-                  {term.description || term.code}
-                  {term.status === "active" ? " · Active" : ""}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {yearLabel && (
-            <span className="hidden items-center rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700 ring-1 ring-green-100 sm:inline-flex">
-              {yearLabel.description || yearLabel.code}
-            </span>
-          )}
-        </div>
+        <Select value={academicYearId} onValueChange={setAcademicYearId} disabled={termsLoading}>
+          <SelectTrigger className="h-10 w-full rounded-xl sm:w-[240px]">
+            <SelectValue placeholder={termsLoading ? "Loading years…" : "Academic Year"} />
+          </SelectTrigger>
+          <SelectContent>
+            {academicYears.map((term) => (
+              <SelectItem key={term.id} value={String(term.id)}>
+                {term.description || term.code}
+                {term.status === "active" ? " · Active" : ""}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <p className="text-xs font-medium text-gray-500">
           <span className="font-heading font-bold text-gray-900">{REPORTS.length}</span> reports available · filtered by academic year
         </p>
@@ -797,7 +804,7 @@ export default function AdminReportPage() {
 
           <div>
             <h2 className="font-heading text-base font-bold text-gray-900 sm:text-lg">{activeMeta?.label}</h2>
-            <p className="text-sm text-gray-500">{activeMeta?.desc} · {yearLabel ? `AY ${yearLabel.description || yearLabel.code}` : "All years"}</p>
+            <p className="text-sm text-gray-500">{activeMeta?.desc}</p>
           </div>
 
           <ActiveView data={data} />
