@@ -188,201 +188,201 @@ export default function InternDashboard() {
                   <span className="font-mono">{data.ojt_hours?.remaining ?? 0}h remaining</span>
                 </div>
               </SectionCard>
-            </>
-          )}
 
-          <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            {moduleCards.map(({ icon: Icon, title, description, tone, to }) => (
-              <Link
-                key={title}
-                to={to}
-                className="group flex items-start gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-5"
-              >
-                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ring-1 ${tone} ring-current/10`}>
-                  <Icon size={20} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="font-heading text-sm font-bold text-gray-900 sm:text-base">{title}</h3>
-                    <ArrowRight size={14} className="shrink-0 text-gray-300 transition group-hover:text-green-600" />
-                  </div>
-                  <p className="mt-0.5 text-xs text-gray-500 sm:text-sm">{description}</p>
-                </div>
-              </Link>
-            ))}
-          </section>
+              <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                {moduleCards.map(({ icon: Icon, title, description, tone, to }) => (
+                  <Link
+                    key={title}
+                    to={to}
+                    className="group flex items-start gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:shadow-md sm:p-5"
+                  >
+                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ring-1 ${tone} ring-current/10`}>
+                      <Icon size={20} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className="font-heading text-sm font-bold text-gray-900 sm:text-base">{title}</h3>
+                        <ArrowRight size={14} className="shrink-0 text-gray-300 transition group-hover:text-green-600" />
+                      </div>
+                      <p className="mt-0.5 text-xs text-gray-500 sm:text-sm">{description}</p>
+                    </div>
+                  </Link>
+                ))}
+              </section>
 
-          <section className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <SectionCard
-                title="Recent DTR"
-                subtitle="Your latest time-in/out entries"
-                action={<Camera size={18} className="text-gray-300" />}
-              >
-                {data.recent_dtr?.length === 0 ? (
-                  <div className="py-8 text-center">
-                    <Camera size={28} className="mx-auto text-gray-300" />
-                    <p className="mt-2 text-sm text-gray-400">No DTR entries yet.</p>
-                    <Button asChild variant="outline" className="mt-3 h-9 rounded-xl">
-                      <Link to="/intern/photo-dtr" className="gap-1.5">
-                        Submit DTR <ArrowRight size={14} />
-                      </Link>
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="space-y-3 sm:hidden">
-                      {data.recent_dtr.map((dtr) => (
-                        <div key={dtr.id} className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-semibold text-gray-800">{formatDate(dtr.date)}</span>
-                            <StatusChip status={dtr.status} />
-                          </div>
-                          <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-gray-500">
-                            <div className="rounded-lg bg-white px-2.5 py-1.5 ring-1 ring-gray-100">
-                              <span className="text-[10px] font-medium uppercase text-gray-400">AM</span>
-                              <div className="flex items-center gap-2 font-mono text-gray-700">
-                                <span>{dtr.am_in || "—"}</span>
-                                <span className="text-gray-300">→</span>
-                                <span>{dtr.am_out || "—"}</span>
+              <section className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-3">
+                <div className="lg:col-span-2">
+                  <SectionCard
+                    title="Recent DTR"
+                    subtitle="Your latest time-in/out entries"
+                    action={<Camera size={18} className="text-gray-300" />}
+                  >
+                    {data.recent_dtr?.length === 0 ? (
+                      <div className="py-8 text-center">
+                        <Camera size={28} className="mx-auto text-gray-300" />
+                        <p className="mt-2 text-sm text-gray-400">No DTR entries yet.</p>
+                        <Button asChild variant="outline" className="mt-3 h-9 rounded-xl">
+                          <Link to="/intern/photo-dtr" className="gap-1.5">
+                            Submit DTR <ArrowRight size={14} />
+                          </Link>
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="space-y-3 sm:hidden">
+                          {data.recent_dtr.map((dtr) => (
+                            <div key={dtr.id} className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-semibold text-gray-800">{formatDate(dtr.date)}</span>
+                                <StatusChip status={dtr.status} />
+                              </div>
+                              <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-gray-500">
+                                <div className="rounded-lg bg-white px-2.5 py-1.5 ring-1 ring-gray-100">
+                                  <span className="text-[10px] font-medium uppercase text-gray-400">AM</span>
+                                  <div className="flex items-center gap-2 font-mono text-gray-700">
+                                    <span>{dtr.am_in || "—"}</span>
+                                    <span className="text-gray-300">→</span>
+                                    <span>{dtr.am_out || "—"}</span>
+                                  </div>
+                                </div>
+                                <div className="rounded-lg bg-white px-2.5 py-1.5 ring-1 ring-gray-100">
+                                  <span className="text-[10px] font-medium uppercase text-gray-400">PM</span>
+                                  <div className="flex items-center gap-2 font-mono text-gray-700">
+                                    <span>{dtr.pm_in || "—"}</span>
+                                    <span className="text-gray-300">→</span>
+                                    <span>{dtr.pm_out || "—"}</span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                            <div className="rounded-lg bg-white px-2.5 py-1.5 ring-1 ring-gray-100">
-                              <span className="text-[10px] font-medium uppercase text-gray-400">PM</span>
-                              <div className="flex items-center gap-2 font-mono text-gray-700">
-                                <span>{dtr.pm_in || "—"}</span>
-                                <span className="text-gray-300">→</span>
-                                <span>{dtr.pm_out || "—"}</span>
-                              </div>
-                            </div>
+                          ))}
+                        </div>
+                        <div className="hidden overflow-x-auto sm:block">
+                          <table className="w-full min-w-[600px] text-left text-sm">
+                            <thead>
+                              <tr className="border-b border-gray-100 text-xs uppercase tracking-wider text-gray-400">
+                                <th className="pb-3 pr-3 font-semibold">Date</th>
+                                <th className="pb-3 pr-3 font-semibold">AM In</th>
+                                <th className="pb-3 pr-3 font-semibold">AM Out</th>
+                                <th className="pb-3 pr-3 font-semibold">PM In</th>
+                                <th className="pb-3 pr-3 font-semibold">PM Out</th>
+                                <th className="pb-3 text-right font-semibold">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {data.recent_dtr.map((dtr) => (
+                                <tr key={dtr.id} className="border-b border-gray-50 last:border-0">
+                                  <td className="py-3 pr-3 font-medium text-gray-800">{formatDate(dtr.date)}</td>
+                                  <td className="py-3 pr-3 font-mono text-xs text-gray-600">{dtr.am_in || "—"}</td>
+                                  <td className="py-3 pr-3 font-mono text-xs text-gray-600">{dtr.am_out || "—"}</td>
+                                  <td className="py-3 pr-3 font-mono text-xs text-gray-600">{dtr.pm_in || "—"}</td>
+                                  <td className="py-3 pr-3 font-mono text-xs text-gray-600">{dtr.pm_out || "—"}</td>
+                                  <td className="py-3 text-right"><StatusChip status={dtr.status} /></td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    )}
+                    <div className="pt-3">
+                      <Button asChild variant="outline" size="sm" className="h-8 w-full rounded-xl text-xs sm:w-auto">
+                        <Link to="/intern/dtr-logs" className="gap-1.5">
+                          View all DTR logs <ArrowRight size={12} />
+                        </Link>
+                      </Button>
+                    </div>
+                  </SectionCard>
+                </div>
+
+                <SectionCard
+                  title="Recent Journals"
+                  subtitle="Your latest entries"
+                  action={<NotebookPen size={18} className="text-gray-300" />}
+                >
+                  {data.recent_journals?.length === 0 ? (
+                    <div className="py-8 text-center">
+                      <NotebookPen size={28} className="mx-auto text-gray-300" />
+                      <p className="mt-2 text-sm text-gray-400">No journals yet.</p>
+                      <Button asChild variant="outline" className="mt-3 h-9 rounded-xl">
+                        <Link to="/intern/journals" className="gap-1.5">
+                          Write journal <ArrowRight size={14} />
+                        </Link>
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {data.recent_journals.map((journal) => (
+                        <div key={journal.id} className="rounded-2xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-semibold text-gray-800">{journal.title || "Untitled"}</span>
+                            <span className="shrink-0 font-mono text-[11px] text-gray-400">{formatDate(journal.date)}</span>
                           </div>
+                          {journal.excerpt && (
+                            <p className="mt-1 line-clamp-2 text-xs text-gray-500">{journal.excerpt}</p>
+                          )}
                         </div>
                       ))}
                     </div>
-                    <div className="hidden overflow-x-auto sm:block">
-                      <table className="w-full min-w-[600px] text-left text-sm">
-                        <thead>
-                          <tr className="border-b border-gray-100 text-xs uppercase tracking-wider text-gray-400">
-                            <th className="pb-3 pr-3 font-semibold">Date</th>
-                            <th className="pb-3 pr-3 font-semibold">AM In</th>
-                            <th className="pb-3 pr-3 font-semibold">AM Out</th>
-                            <th className="pb-3 pr-3 font-semibold">PM In</th>
-                            <th className="pb-3 pr-3 font-semibold">PM Out</th>
-                            <th className="pb-3 text-right font-semibold">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {data.recent_dtr.map((dtr) => (
-                            <tr key={dtr.id} className="border-b border-gray-50 last:border-0">
-                              <td className="py-3 pr-3 font-medium text-gray-800">{formatDate(dtr.date)}</td>
-                              <td className="py-3 pr-3 font-mono text-xs text-gray-600">{dtr.am_in || "—"}</td>
-                              <td className="py-3 pr-3 font-mono text-xs text-gray-600">{dtr.am_out || "—"}</td>
-                              <td className="py-3 pr-3 font-mono text-xs text-gray-600">{dtr.pm_in || "—"}</td>
-                              <td className="py-3 pr-3 font-mono text-xs text-gray-600">{dtr.pm_out || "—"}</td>
-                              <td className="py-3 text-right"><StatusChip status={dtr.status} /></td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </>
-                )}
-                <div className="pt-3">
-                  <Button asChild variant="outline" size="sm" className="h-8 w-full rounded-xl text-xs sm:w-auto">
-                    <Link to="/intern/dtr-logs" className="gap-1.5">
-                      View all DTR logs <ArrowRight size={12} />
-                    </Link>
-                  </Button>
-                </div>
-              </SectionCard>
-            </div>
+                  )}
+                  <div className="pt-3">
+                    <Button asChild variant="ghost" size="sm" className="h-8 w-full rounded-xl text-xs text-green-700 hover:text-green-800">
+                      <Link to="/intern/journals" className="gap-1.5">
+                        View all journals <ArrowRight size={12} />
+                      </Link>
+                    </Button>
+                  </div>
+                </SectionCard>
+              </section>
 
-            <SectionCard
-              title="Recent Journals"
-              subtitle="Your latest entries"
-              action={<NotebookPen size={18} className="text-gray-300" />}
-            >
-              {data.recent_journals?.length === 0 ? (
-                <div className="py-8 text-center">
-                  <NotebookPen size={28} className="mx-auto text-gray-300" />
-                  <p className="mt-2 text-sm text-gray-400">No journals yet.</p>
-                  <Button asChild variant="outline" className="mt-3 h-9 rounded-xl">
-                    <Link to="/intern/journals" className="gap-1.5">
-                      Write journal <ArrowRight size={14} />
-                    </Link>
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {data.recent_journals.map((journal) => (
-                    <div key={journal.id} className="rounded-2xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-semibold text-gray-800">{journal.title || "Untitled"}</span>
-                        <span className="shrink-0 font-mono text-[11px] text-gray-400">{formatDate(journal.date)}</span>
+              <section className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-3">
+                <div className="lg:col-span-2">
+                  <SectionCard title="Internship Details" subtitle="Your assigned institute, program and academic year">
+                    {data.intern ? (
+                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
+                        {[
+                          { icon: Building2, label: "Institute", value: data.intern.institute || "—" },
+                          { icon: BookOpen, label: "Program", value: data.intern.program || "—" },
+                          { icon: CalendarDays, label: "Academic Year", value: data.intern.academic_year || "—" },
+                          { icon: UserRound, label: "Instructor", value: data.intern.practicum_instructor || "—" },
+                        ].map((item) => (
+                          <div key={item.label} className="flex items-start gap-3 rounded-2xl bg-gray-50 p-3.5">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-700">
+                              <item.icon size={16} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{item.label}</p>
+                              <p className="mt-0.5 truncate text-sm font-semibold text-gray-800">{item.value}</p>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      {journal.excerpt && (
-                        <p className="mt-1 line-clamp-2 text-xs text-gray-500">{journal.excerpt}</p>
-                      )}
-                    </div>
-                  ))}
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 py-8 text-center">
+                        <Building2 size={28} className="text-gray-300" />
+                        <p className="text-sm text-gray-500">Your internship details haven&apos;t been set up yet.</p>
+                      </div>
+                    )}
+                  </SectionCard>
                 </div>
-              )}
-              <div className="pt-3">
-                <Button asChild variant="ghost" size="sm" className="h-8 w-full rounded-xl text-xs text-green-700 hover:text-green-800">
-                  <Link to="/intern/journals" className="gap-1.5">
-                    View all journals <ArrowRight size={12} />
-                  </Link>
-                </Button>
-              </div>
-            </SectionCard>
-          </section>
 
-          <section className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <SectionCard title="Internship Details" subtitle="Your assigned institute, program and academic year">
-                {data.intern ? (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
+                <SectionCard title="Account" subtitle="Your contact information">
+                  <div className="space-y-3">
                     {[
-                      { icon: Building2, label: "Institute", value: data.intern.institute || "—" },
-                      { icon: BookOpen, label: "Program", value: data.intern.program || "—" },
-                      { icon: CalendarDays, label: "Academic Year", value: data.intern.academic_year || "—" },
-                      { icon: UserRound, label: "Instructor", value: data.intern.practicum_instructor || "—" },
+                      { label: "Email", value: data.user.email || "—" },
+                      { label: "Contact", value: data.user.contact_number || "—" },
+                      { label: "Registered", value: formatDate(data.user.created_at) },
                     ].map((item) => (
-                      <div key={item.label} className="flex items-start gap-3 rounded-2xl bg-gray-50 p-3.5">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-700">
-                          <item.icon size={16} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-medium uppercase tracking-wide text-gray-400">{item.label}</p>
-                          <p className="mt-0.5 truncate text-sm font-semibold text-gray-800">{item.value}</p>
-                        </div>
+                      <div key={item.label} className="flex items-center justify-between rounded-2xl bg-gray-50 px-4 py-3">
+                        <span className="text-xs font-medium uppercase tracking-wide text-gray-400">{item.label}</span>
+                        <span className="truncate text-sm font-semibold text-gray-800">{item.value}</span>
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-2 py-8 text-center">
-                    <Building2 size={28} className="text-gray-300" />
-                    <p className="text-sm text-gray-500">Your internship details haven&apos;t been set up yet.</p>
-                  </div>
-                )}
-              </SectionCard>
-            </div>
-
-            <SectionCard title="Account" subtitle="Your contact information">
-              <div className="space-y-3">
-                {[
-                  { label: "Email", value: data.user.email || "—" },
-                  { label: "Contact", value: data.user.contact_number || "—" },
-                  { label: "Registered", value: formatDate(data.user.created_at) },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-center justify-between rounded-2xl bg-gray-50 px-4 py-3">
-                    <span className="text-xs font-medium uppercase tracking-wide text-gray-400">{item.label}</span>
-                    <span className="truncate text-sm font-semibold text-gray-800">{item.value}</span>
-                  </div>
-                ))}
-              </div>
-            </SectionCard>
-          </section>
+                </SectionCard>
+              </section>
+            </>
+          )}
         </>
       )}
     </InternLayout>
