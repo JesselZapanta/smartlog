@@ -44,6 +44,7 @@ import StatCard from "@/components/StatCard.jsx";
 import SectionCard from "@/components/SectionCard.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
+import { formatDate } from "@/lib/dates";
 
 const REPORTS = [
   {
@@ -205,20 +206,6 @@ function OverviewView({ data, onPrint, isPrinting }) {
         </SectionCard>
       </section>
 
-      <SectionCard title="Recent Evaluations" subtitle="Latest performance reviews">
-        {!(data.evaluations.recent || []).length ? (
-          <p className="py-6 text-center text-sm text-gray-400">No evaluations yet</p>
-        ) : (
-          <div className="space-y-2">
-            {data.evaluations.recent.map((r, i) => (
-              <div key={i} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5">
-                <span className="text-sm font-medium text-gray-800">{r.student}</span>
-                <span className="text-xs text-gray-500">{r.created_at}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </SectionCard>
     </div>
   );
 }
@@ -633,7 +620,7 @@ function DtrView({ data, onPrint, isPrinting }) {
                 <div key={i} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/60 px-3 py-2">
                   <div>
                     <p className="text-sm font-medium text-gray-800">{r.student}</p>
-                    <p className="text-xs text-gray-500">{r.date}</p>
+                    <p className="text-xs text-gray-500">{formatDate(r.date)}</p>
                   </div>
                   <StatusBadge value={r.status} />
                 </div>
@@ -650,7 +637,7 @@ function DtrView({ data, onPrint, isPrinting }) {
                 <div key={i} className="rounded-xl border border-gray-100 bg-white px-3 py-2 shadow-sm">
                   <p className="truncate text-sm font-medium text-gray-800">{r.title || "Untitled"}</p>
                   <p className="text-xs text-gray-500">
-                    {r.student} · {r.date}
+                    {r.student} · {formatDate(r.date)}
                   </p>
                 </div>
               ))}
@@ -671,21 +658,6 @@ function EvaluationsView({ data, onPrint, isPrinting }) {
         <StatCard label="Journals" value={data.journals.total} helper={`${data.journals.recent?.length || 0} recent`} icon={<BookOpen size={18} />} tone="teal" />
         <StatCard label="Issues" value={data.issues.total} helper={`${data.evaluations.recent?.length || 0} recent ratings`} icon={<AlertTriangle size={18} />} tone="amber" />
       </section>
-
-      <SectionCard title="Recent Evaluations" subtitle="Latest performance reviews in this academic year">
-        {!(data.evaluations.recent || []).length ? (
-          <p className="py-6 text-center text-sm text-gray-400">No evaluations yet</p>
-        ) : (
-          <div className="space-y-2">
-            {data.evaluations.recent.map((r, i) => (
-              <div key={i} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5">
-                <span className="text-sm font-medium text-gray-800">{r.student}</span>
-                <span className="text-xs text-gray-500">{r.created_at}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </SectionCard>
 
       <SectionCard title="Evaluations Summary" subtitle="Overall review activity">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -807,20 +779,6 @@ function IssuesView({ data, onPrint, isPrinting }) {
                   <p className="mt-1 line-clamp-1 text-xs text-gray-500">
                     <span className="font-semibold capitalize">{r.type?.replace(/_/g, " ")}:</span> {r.excerpt}
                   </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </SectionCard>
-        <SectionCard title="Recent Evaluations" subtitle="Latest 5 performance reviews">
-          {!(data.evaluations.recent || []).length ? (
-            <p className="py-6 text-center text-sm text-gray-400">No evaluations yet</p>
-          ) : (
-            <div className="space-y-2">
-              {data.evaluations.recent.map((r, i) => (
-                <div key={i} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5">
-                  <span className="text-sm font-medium text-gray-800">{r.student}</span>
-                  <span className="text-xs text-gray-500">{r.created_at}</span>
                 </div>
               ))}
             </div>

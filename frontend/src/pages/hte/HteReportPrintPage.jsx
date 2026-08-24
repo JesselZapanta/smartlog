@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
+import { formatDate } from "@/lib/dates";
 import { useAuth } from "@/contexts/AuthContext";
 
 const REPORT_TITLES = {
@@ -224,7 +225,7 @@ export default function HteReportPrintPage() {
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   <div>
                     <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Recent DTR</p>
-                    <DataTable columns={[{ key: "student", label: "Student", bold: true }, { key: "date", label: "Date" }, { key: "status", label: "Status" }]} rows={(data.dtr.recent || []).map((r) => ({ student: r.student, date: r.date, status: r.status }))} />
+                    <DataTable columns={[{ key: "student", label: "Student", bold: true }, { key: "date", label: "Date" }, { key: "status", label: "Status" }]} rows={(data.dtr.recent || []).map((r) => ({ student: r.student, date: formatDate(r.date), status: r.status }))} />
                   </div>
                   <div>
                     <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Recent Journals</p>
@@ -241,10 +242,6 @@ export default function HteReportPrintPage() {
                   {miniStatsBox("Total Evaluations", data.evaluations.total)}
                   {miniStatsBox("Journals", data.journals.total)}
                   {miniStatsBox("Deployed Interns", data.interns.total, "text-green-700")}
-                </div>
-                <div className="mt-2">
-                  <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Recent Evaluations</p>
-                  <DataTable columns={[{ key: "student", label: "Student", bold: true }, { key: "date", label: "Date" }]} rows={(data.evaluations.recent || []).map((r) => ({ student: r.student, date: r.created_at }))} />
                 </div>
               </div>
             )}
