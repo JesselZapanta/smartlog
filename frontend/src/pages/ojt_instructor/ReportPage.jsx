@@ -991,7 +991,7 @@ export default function InstructorReportPage() {
       <PageHeader
         icon={BarChart3}
         title="Reports"
-        subtitle="Monitoring and evaluation reports filtered by academic year"
+        subtitle={`Official reports for ${data?.institute?.name || "your institute"} — filter by academic year`}
         action={
           <Button
             onClick={handlePrintExecutive}
