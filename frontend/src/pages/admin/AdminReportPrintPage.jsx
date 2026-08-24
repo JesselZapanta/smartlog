@@ -435,7 +435,7 @@ export default function AdminReportPrintPage() {
                 <p className="text-gray-600">Prepared by:</p>
                 <div className="mt-8 border-b border-gray-800 sm:mt-12" />
                 <p className="mt-1.5 text-center font-heading text-[10px] font-bold uppercase tracking-wide text-gray-900 sm:text-xs">{preparedName}</p>
-                <p className="text-center text-[9px] text-gray-500 sm:text-[10px]">Administrator</p>
+                <p className="text-center text-[9px] text-gray-500 sm:text-[10px]">OJT, Placement and Alumni Affairs Office</p>
               </div>
             </div>
 
