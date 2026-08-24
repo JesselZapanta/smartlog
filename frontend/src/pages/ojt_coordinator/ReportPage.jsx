@@ -154,9 +154,25 @@ function miniStat(label, value) {
   );
 }
 
-function OverviewView({ data }) {
+function ReportPrintBar({ onPrint, reportKey, isPrinting, label }) {
+  return (
+    <div className="flex justify-end">
+      <Button
+        onClick={() => onPrint(reportKey)}
+        disabled={isPrinting}
+        className="h-9 whitespace-nowrap rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700 disabled:opacity-60"
+      >
+        {isPrinting ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}
+        {isPrinting ? "Preparing…" : label || "Print Report"}
+      </Button>
+    </div>
+  );
+}
+
+function OverviewView({ data, onPrint, isPrinting }) {
   return (
     <div className="space-y-4 sm:space-y-5">
+      <ReportPrintBar onPrint={onPrint} reportKey="overview" isPrinting={isPrinting} label="Print Executive Report" />
       <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard label="Total Interns" value={data.interns.total} helper={`${data.interns.approved} approved`} icon={<GraduationCap size={18} />} tone="green" />
         <StatCard label="HTE Partners" value={data.htes.total} helper={`${data.htes.active} active`} icon={<Building2 size={18} />} tone="blue" />
@@ -208,9 +224,10 @@ function OverviewView({ data }) {
   );
 }
 
-function RegistrationsView({ data }) {
+function RegistrationsView({ data, onPrint, isPrinting }) {
   return (
     <div className="space-y-4 sm:space-y-5">
+      <ReportPrintBar onPrint={onPrint} reportKey="registrations" isPrinting={isPrinting} label="Print Registration Report" />
       <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard label="Total Interns" value={data.interns.total} icon={<GraduationCap size={18} />} tone="green" />
         <StatCard label="Approved" value={data.interns.approved} helper="Ready for deployment" icon={<UserCheck size={18} />} tone="green" />
@@ -264,9 +281,10 @@ function RegistrationsView({ data }) {
   );
 }
 
-function PlacementView({ data }) {
+function PlacementView({ data, onPrint, isPrinting }) {
   return (
     <div className="space-y-4 sm:space-y-5">
+      <ReportPrintBar onPrint={onPrint} reportKey="placement" isPrinting={isPrinting} label="Print Placement Report" />
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <StatCard label="Total HTEs" value={data.htes.total} icon={<Building2 size={18} />} tone="blue" />
         <StatCard label="Active" value={data.htes.active} icon={<UserCheck size={18} />} tone="green" />
@@ -307,9 +325,10 @@ function PlacementView({ data }) {
   );
 }
 
-function RequirementsView({ data }) {
+function RequirementsView({ data, onPrint, isPrinting }) {
   return (
     <div className="space-y-4 sm:space-y-5">
+      <ReportPrintBar onPrint={onPrint} reportKey="requirements" isPrinting={isPrinting} label="Print Requirements Report" />
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <StatCard label="Requirement Types" value={data.requirements.definitions_total} icon={<ClipboardList size={18} />} tone="amber" />
         <StatCard label="Total Submissions" value={data.requirements.total} icon={<FileText size={18} />} tone="emerald" />
@@ -343,9 +362,10 @@ function RequirementsView({ data }) {
   );
 }
 
-function DtrView({ data }) {
+function DtrView({ data, onPrint, isPrinting }) {
   return (
     <div className="space-y-4 sm:space-y-5">
+      <ReportPrintBar onPrint={onPrint} reportKey="dtr" isPrinting={isPrinting} label="Print Attendance Report" />
       <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         <StatCard label="DTR Submissions" value={data.dtr.total} icon={<CalendarCheck size={18} />} tone="blue" />
         <StatCard label="Daily Journals" value={data.journals.total} icon={<BookOpen size={18} />} tone="teal" />
@@ -370,9 +390,10 @@ function DtrView({ data }) {
   );
 }
 
-function IssuesView({ data }) {
+function IssuesView({ data, onPrint, isPrinting }) {
   return (
     <div className="space-y-4 sm:space-y-5">
+      <ReportPrintBar onPrint={onPrint} reportKey="issues" isPrinting={isPrinting} label="Print Issues Report" />
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard label="Total Issues" value={data.issues.total} icon={<AlertTriangle size={18} />} tone="red" />
         <StatCard label="Open" value={data.issues.by_status.pending || 0} icon={<AlertTriangle size={18} />} tone="amber" />
@@ -423,13 +444,11 @@ function IssuesView({ data }) {
   );
 }
 
-function StudentPlacementView({ academicYearId }) {
+function StudentPlacementView({ academicYearId, onPrint, isPrinting }) {
   const [rows, setRows] = useState([]);
   const [meta, setMeta] = useState(null);
   const [loadingPlacement, setLoadingPlacement] = useState(true);
   const [q, setQ] = useState("");
-  const [isPrintingPlacement, setIsPrintingPlacement] = useState(false);
-  const iframeRef = useRef(null);
 
   const fetchPlacement = useCallback(() => {
     setLoadingPlacement(true);
@@ -463,86 +482,28 @@ function StudentPlacementView({ academicYearId }) {
   const placed = rows.filter((r) => r.company).length;
   const unplaced = rows.length - placed;
 
-  const handlePrintPlacement = () => {
-    if (isPrintingPlacement) return;
-    setIsPrintingPlacement(true);
-    const params = new URLSearchParams();
-    if (academicYearId) params.set("academic_year_id", academicYearId);
-    const printUrl = `/coordinator/reports/placement/print?${params.toString()}`;
-    const ensureIframe = () => {
-      if (iframeRef.current) return iframeRef.current;
-      const iframe = document.createElement("iframe");
-      iframe.style.position = "fixed";
-      iframe.style.inset = "0";
-      iframe.style.width = "0";
-      iframe.style.height = "0";
-      iframe.style.border = "none";
-      iframe.style.zIndex = "9999";
-      iframeRef.current = iframe;
-      document.body.appendChild(iframe);
-      return iframe;
-    };
-    const iframe = ensureIframe();
-    iframe.src = printUrl;
-    let done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
-      setIsPrintingPlacement(false);
-    };
-    const handler = (e) => {
-      if (e.data?.type === "smartlog-placement-print-ready") {
-        setTimeout(() => {
-          try {
-            iframeRef.current?.contentWindow?.print();
-          } catch {}
-          finish();
-        }, 250);
-        window.removeEventListener("message", handler);
-        clearTimeout(fallback);
-      }
-    };
-    window.addEventListener("message", handler);
-    const fallback = setTimeout(finish, 8000);
-    iframe.addEventListener("load", () => setTimeout(finish, 3000), { once: true });
-  };
-
   return (
     <div className="space-y-4 sm:space-y-5">
+      <ReportPrintBar onPrint={onPrint} reportKey="student_placement" isPrinting={isPrinting} label="Print Placement Report" />
+
       <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         <StatCard label="Total Students" value={rows.length} icon={<Users size={18} />} tone="green" />
         <StatCard label="Placed" value={placed} helper={`${unplaced} unplaced`} icon={<Building2 size={18} />} tone="blue" />
         <StatCard label="Programs Involved" value={meta ? new Set(rows.map((r) => r.program)).size : 0} icon={<BookOpen size={18} />} tone="amber" />
       </section>
 
-      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-        <div className="border-b border-gray-100 px-4 py-3 sm:px-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 className="font-heading text-sm font-bold text-gray-900">Student Placement Roster</h3>
-              <p className="mt-0.5 text-xs text-gray-500">
-                {meta?.institute?.name || "Institute"} · {meta?.academic_year?.description || meta?.academic_year?.code || "Selected AY"}
-              </p>
-            </div>
-            <Button
-              onClick={handlePrintPlacement}
-              disabled={isPrintingPlacement || loadingPlacement}
-              size="sm"
-              className="h-10 w-full whitespace-nowrap rounded-xl bg-[#052e16] font-semibold text-white hover:bg-green-900 disabled:opacity-60 sm:w-auto"
-            >
-              {isPrintingPlacement ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
-              {isPrintingPlacement ? "Preparing…" : "Print Placement Report"}
-            </Button>
+      <SectionCard
+        title="Student Placement Roster"
+        subtitle={`${meta?.institute?.name || "Institute"} · ${meta?.academic_year?.description || meta?.academic_year?.code || "Selected AY"} · Official per-student deployment records`}
+      >
+        <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full sm:max-w-sm">
+            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search student, program, company, supervisor…" className="h-10 rounded-xl pl-9" />
           </div>
-          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="relative w-full sm:max-w-sm">
-              <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search student, program, company, supervisor…" className="h-10 rounded-xl border-gray-200 pl-9" />
-            </div>
-            <p className="shrink-0 text-xs font-medium text-gray-500">
-              Showing <span className="font-heading font-bold text-gray-900">{filtered.length}</span> of {rows.length}
-            </p>
-          </div>
+          <p className="text-xs font-medium text-gray-500">
+            Showing <span className="font-heading font-bold text-gray-900">{filtered.length}</span> of {rows.length} students
+          </p>
         </div>
 
         {loadingPlacement ? (
@@ -550,41 +511,43 @@ function StudentPlacementView({ academicYearId }) {
             <Loader2 size={24} className="animate-spin text-green-600" />
           </div>
         ) : filtered.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-gray-400 sm:px-5">{q ? "No matching records" : "No students in this academic year"}</p>
+          <p className="py-10 text-center text-sm text-gray-400">{q ? "No matching records" : "No students in this academic year"}</p>
         ) : (
           <>
-            <div className="hidden overflow-x-auto sm:block">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-[#052e16] hover:bg-[#052e16]">
-                    <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-white">Student Name</TableHead>
-                    <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-white">Course / Program</TableHead>
-                    <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-white">Company / Organization</TableHead>
-                    <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-white">Department / Office</TableHead>
-                    <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-white">Supervisor</TableHead>
-                    <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-white">OJT Start & End</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((r, idx) => (
-                    <TableRow key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50/60"}>
-                      <TableCell className="max-w-[180px] whitespace-normal font-semibold leading-tight text-gray-900">{r.student_name}</TableCell>
-                      <TableCell className="whitespace-nowrap text-sm font-medium text-gray-700">{r.program}</TableCell>
-                      <TableCell className="max-w-[170px] whitespace-normal text-sm leading-tight text-gray-700">{r.company || <span className="text-gray-300">—</span>}</TableCell>
-                      <TableCell className="text-sm text-gray-400">{r.department || "—"}</TableCell>
-                      <TableCell className="max-w-[150px] whitespace-normal text-sm leading-tight text-gray-700">{r.supervisor || <span className="text-gray-300">—</span>}</TableCell>
-                      <TableCell className="whitespace-nowrap text-xs text-gray-600">
-                        {r.ojt_start ? r.ojt_start : "—"} {r.ojt_start || r.ojt_end ? "–" : ""} {r.ojt_end ? r.ojt_end : r.ojt_start ? "" : ""}
-                      </TableCell>
+            <div className="hidden overflow-hidden rounded-xl border border-gray-200 sm:block">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50/50">
+                      <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-gray-500">Student Name</TableHead>
+                      <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-gray-500">Course / Program</TableHead>
+                      <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-gray-500">Company / Organization</TableHead>
+                      <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-gray-500">Department / Office</TableHead>
+                      <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-gray-500">Supervisor</TableHead>
+                      <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-gray-500">OJT Start & End</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((r, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell className="max-w-[180px] whitespace-normal font-medium leading-tight text-gray-800">{r.student_name}</TableCell>
+                        <TableCell className="whitespace-nowrap text-sm text-gray-600">{r.program}</TableCell>
+                        <TableCell className="max-w-[170px] whitespace-normal text-sm leading-tight text-gray-700">{r.company || <span className="text-gray-400">—</span>}</TableCell>
+                        <TableCell className="text-sm text-gray-400">{r.department || "—"}</TableCell>
+                        <TableCell className="max-w-[150px] whitespace-normal text-sm leading-tight text-gray-700">{r.supervisor || <span className="text-gray-400">—</span>}</TableCell>
+                        <TableCell className="whitespace-nowrap text-xs text-gray-600">
+                          {r.ojt_start ? r.ojt_start : "—"} {r.ojt_start || r.ojt_end ? "–" : ""} {r.ojt_end ? r.ojt_end : r.ojt_start ? "" : ""}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 p-3 sm:hidden">
+            <div className="grid grid-cols-1 gap-3 sm:hidden">
               {filtered.map((r, idx) => (
-                <div key={idx} className="rounded-xl border border-gray-200 bg-gray-50/50 p-4">
+                <div key={idx} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
                   <p className="font-heading text-sm font-bold leading-tight text-gray-900">{r.student_name}</p>
                   <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-green-700">{r.program}</p>
                   <div className="mt-3 space-y-2 text-xs">
@@ -610,13 +573,9 @@ function StudentPlacementView({ academicYearId }) {
                 </div>
               ))}
             </div>
-            <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-4 py-2.5 text-[11px] text-gray-500 sm:px-5">
-              <span>{rows.filter((r) => r.company).length} placed · {rows.length - rows.filter((r) => r.company).length} unplaced</span>
-              <span className="font-medium">{rows.length} total</span>
-            </div>
           </>
         )}
-      </div>
+      </SectionCard>
     </div>
   );
 }
@@ -671,54 +630,66 @@ export default function CoordinatorReportPage() {
     loadReport();
   }, [loadReport]);
 
-  const handlePrintExecutive = () => {
-    if (isPrinting) return;
-    setIsPrinting(true);
-    const params = new URLSearchParams();
-    if (academicYearId) params.set("academic_year_id", academicYearId);
-    params.set("report", "overview");
-    const printUrl = `/coordinator/reports/print?${params.toString()}`;
-
-    const ensureIframe = () => {
-      if (iframeRef.current) return iframeRef.current;
-      const iframe = document.createElement("iframe");
-      iframe.style.position = "fixed";
-      iframe.style.inset = "0";
-      iframe.style.width = "0";
-      iframe.style.height = "0";
-      iframe.style.border = "none";
-      iframe.style.zIndex = "9999";
-      iframeRef.current = iframe;
-      document.body.appendChild(iframe);
-      return iframe;
-    };
-
-    const iframe = ensureIframe();
-    iframe.src = printUrl;
-
-    let done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
-      setIsPrinting(false);
-    };
-
-    const handler = (e) => {
-      if (e.data?.type === "smartlog-report-print-ready") {
-        setTimeout(() => {
-          try {
-            iframeRef.current?.contentWindow?.print();
-          } catch {}
-          finish();
-        }, 250);
-        window.removeEventListener("message", handler);
-        clearTimeout(fallback);
+  const handlePrint = useCallback(
+    (reportKey = "overview") => {
+      if (isPrinting) return;
+      setIsPrinting(true);
+      const params = new URLSearchParams();
+      if (academicYearId) params.set("academic_year_id", academicYearId);
+      let printUrl;
+      let readyType;
+      if (reportKey === "student_placement") {
+        printUrl = `/coordinator/reports/placement/print?${params.toString()}`;
+        readyType = "smartlog-placement-print-ready";
+      } else {
+        params.set("report", reportKey);
+        printUrl = `/coordinator/reports/print?${params.toString()}`;
+        readyType = "smartlog-report-print-ready";
       }
-    };
-    window.addEventListener("message", handler);
-    const fallback = setTimeout(finish, 8000);
-    iframe.addEventListener("load", () => setTimeout(finish, 3000), { once: true });
-  };
+
+      const ensureIframe = () => {
+        if (iframeRef.current) return iframeRef.current;
+        const iframe = document.createElement("iframe");
+        iframe.style.position = "fixed";
+        iframe.style.inset = "0";
+        iframe.style.width = "0";
+        iframe.style.height = "0";
+        iframe.style.border = "none";
+        iframe.style.zIndex = "9999";
+        iframeRef.current = iframe;
+        document.body.appendChild(iframe);
+        return iframe;
+      };
+
+      const iframe = ensureIframe();
+      iframe.src = printUrl;
+
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        setIsPrinting(false);
+      };
+
+      const handler = (e) => {
+        if (e.data?.type === readyType) {
+          setTimeout(() => {
+            try {
+              iframeRef.current?.contentWindow?.print();
+            } catch {}
+            finish();
+          }, 250);
+          window.removeEventListener("message", handler);
+          clearTimeout(fallback);
+        }
+      };
+      window.addEventListener("message", handler);
+      const fallback = setTimeout(finish, 8000);
+      iframe.addEventListener("load", () => setTimeout(finish, 3000), { once: true });
+    },
+    [academicYearId, isPrinting]
+  );
+  const handlePrintExecutive = () => handlePrint("overview");
 
   const ActiveView = viewMap[activeReport];
   const activeMeta = REPORTS.find((r) => r.key === activeReport);
@@ -808,7 +779,7 @@ export default function CoordinatorReportPage() {
             <p className="text-sm text-gray-500">{activeMeta?.desc}{user?.coordinator?.institute ? ` · ${data.institute?.name}` : ""}</p>
           </div>
 
-          <ActiveView data={data} academicYearId={academicYearId} />
+          <ActiveView data={data} academicYearId={academicYearId} onPrint={handlePrint} isPrinting={isPrinting} />
         </>
       )}
     </CoordinatorLayout>

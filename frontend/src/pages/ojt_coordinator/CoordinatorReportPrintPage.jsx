@@ -67,6 +67,10 @@ function miniStatsBox(label, value, tone = "text-gray-900") {
   );
 }
 
+function shouldShow(report, key) {
+  return !report || report === "overview" || report === key;
+}
+
 export default function CoordinatorReportPrintPage() {
   const [searchParams] = useSearchParams();
   const academicYearId = searchParams.get("academic_year_id") || "";
@@ -135,111 +139,121 @@ export default function CoordinatorReportPrintPage() {
           </div>
 
           <div className="space-y-6">
-            <div>
-              <SectionTitle>Intern Registration Summary</SectionTitle>
-              <div className="grid grid-cols-4 gap-2">
-                {miniStatsBox("Total", data.interns.total)}
-                {miniStatsBox("Approved", data.interns.approved, "text-green-700")}
-                {miniStatsBox("Pending", data.interns.pending, "text-amber-700")}
-                {miniStatsBox("Rejected", data.interns.rejected, "text-red-700")}
+            {shouldShow(report, "registrations") && (
+              <div>
+                <SectionTitle>Intern Registration Summary</SectionTitle>
+                <div className="grid grid-cols-4 gap-2">
+                  {miniStatsBox("Total", data.interns.total)}
+                  {miniStatsBox("Approved", data.interns.approved, "text-green-700")}
+                  {miniStatsBox("Pending", data.interns.pending, "text-amber-700")}
+                  {miniStatsBox("Rejected", data.interns.rejected, "text-red-700")}
+                </div>
+                <div className="mt-2">
+                  <DataTable
+                    columns={[{ key: "program", label: "Program", bold: true }, { key: "count", label: "Interns", align: "right" }]}
+                    rows={data.interns.by_program.map((r) => ({ program: r.program, count: r.total }))}
+                  />
+                </div>
+                <div className="mt-2">
+                  <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">OJT Deployment Status</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {Object.entries(data.interns.by_ojt_status).map(([s, c]) => (
+                      <span key={s} className="inline-flex items-center gap-1 rounded border border-gray-200 px-2 py-1 text-[9px]">
+                        <StatusBadge value={s} /> <span className="font-mono font-bold">{c}</span>
+                      </span>
+                    ))}
+                    {Object.keys(data.interns.by_ojt_status).length === 0 && <span className="text-[10px] text-gray-400">No deployment data</span>}
+                  </div>
+                </div>
               </div>
-              <div className="mt-2">
-                <DataTable
-                  columns={[{ key: "program", label: "Program", bold: true }, { key: "count", label: "Interns", align: "right" }]}
-                  rows={data.interns.by_program.map((r) => ({ program: r.program, count: r.total }))}
-                />
+            )}
+
+            {shouldShow(report, "placement") && (
+              <div>
+                <SectionTitle>HTE Placement Summary</SectionTitle>
+                <div className="grid grid-cols-3 gap-2">
+                  {miniStatsBox("Total HTEs", data.htes.total)}
+                  {miniStatsBox("Active", data.htes.active, "text-green-700")}
+                  {miniStatsBox("Inactive", data.htes.inactive)}
+                </div>
+                <div className="mt-2">
+                  <DataTable
+                    columns={[
+                      { key: "name", label: "Host Training Establishment", bold: true },
+                      { key: "status", label: "Status" },
+                      { key: "count", label: "Assigned Interns", align: "right" },
+                    ]}
+                    rows={data.htes.top_htes.map((r) => ({ name: r.name, status: r.status, count: r.total }))}
+                  />
+                </div>
               </div>
-              <div className="mt-2">
-                <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">OJT Deployment Status</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {Object.entries(data.interns.by_ojt_status).map(([s, c]) => (
+            )}
+
+            {shouldShow(report, "requirements") && (
+              <div>
+                <SectionTitle>Requirements Compliance</SectionTitle>
+                <div className="grid grid-cols-4 gap-2">
+                  {miniStatsBox("Types", data.requirements.definitions_total)}
+                  {miniStatsBox("Submissions", data.requirements.total)}
+                  {miniStatsBox("Approved", data.requirements.by_status.approved || 0, "text-green-700")}
+                  {miniStatsBox("Pending", data.requirements.by_status.pending || 0, "text-amber-700")}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {Object.entries(data.requirements.by_status).map(([s, c]) => (
                     <span key={s} className="inline-flex items-center gap-1 rounded border border-gray-200 px-2 py-1 text-[9px]">
                       <StatusBadge value={s} /> <span className="font-mono font-bold">{c}</span>
                     </span>
                   ))}
-                  {Object.keys(data.interns.by_ojt_status).length === 0 && <span className="text-[10px] text-gray-400">No deployment data</span>}
                 </div>
               </div>
-            </div>
+            )}
 
-            <div>
-              <SectionTitle>HTE Placement Summary</SectionTitle>
-              <div className="grid grid-cols-3 gap-2">
-                {miniStatsBox("Total HTEs", data.htes.total)}
-                {miniStatsBox("Active", data.htes.active, "text-green-700")}
-                {miniStatsBox("Inactive", data.htes.inactive)}
+            {shouldShow(report, "dtr") && (
+              <div>
+                <SectionTitle>Attendance & DTR</SectionTitle>
+                <div className="grid grid-cols-3 gap-2">
+                  {miniStatsBox("DTR Submissions", data.dtr.total)}
+                  {miniStatsBox("Journals", data.journals.total)}
+                  {miniStatsBox("Evaluations", data.evaluations.intern_ratings + data.evaluations.hte_ratings)}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {Object.entries(data.dtr.by_status).map(([s, c]) => (
+                    <span key={s} className="inline-flex items-center gap-1 rounded border border-gray-200 px-2 py-1 text-[9px]">
+                      <StatusBadge value={s} /> <span className="font-mono font-bold">{c}</span>
+                    </span>
+                  ))}
+                  {Object.keys(data.dtr.by_status).length === 0 && <span className="text-[10px] text-gray-400">No DTR data</span>}
+                </div>
               </div>
-              <div className="mt-2">
-                <DataTable
-                  columns={[
-                    { key: "name", label: "Host Training Establishment", bold: true },
-                    { key: "status", label: "Status" },
-                    { key: "count", label: "Assigned Interns", align: "right" },
-                  ]}
-                  rows={data.htes.top_htes.map((r) => ({ name: r.name, status: r.status, count: r.total }))}
-                />
-              </div>
-            </div>
+            )}
 
-            <div>
-              <SectionTitle>Requirements Compliance</SectionTitle>
-              <div className="grid grid-cols-4 gap-2">
-                {miniStatsBox("Types", data.requirements.definitions_total)}
-                {miniStatsBox("Submissions", data.requirements.total)}
-                {miniStatsBox("Approved", data.requirements.by_status.approved || 0, "text-green-700")}
-                {miniStatsBox("Pending", data.requirements.by_status.pending || 0, "text-amber-700")}
+            {shouldShow(report, "issues") && (
+              <div>
+                <SectionTitle>Issues & Evaluations</SectionTitle>
+                <div className="grid grid-cols-4 gap-2">
+                  {miniStatsBox("Issues", data.issues.total, "text-red-700")}
+                  {miniStatsBox("Open", data.issues.by_status.pending || 0, "text-amber-700")}
+                  {miniStatsBox("Resolved", data.issues.by_status.resolve || 0, "text-green-700")}
+                  {miniStatsBox("Ratings", data.evaluations.intern_ratings + data.evaluations.hte_ratings)}
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-3">
+                  <DataTable
+                    columns={[{ key: "status", label: "Issue Status", bold: true }, { key: "count", label: "Count", align: "right" }]}
+                    rows={Object.entries(data.issues.by_status).map(([s, c]) => ({ status: s, count: c }))}
+                  />
+                  <DataTable
+                    columns={[
+                      { key: "type", label: "Evaluation Type", bold: true },
+                      { key: "count", label: "Count", align: "right" },
+                    ]}
+                    rows={[
+                      { type: "Intern rated HTE", count: data.evaluations.intern_ratings },
+                      { type: "HTE rated Intern", count: data.evaluations.hte_ratings },
+                    ]}
+                  />
+                </div>
               </div>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {Object.entries(data.requirements.by_status).map(([s, c]) => (
-                  <span key={s} className="inline-flex items-center gap-1 rounded border border-gray-200 px-2 py-1 text-[9px]">
-                    <StatusBadge value={s} /> <span className="font-mono font-bold">{c}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <SectionTitle>Attendance & DTR</SectionTitle>
-              <div className="grid grid-cols-3 gap-2">
-                {miniStatsBox("DTR Submissions", data.dtr.total)}
-                {miniStatsBox("Journals", data.journals.total)}
-                {miniStatsBox("Evaluations", data.evaluations.intern_ratings + data.evaluations.hte_ratings)}
-              </div>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {Object.entries(data.dtr.by_status).map(([s, c]) => (
-                  <span key={s} className="inline-flex items-center gap-1 rounded border border-gray-200 px-2 py-1 text-[9px]">
-                    <StatusBadge value={s} /> <span className="font-mono font-bold">{c}</span>
-                  </span>
-                ))}
-                {Object.keys(data.dtr.by_status).length === 0 && <span className="text-[10px] text-gray-400">No DTR data</span>}
-              </div>
-            </div>
-
-            <div>
-              <SectionTitle>Issues & Evaluations</SectionTitle>
-              <div className="grid grid-cols-4 gap-2">
-                {miniStatsBox("Issues", data.issues.total, "text-red-700")}
-                {miniStatsBox("Open", data.issues.by_status.pending || 0, "text-amber-700")}
-                {miniStatsBox("Resolved", data.issues.by_status.resolve || 0, "text-green-700")}
-                {miniStatsBox("Ratings", data.evaluations.intern_ratings + data.evaluations.hte_ratings)}
-              </div>
-              <div className="mt-2 grid grid-cols-2 gap-3">
-                <DataTable
-                  columns={[{ key: "status", label: "Issue Status", bold: true }, { key: "count", label: "Count", align: "right" }]}
-                  rows={Object.entries(data.issues.by_status).map(([s, c]) => ({ status: s, count: c }))}
-                />
-                <DataTable
-                  columns={[
-                    { key: "type", label: "Evaluation Type", bold: true },
-                    { key: "count", label: "Count", align: "right" },
-                  ]}
-                  rows={[
-                    { type: "Intern rated HTE", count: data.evaluations.intern_ratings },
-                    { type: "HTE rated Intern", count: data.evaluations.hte_ratings },
-                  ]}
-                />
-              </div>
-            </div>
+            )}
 
             <div className="mt-6 border-t border-gray-200 pt-3 text-center text-[8px] text-gray-400">
               <p>SMARTLOG OJT Monitoring System · Tangub City Global College · Confidential</p>
