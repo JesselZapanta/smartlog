@@ -158,6 +158,7 @@ Route::middleware('auth:api')->group(function (): void {
         Route::get('/coordinator/hte-evaluations/{hte:uuid}/{intern:uuid}', [App\Http\Controllers\Api\OjtCoordinator\Evaluations\HteEvaluationController::class, 'showForHte'])->withoutScopedBindings()->name('api.coordinator.hte-evaluations.showForHte');
 
         Route::get('/coordinator/issues/interns/options', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'internOptions'])->name('api.coordinator.issues.interns-options');
+        Route::get('/coordinator/reports', [App\Http\Controllers\Api\OjtCoordinator\ReportController::class, 'index'])->name('api.coordinator.reports');
         Route::get('/coordinator/issues', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'index'])->name('api.coordinator.issues.index');
         Route::post('/coordinator/issues', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'store'])->name('api.coordinator.issues.store');
         Route::get('/coordinator/issues/{issue}', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'show'])->name('api.coordinator.issues.show');
