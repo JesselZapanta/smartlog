@@ -150,11 +150,10 @@ function OverviewView({ data, onPrint, isPrinting }) {
   return (
     <div className="space-y-4 sm:space-y-5">
       <ReportPrintBar onPrint={onPrint} reportKey="overview" isPrinting={isPrinting} label="Print Executive Report" />
-      <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <StatCard label="Total Interns" value={data.interns.total} helper={`${data.interns.approved} approved`} icon={<GraduationCap size={18} />} tone="green" />
-        <StatCard label="HTE Partners" value={data.htes.total} helper={`${data.institutes.total} institutes`} icon={<Building2 size={18} />} tone="blue" />
-        <StatCard label="Requirements" value={data.requirements.total} helper={`${data.requirements.definitions_total} types`} icon={<FileText size={18} />} tone="emerald" />
-        <StatCard label="Photo DTR" value={data.dtr.total} helper={`${data.journals.total} journals`} icon={<CalendarCheck size={18} />} tone="amber" />
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <StatCard label="Deployed Interns" value={data.interns.total} helper={`${data.interns.approved} approved · ${data.interns.pending} pending`} icon={<GraduationCap size={18} />} tone="green" />
+        <StatCard label="Intern Monitoring" value={data.dtr.total} helper={`${data.journals.total} journals · ${Object.keys(data.dtr.by_status || {}).length} statuses`} icon={<CalendarCheck size={18} />} tone="teal" />
+        <StatCard label="Intern Evaluations" value={data.evaluations.total} helper={`${(data.evaluations.recent || []).length} recent`} icon={<Star size={18} />} tone="violet" />
       </section>
 
       <SectionCard title="Interns by Program" subtitle="Programs under your institute">
@@ -172,10 +171,22 @@ function OverviewView({ data, onPrint, isPrinting }) {
         </div>
       </SectionCard>
 
-
-
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <SectionCard title="Recent Registrations" subtitle="Latest 6 interns in this AY">
+        <SectionCard title="Monitoring Snapshot" subtitle="DTR and journal activity">
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(data.dtr.by_status || {}).map(([s, c]) => (
+              <span key={s} className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1.5 text-xs font-semibold shadow-sm">
+                <StatusBadge value={s} /> <span className="font-heading">{c}</span>
+              </span>
+            ))}
+            {Object.keys(data.dtr.by_status || {}).length === 0 && <span className="text-xs text-gray-400">No DTR data</span>}
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {miniStat("DTR Submissions", data.dtr.total)}
+            {miniStat("Journals", data.journals.total)}
+          </div>
+        </SectionCard>
+        <SectionCard title="Recent Registrations" subtitle="Latest 6 deployed interns">
           {!(data.interns.recent || []).length ? (
             <p className="py-6 text-center text-xs text-gray-400">No recent registrations</p>
           ) : (
@@ -184,7 +195,7 @@ function OverviewView({ data, onPrint, isPrinting }) {
                 <div key={i} className="flex items-center justify-between rounded-xl border border-gray-100 px-3 py-2">
                   <div className="min-w-0 pr-2">
                     <p className="truncate text-sm font-medium text-gray-800">{r.name}</p>
-                    <p className="truncate text-xs text-gray-500">{r.institute} · {r.program}</p>
+                    <p className="truncate text-xs text-gray-500">{r.program}</p>
                   </div>
                   <StatusBadge value={r.status} />
                 </div>
@@ -192,32 +203,21 @@ function OverviewView({ data, onPrint, isPrinting }) {
             </div>
           )}
         </SectionCard>
-        <SectionCard title="Recent Issues" subtitle="Latest concerns reported">
-          {!(data.issues.recent || []).length ? (
-            <p className="py-6 text-center text-xs text-gray-400">No recent issues</p>
-          ) : (
-            <div className="space-y-2">
-              {data.issues.recent.map((r, i) => (
-                <div key={i} className="rounded-xl border border-gray-100 px-3 py-2">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate text-sm font-medium text-gray-800">{r.student}</span>
-                    <StatusBadge value={r.status} />
-                  </div>
-                  <p className="mt-1 line-clamp-1 text-xs text-gray-500">{r.excerpt}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </SectionCard>
       </section>
 
-      <SectionCard title="Issues & Evaluations" subtitle="Concerns and performance ratings in the selected academic year">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {miniStat("Issues", data.issues.total)}
-          {miniStat("Open", data.issues.by_status.open || 0)}
-          {miniStat("Evaluations", data.evaluations.total)}
-          {miniStat("Journals", data.journals.total)}
-        </div>
+      <SectionCard title="Recent Evaluations" subtitle="Latest performance reviews">
+        {!(data.evaluations.recent || []).length ? (
+          <p className="py-6 text-center text-sm text-gray-400">No evaluations yet</p>
+        ) : (
+          <div className="space-y-2">
+            {data.evaluations.recent.map((r, i) => (
+              <div key={i} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5">
+                <span className="text-sm font-medium text-gray-800">{r.student}</span>
+                <span className="text-xs text-gray-500">{r.created_at}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </SectionCard>
     </div>
   );
@@ -248,34 +248,7 @@ function InternsView({ data, onPrint, isPrinting }) {
         ))}
       </div>
 
-      <SectionCard title="Interns by Institute" subtitle="Count of interns per institute for the selected academic year">
-        {data.interns.by_institute.length === 0 ? (
-          <p className="py-8 text-center text-sm text-gray-400">No interns in this academic year</p>
-        ) : (
-          <div className="overflow-hidden rounded-xl border border-gray-200">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-gray-50/50">
-                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Institute</TableHead>
-                    <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-gray-500">Interns</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.interns.by_institute.map((row) => (
-                    <TableRow key={row.institute}>
-                      <TableCell className="font-medium text-gray-800">{row.institute}</TableCell>
-                      <TableCell className="text-right font-heading font-bold text-gray-900">{row.total}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        )}
-      </SectionCard>
-
-      <SectionCard title="Interns by Program" subtitle="Program-level distribution">
+      <SectionCard title="Interns by Program" subtitle="Programs under your institute">
         {data.interns.by_program.length === 0 ? (
           <p className="py-8 text-center text-sm text-gray-400">No data</p>
         ) : (
