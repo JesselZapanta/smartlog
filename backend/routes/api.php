@@ -179,6 +179,8 @@ Route::middleware('auth:api')->group(function (): void {
         Route::get('/hte/evaluations/{user:uuid}', [HteEvaluationController::class, 'show'])->name('api.hte.evaluations.show');
         Route::post('/hte/evaluations/{user:uuid}', [HteEvaluationController::class, 'store'])->name('api.hte.evaluations.store');
 
+        Route::get('/hte/reports', [App\Http\Controllers\Api\Hte\ReportController::class, 'index'])->name('api.hte.reports');
+
         Route::get('/hte/issues/assignable-interns/options', [IssueController::class, 'assignableInterns'])->name('api.hte.issues.assignable-interns');
         Route::get('/hte/issues', [IssueController::class, 'index'])->name('api.hte.issues.index');
         Route::post('/hte/issues', [IssueController::class, 'store'])->name('api.hte.issues.store');

@@ -84,6 +84,7 @@ import InstructorReportPage from "@/pages/ojt_instructor/ReportPage.jsx";
 import InstructorReportPrintPage from "@/pages/ojt_instructor/InstructorReportPrintPage.jsx";
 import InternReportPage from "@/pages/intern/ReportPage.jsx";
 import HteReportPage from "@/pages/hte/ReportPage.jsx";
+import HteReportPrintPage from "@/pages/hte/HteReportPrintPage.jsx";
 import ProtectedRoute from "@/components/ProtectedRoute.jsx";
 import GuestRoute from "@/components/GuestRoute.jsx";
 
@@ -755,6 +756,14 @@ function App() {
         element={
           <ProtectedRoute roles={["hte"]}>
             <HteReportPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/hte/reports/print"
+        element={
+          <ProtectedRoute roles={["hte"]}>
+            <HteReportPrintPage />
           </ProtectedRoute>
         }
       />
