@@ -121,24 +121,12 @@ export default function CoordinatorStudentPlacementPrintPage() {
             </table>
           </div>
 
-          <div className="mt-10 grid grid-cols-3 gap-6 text-[9px] sm:mt-14 sm:gap-8 sm:text-xs">
-            <div>
-              <p className="text-gray-600">Prepared:</p>
+          <div className="mt-10 flex justify-end sm:mt-14">
+            <div className="w-[42%] text-[9px] sm:w-[36%] sm:text-xs">
+              <p className="text-gray-600">Prepared by:</p>
               <div className="mt-8 border-b border-gray-800 sm:mt-12" />
               <p className="mt-1.5 text-center font-heading text-[10px] font-bold uppercase tracking-wide text-gray-900 sm:text-xs">{coordinatorName}</p>
               <p className="text-center text-[9px] text-gray-500 sm:text-[10px]">{instituteName} OJT Coordinator</p>
-            </div>
-            <div>
-              <p className="text-gray-600">Checked:</p>
-              <div className="mt-8 border-b border-gray-800 sm:mt-12" />
-              <p className="mt-1.5 text-center font-heading text-[10px] font-bold uppercase tracking-wide text-gray-900 sm:text-xs">JANZIEL BELANO-SELATONA</p>
-              <p className="text-center text-[9px] text-gray-500 sm:text-[10px]">ICS Program Coordinator</p>
-            </div>
-            <div>
-              <p className="text-gray-600">Noted:</p>
-              <div className="mt-8 border-b border-gray-800 sm:mt-12" />
-              <p className="mt-1.5 text-center font-heading text-[10px] font-bold uppercase tracking-wide text-gray-900 sm:text-xs">CARIN Z. CABATINGAN, MST-CS</p>
-              <p className="text-center text-[9px] text-gray-500 sm:text-[10px]">ICS Dean</p>
             </div>
           </div>
 
