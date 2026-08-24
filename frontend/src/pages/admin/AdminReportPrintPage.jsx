@@ -212,6 +212,18 @@ export default function AdminReportPrintPage() {
                     ))}
                   </div>
                 </div>
+                <div className="mt-2">
+                  <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Recent Registrations</p>
+                  <DataTable
+                    columns={[
+                      { key: "name", label: "Student", bold: true },
+                      { key: "institute", label: "Institute" },
+                      { key: "program", label: "Program" },
+                      { key: "status", label: "Status" },
+                    ]}
+                    rows={(data.interns.recent || []).map((r) => ({ name: r.name, institute: r.institute, program: r.program, status: r.status }))}
+                  />
+                </div>
               </div>
             )}
 
@@ -239,6 +251,17 @@ export default function AdminReportPrintPage() {
                       { key: "status", label: "Status", align: "right" },
                     ]}
                     rows={(data.institutes.list || []).map((r) => ({ name: r.name, programs: r.programs_count, status: r.is_active ? "active" : "inactive" }))}
+                  />
+                </div>
+                <div className="mt-2">
+                  <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">All HTEs — Assignment Load</p>
+                  <DataTable
+                    columns={[
+                      { key: "name", label: "HTE", bold: true },
+                      { key: "status", label: "Status" },
+                      { key: "assigned", label: "Assigned", align: "right" },
+                    ]}
+                    rows={(data.htes.detail || []).map((h) => ({ name: h.name, status: h.status, assigned: h.assigned }))}
                   />
                 </div>
               </div>
@@ -303,6 +326,19 @@ export default function AdminReportPrintPage() {
                     </span>
                   ))}
                 </div>
+                <div className="mt-2">
+                  <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Compliance per Requirement</p>
+                  <DataTable
+                    columns={[
+                      { key: "name", label: "Requirement", bold: true },
+                      { key: "type", label: "Type" },
+                      { key: "pending", label: "Pending", align: "right" },
+                      { key: "approved", label: "Approved", align: "right" },
+                      { key: "total", label: "Total", align: "right" },
+                    ]}
+                    rows={(data.requirements.by_requirement || []).map((r) => ({ name: r.name, type: r.type, pending: r.pending, approved: r.approved, total: r.total }))}
+                  />
+                </div>
               </div>
             )}
 
@@ -331,6 +367,16 @@ export default function AdminReportPrintPage() {
                     ]}
                     rows={(data.ojt_hours || []).map((r) => ({ institute: r.institute?.name || "—", hours: r.hours }))}
                   />
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div>
+                    <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Recent DTR</p>
+                    <DataTable columns={[{ key: "student", label: "Student", bold: true }, { key: "date", label: "Date" }, { key: "status", label: "Status" }]} rows={(data.dtr.recent || []).map((r) => ({ student: r.student, date: r.date, status: r.status }))} />
+                  </div>
+                  <div>
+                    <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Recent Journals</p>
+                    <DataTable columns={[{ key: "student", label: "Student", bold: true }, { key: "title", label: "Title" }]} rows={(data.journals.recent || []).map((r) => ({ student: r.student, title: r.title }))} />
+                  </div>
                 </div>
               </div>
             )}
@@ -370,6 +416,16 @@ export default function AdminReportPrintPage() {
                     columns={[{ key: "type", label: "Type", bold: true }, { key: "count", label: "Count", align: "right" }]}
                     rows={Object.entries(data.issues.by_type).map(([t, c]) => ({ type: (t || "N/A").replace(/_/g, " "), count: c }))}
                   />
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div>
+                    <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Recent Issues</p>
+                    <DataTable columns={[{ key: "student", label: "Student", bold: true }, { key: "status", label: "Status" }]} rows={(data.issues.recent || []).map((r) => ({ student: r.student, status: r.status }))} />
+                  </div>
+                  <div>
+                    <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Recent Evaluations</p>
+                    <DataTable columns={[{ key: "student", label: "Student", bold: true }, { key: "date", label: "Date" }]} rows={(data.evaluations.recent || []).map((r) => ({ student: r.student, date: r.created_at }))} />
+                  </div>
                 </div>
               </div>
             )}
