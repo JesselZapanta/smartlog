@@ -16,6 +16,8 @@ import {
   UserCheck,
   ClipboardList,
   ChevronRight,
+  Search,
+  FileSpreadsheet,
 } from "lucide-react";
 import {
   Select,
@@ -33,6 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import CoordinatorLayout from "@/layouts/CoordinatorLayout.jsx";
 import PageHeader from "@/components/PageHeader.jsx";
 import StatCard from "@/components/StatCard.jsx";
@@ -67,6 +70,14 @@ const REPORTS = [
     statKey: "htes.total",
   },
   {
+    key: "student_placement",
+    label: "Student Placement",
+    desc: "Per-student official deployment report",
+    icon: FileSpreadsheet,
+    tone: "violet",
+    statKey: "interns.total",
+  },
+  {
     key: "requirements",
     label: "Requirements",
     desc: "Compliance & submissions review",
@@ -97,6 +108,7 @@ const iconToneClasses = {
   emerald: "bg-emerald-50 text-emerald-700 ring-emerald-100",
   blue: "bg-blue-50 text-blue-700 ring-blue-100",
   amber: "bg-amber-50 text-amber-700 ring-amber-100",
+  violet: "bg-violet-50 text-violet-700 ring-violet-100",
   teal: "bg-teal-50 text-teal-700 ring-teal-100",
   red: "bg-red-50 text-red-700 ring-red-100",
 };
@@ -411,10 +423,201 @@ function IssuesView({ data }) {
   );
 }
 
+function StudentPlacementView({ academicYearId }) {
+  const [rows, setRows] = useState([]);
+  const [meta, setMeta] = useState(null);
+  const [loadingPlacement, setLoadingPlacement] = useState(true);
+  const [q, setQ] = useState("");
+  const [isPrintingPlacement, setIsPrintingPlacement] = useState(false);
+  const iframeRef = useRef(null);
+
+  const fetchPlacement = useCallback(() => {
+    setLoadingPlacement(true);
+    const params = new URLSearchParams();
+    if (academicYearId) params.set("academic_year_id", academicYearId);
+    api
+      .get(`/coordinator/reports/placement?${params.toString()}`)
+      .then((res) => {
+        setRows(res.data.data.rows || []);
+        setMeta(res.data.data);
+      })
+      .catch((err) => toast.error("Failed to load placement report", { description: firstErrorMessage(err) }))
+      .finally(() => setLoadingPlacement(false));
+  }, [academicYearId]);
+
+  useEffect(() => {
+    fetchPlacement();
+  }, [fetchPlacement]);
+
+  const filtered = rows.filter((r) => {
+    if (!q.trim()) return true;
+    const needle = q.toLowerCase();
+    return (
+      r.student_name.toLowerCase().includes(needle) ||
+      r.program.toLowerCase().includes(needle) ||
+      r.company.toLowerCase().includes(needle) ||
+      r.supervisor.toLowerCase().includes(needle)
+    );
+  });
+
+  const placed = rows.filter((r) => r.company).length;
+  const unplaced = rows.length - placed;
+
+  const handlePrintPlacement = () => {
+    if (isPrintingPlacement) return;
+    setIsPrintingPlacement(true);
+    const params = new URLSearchParams();
+    if (academicYearId) params.set("academic_year_id", academicYearId);
+    const printUrl = `/coordinator/reports/placement/print?${params.toString()}`;
+    const ensureIframe = () => {
+      if (iframeRef.current) return iframeRef.current;
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "fixed";
+      iframe.style.inset = "0";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "none";
+      iframe.style.zIndex = "9999";
+      iframeRef.current = iframe;
+      document.body.appendChild(iframe);
+      return iframe;
+    };
+    const iframe = ensureIframe();
+    iframe.src = printUrl;
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      setIsPrintingPlacement(false);
+    };
+    const handler = (e) => {
+      if (e.data?.type === "smartlog-placement-print-ready") {
+        setTimeout(() => {
+          try {
+            iframeRef.current?.contentWindow?.print();
+          } catch {}
+          finish();
+        }, 250);
+        window.removeEventListener("message", handler);
+        clearTimeout(fallback);
+      }
+    };
+    window.addEventListener("message", handler);
+    const fallback = setTimeout(finish, 8000);
+    iframe.addEventListener("load", () => setTimeout(finish, 3000), { once: true });
+  };
+
+  return (
+    <div className="space-y-4 sm:space-y-5">
+      <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+        <StatCard label="Total Students" value={rows.length} icon={<Users size={18} />} tone="green" />
+        <StatCard label="Placed" value={placed} helper={`${unplaced} unplaced`} icon={<Building2 size={18} />} tone="blue" />
+        <StatCard label="Programs Involved" value={meta ? new Set(rows.map((r) => r.program)).size : 0} icon={<BookOpen size={18} />} tone="amber" />
+      </section>
+
+      <SectionCard
+        title="Student Placement Roster"
+        subtitle={`${meta?.institute?.name || "Institute"} · ${meta?.academic_year?.description || meta?.academic_year?.code || "Selected AY"} · Official per-student deployment records`}
+        action={
+          <Button
+            onClick={handlePrintPlacement}
+            disabled={isPrintingPlacement || loadingPlacement}
+            className="h-10 whitespace-nowrap rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700 disabled:opacity-60"
+          >
+            {isPrintingPlacement ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
+            {isPrintingPlacement ? "Preparing…" : "Print Placement Report"}
+          </Button>
+        }
+      >
+        <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full sm:max-w-sm">
+            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search student, program, company, supervisor…" className="h-10 rounded-xl pl-9" />
+          </div>
+          <p className="text-xs font-medium text-gray-500">
+            Showing <span className="font-heading font-bold text-gray-900">{filtered.length}</span> of {rows.length} students
+          </p>
+        </div>
+
+        {loadingPlacement ? (
+          <div className="flex h-40 items-center justify-center">
+            <Loader2 size={24} className="animate-spin text-green-600" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <p className="py-10 text-center text-sm text-gray-400">{q ? "No matching records" : "No students in this academic year"}</p>
+        ) : (
+          <>
+            <div className="hidden overflow-hidden rounded-xl border border-gray-200 sm:block">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50/50">
+                      <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-gray-500">Student Name</TableHead>
+                      <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-gray-500">Course / Program</TableHead>
+                      <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-gray-500">Company / Organization</TableHead>
+                      <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-gray-500">Department / Office</TableHead>
+                      <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-gray-500">Supervisor</TableHead>
+                      <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-gray-500">OJT Start & End</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((r, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell className="max-w-[180px] whitespace-normal font-medium leading-tight text-gray-800">{r.student_name}</TableCell>
+                        <TableCell className="whitespace-nowrap text-sm text-gray-600">{r.program}</TableCell>
+                        <TableCell className="max-w-[170px] whitespace-normal text-sm leading-tight text-gray-700">{r.company || <span className="text-gray-400">—</span>}</TableCell>
+                        <TableCell className="text-sm text-gray-400">{r.department || "—"}</TableCell>
+                        <TableCell className="max-w-[150px] whitespace-normal text-sm leading-tight text-gray-700">{r.supervisor || <span className="text-gray-400">—</span>}</TableCell>
+                        <TableCell className="whitespace-nowrap text-xs text-gray-600">
+                          {r.ojt_start ? r.ojt_start : "—"} {r.ojt_start || r.ojt_end ? "–" : ""} {r.ojt_end ? r.ojt_end : r.ojt_start ? "" : ""}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:hidden">
+              {filtered.map((r, idx) => (
+                <div key={idx} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                  <p className="font-heading text-sm font-bold leading-tight text-gray-900">{r.student_name}</p>
+                  <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-green-700">{r.program}</p>
+                  <div className="mt-3 space-y-2 text-xs">
+                    <div className="flex justify-between gap-3">
+                      <span className="font-semibold uppercase tracking-wider text-gray-400">Company</span>
+                      <span className="max-w-[60%] text-right font-medium text-gray-700">{r.company || "—"}</span>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <span className="font-semibold uppercase tracking-wider text-gray-400">Department</span>
+                      <span className="text-gray-500">{r.department || "—"}</span>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <span className="font-semibold uppercase tracking-wider text-gray-400">Supervisor</span>
+                      <span className="max-w-[60%] text-right font-medium text-gray-700">{r.supervisor || "—"}</span>
+                    </div>
+                    <div className="flex justify-between gap-3">
+                      <span className="font-semibold uppercase tracking-wider text-gray-400">OJT Dates</span>
+                      <span className="text-right text-gray-600">
+                        {r.ojt_start || "—"} – {r.ojt_end || "—"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </SectionCard>
+    </div>
+  );
+}
+
 const viewMap = {
   overview: OverviewView,
   registrations: RegistrationsView,
   placement: PlacementView,
+  student_placement: StudentPlacementView,
   requirements: RequirementsView,
   dtr: DtrView,
   issues: IssuesView,
@@ -597,7 +800,7 @@ export default function CoordinatorReportPage() {
             <p className="text-sm text-gray-500">{activeMeta?.desc}{user?.coordinator?.institute ? ` · ${data.institute?.name}` : ""}</p>
           </div>
 
-          <ActiveView data={data} />
+          <ActiveView data={data} academicYearId={academicYearId} />
         </>
       )}
     </CoordinatorLayout>

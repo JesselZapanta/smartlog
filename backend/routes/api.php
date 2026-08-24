@@ -159,6 +159,7 @@ Route::middleware('auth:api')->group(function (): void {
 
         Route::get('/coordinator/issues/interns/options', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'internOptions'])->name('api.coordinator.issues.interns-options');
         Route::get('/coordinator/reports', [App\Http\Controllers\Api\OjtCoordinator\ReportController::class, 'index'])->name('api.coordinator.reports');
+        Route::get('/coordinator/reports/placement', [App\Http\Controllers\Api\OjtCoordinator\ReportController::class, 'placement'])->name('api.coordinator.reports.placement');
         Route::get('/coordinator/issues', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'index'])->name('api.coordinator.issues.index');
         Route::post('/coordinator/issues', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'store'])->name('api.coordinator.issues.store');
         Route::get('/coordinator/issues/{issue}', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'show'])->name('api.coordinator.issues.show');

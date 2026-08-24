@@ -177,4 +177,61 @@ class ReportController extends Controller
             ],
         ]);
     }
+
+    public function placement(Request $request): JsonResponse
+    {
+        $coordinator = $request->user()->coordinator;
+        $instituteId = $coordinator?->institute_id;
+        $institute = $coordinator?->institute;
+
+        if (! $instituteId) {
+            return response()->json([
+                'data' => [
+                    'institute' => null,
+                    'academic_year' => null,
+                    'coordinator_name' => $request->user()->full_name ?? $request->user()->firstname,
+                    'rows' => [],
+                ],
+            ]);
+        }
+
+        $academicYearId = $request->integer('academic_year_id');
+        $activeTerm = AcademicTerm::where('status', 'active')->first();
+        $targetYearId = $academicYearId ?: ($activeTerm?->id);
+
+        $interns = Intern::where('institute_id', $instituteId)
+            ->when($targetYearId, fn ($q) => $q->where('academic_year_id', $targetYearId))
+            ->with(['user', 'program', 'assignedHte.user'])
+            ->join('users', 'interns.user_id', '=', 'users.id')
+            ->orderBy('users.lastname')
+            ->orderBy('users.firstname')
+            ->select('interns.*')
+            ->get();
+
+        $rows = $interns->map(function (Intern $intern): array {
+            $user = $intern->user;
+            $hte = $intern->assignedHte;
+
+            return [
+                'student_name' => $user ? trim(implode(' ', array_filter([$user->firstname, $user->middlename, $user->lastname, $user->extension]))) : '—',
+                'program' => $intern->program?->name ?? '—',
+                'company' => $hte?->name ?? '',
+                'department' => '',
+                'supervisor' => $hte?->user ? trim(implode(' ', array_filter([$hte->user->firstname, $hte->user->middlename, $hte->user->lastname, $hte->user->extension]))) : '',
+                'ojt_start' => $intern->start_date?->format('F j, Y'),
+                'ojt_end' => $intern->end_date?->format('F j, Y'),
+                'ojt_status' => $intern->ojt_status,
+                'intern_status' => $intern->status,
+            ];
+        })->values();
+
+        return response()->json([
+            'data' => [
+                'institute' => $institute ? ['id' => $institute->id, 'name' => $institute->name] : null,
+                'academic_year' => $targetYearId ? AcademicTerm::find($targetYearId)?->only(['id', 'code', 'description']) : null,
+                'coordinator_name' => $request->user()->full_name ?? trim(implode(' ', array_filter([$request->user()->firstname, $request->user()->middlename, $request->user()->lastname]))),
+                'rows' => $rows,
+            ],
+        ]);
+    }
 }
