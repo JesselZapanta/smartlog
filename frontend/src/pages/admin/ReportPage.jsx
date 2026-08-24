@@ -728,15 +728,16 @@ export default function AdminReportPage() {
       <PageHeader
         icon={BarChart3}
         title="Reports"
-        subtitle="Generate and export official reports for every module — filter by academic year and print"
+        subtitle="Export official reports filtered by academic year"
         action={
           <Button
             onClick={handlePrintExecutive}
             disabled={isPrinting}
-            className="h-11 rounded-xl bg-white font-semibold text-green-700 shadow-sm hover:bg-green-50 disabled:opacity-60"
+            className="h-11 whitespace-nowrap rounded-xl bg-white font-semibold text-green-700 shadow-sm hover:bg-green-50 disabled:opacity-60"
           >
             {isPrinting ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
-            {isPrinting ? "Preparing…" : "Print Executive Report"}
+            <span className="hidden sm:inline">{isPrinting ? "Preparing…" : "Print Executive Report"}</span>
+            <span className="sm:hidden">{isPrinting ? "Preparing…" : "Print Report"}</span>
           </Button>
         }
       />
