@@ -515,28 +515,34 @@ function StudentPlacementView({ academicYearId }) {
         <StatCard label="Programs Involved" value={meta ? new Set(rows.map((r) => r.program)).size : 0} icon={<BookOpen size={18} />} tone="amber" />
       </section>
 
-      <SectionCard
-        title="Student Placement Roster"
-        subtitle={`${meta?.institute?.name || "Institute"} · ${meta?.academic_year?.description || meta?.academic_year?.code || "Selected AY"} · Official per-student deployment records`}
-        action={
-          <Button
-            onClick={handlePrintPlacement}
-            disabled={isPrintingPlacement || loadingPlacement}
-            className="h-10 whitespace-nowrap rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700 disabled:opacity-60"
-          >
-            {isPrintingPlacement ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
-            {isPrintingPlacement ? "Preparing…" : "Print Placement Report"}
-          </Button>
-        }
-      >
-        <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative w-full sm:max-w-sm">
-            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search student, program, company, supervisor…" className="h-10 rounded-xl pl-9" />
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div className="border-b border-gray-100 px-4 py-3 sm:px-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="font-heading text-sm font-bold text-gray-900">Student Placement Roster</h3>
+              <p className="mt-0.5 text-xs text-gray-500">
+                {meta?.institute?.name || "Institute"} · {meta?.academic_year?.description || meta?.academic_year?.code || "Selected AY"}
+              </p>
+            </div>
+            <Button
+              onClick={handlePrintPlacement}
+              disabled={isPrintingPlacement || loadingPlacement}
+              size="sm"
+              className="h-10 w-full whitespace-nowrap rounded-xl bg-[#052e16] font-semibold text-white hover:bg-green-900 disabled:opacity-60 sm:w-auto"
+            >
+              {isPrintingPlacement ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
+              {isPrintingPlacement ? "Preparing…" : "Print Placement Report"}
+            </Button>
           </div>
-          <p className="text-xs font-medium text-gray-500">
-            Showing <span className="font-heading font-bold text-gray-900">{filtered.length}</span> of {rows.length} students
-          </p>
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative w-full sm:max-w-sm">
+              <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search student, program, company, supervisor…" className="h-10 rounded-xl border-gray-200 pl-9" />
+            </div>
+            <p className="shrink-0 text-xs font-medium text-gray-500">
+              Showing <span className="font-heading font-bold text-gray-900">{filtered.length}</span> of {rows.length}
+            </p>
+          </div>
         </div>
 
         {loadingPlacement ? (
@@ -544,43 +550,41 @@ function StudentPlacementView({ academicYearId }) {
             <Loader2 size={24} className="animate-spin text-green-600" />
           </div>
         ) : filtered.length === 0 ? (
-          <p className="py-10 text-center text-sm text-gray-400">{q ? "No matching records" : "No students in this academic year"}</p>
+          <p className="px-4 py-10 text-center text-sm text-gray-400 sm:px-5">{q ? "No matching records" : "No students in this academic year"}</p>
         ) : (
           <>
-            <div className="hidden overflow-hidden rounded-xl border border-gray-200 sm:block">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gray-50/50">
-                      <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-gray-500">Student Name</TableHead>
-                      <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-gray-500">Course / Program</TableHead>
-                      <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-gray-500">Company / Organization</TableHead>
-                      <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-gray-500">Department / Office</TableHead>
-                      <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-gray-500">Supervisor</TableHead>
-                      <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-gray-500">OJT Start & End</TableHead>
+            <div className="hidden overflow-x-auto sm:block">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-[#052e16] hover:bg-[#052e16]">
+                    <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-white">Student Name</TableHead>
+                    <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-white">Course / Program</TableHead>
+                    <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-white">Company / Organization</TableHead>
+                    <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-white">Department / Office</TableHead>
+                    <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-white">Supervisor</TableHead>
+                    <TableHead className="whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-white">OJT Start & End</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((r, idx) => (
+                    <TableRow key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50/60"}>
+                      <TableCell className="max-w-[180px] whitespace-normal font-semibold leading-tight text-gray-900">{r.student_name}</TableCell>
+                      <TableCell className="whitespace-nowrap text-sm font-medium text-gray-700">{r.program}</TableCell>
+                      <TableCell className="max-w-[170px] whitespace-normal text-sm leading-tight text-gray-700">{r.company || <span className="text-gray-300">—</span>}</TableCell>
+                      <TableCell className="text-sm text-gray-400">{r.department || "—"}</TableCell>
+                      <TableCell className="max-w-[150px] whitespace-normal text-sm leading-tight text-gray-700">{r.supervisor || <span className="text-gray-300">—</span>}</TableCell>
+                      <TableCell className="whitespace-nowrap text-xs text-gray-600">
+                        {r.ojt_start ? r.ojt_start : "—"} {r.ojt_start || r.ojt_end ? "–" : ""} {r.ojt_end ? r.ojt_end : r.ojt_start ? "" : ""}
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filtered.map((r, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell className="max-w-[180px] whitespace-normal font-medium leading-tight text-gray-800">{r.student_name}</TableCell>
-                        <TableCell className="whitespace-nowrap text-sm text-gray-600">{r.program}</TableCell>
-                        <TableCell className="max-w-[170px] whitespace-normal text-sm leading-tight text-gray-700">{r.company || <span className="text-gray-400">—</span>}</TableCell>
-                        <TableCell className="text-sm text-gray-400">{r.department || "—"}</TableCell>
-                        <TableCell className="max-w-[150px] whitespace-normal text-sm leading-tight text-gray-700">{r.supervisor || <span className="text-gray-400">—</span>}</TableCell>
-                        <TableCell className="whitespace-nowrap text-xs text-gray-600">
-                          {r.ojt_start ? r.ojt_start : "—"} {r.ojt_start || r.ojt_end ? "–" : ""} {r.ojt_end ? r.ojt_end : r.ojt_start ? "" : ""}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:hidden">
+            <div className="grid grid-cols-1 gap-3 p-3 sm:hidden">
               {filtered.map((r, idx) => (
-                <div key={idx} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div key={idx} className="rounded-xl border border-gray-200 bg-gray-50/50 p-4">
                   <p className="font-heading text-sm font-bold leading-tight text-gray-900">{r.student_name}</p>
                   <p className="mt-0.5 text-xs font-semibold uppercase tracking-wider text-green-700">{r.program}</p>
                   <div className="mt-3 space-y-2 text-xs">
@@ -606,9 +610,13 @@ function StudentPlacementView({ academicYearId }) {
                 </div>
               ))}
             </div>
+            <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-4 py-2.5 text-[11px] text-gray-500 sm:px-5">
+              <span>{rows.filter((r) => r.company).length} placed · {rows.length - rows.filter((r) => r.company).length} unplaced</span>
+              <span className="font-medium">{rows.length} total</span>
+            </div>
           </>
         )}
-      </SectionCard>
+      </div>
     </div>
   );
 }
