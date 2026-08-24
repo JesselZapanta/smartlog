@@ -670,10 +670,10 @@ export default function AdminReportPage() {
     loadReport();
   }, [loadReport]);
 
-  const handlePrint = (reportKey = activeReport) => {
+  const handlePrintExecutive = () => {
     const params = new URLSearchParams();
     if (academicYearId) params.set("academic_year_id", academicYearId);
-    params.set("report", reportKey);
+    params.set("report", "overview");
     const printUrl = `/admin/reports/print?${params.toString()}`;
 
     const ensureIframe = () => {
@@ -718,11 +718,11 @@ export default function AdminReportPage() {
         subtitle="Generate and export official reports for every module — filter by academic year and print"
         action={
           <Button
-            onClick={() => handlePrint()}
+            onClick={handlePrintExecutive}
             className="h-11 rounded-xl bg-white font-semibold text-green-700 shadow-sm hover:bg-green-50"
           >
             <Printer size={16} />
-            Print {activeMeta?.label || "Report"}
+            Print Executive Report
           </Button>
         }
       />
@@ -795,14 +795,9 @@ export default function AdminReportPage() {
             })}
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="font-heading text-base font-bold text-gray-900 sm:text-lg">{activeMeta?.label}</h2>
-              <p className="text-sm text-gray-500">{activeMeta?.desc} · {yearLabel ? `AY ${yearLabel.description || yearLabel.code}` : "All years"}</p>
-            </div>
-            <Button variant="outline" onClick={() => handlePrint()} className="h-11 rounded-xl">
-              <Printer size={16} /> Print this report
-            </Button>
+          <div>
+            <h2 className="font-heading text-base font-bold text-gray-900 sm:text-lg">{activeMeta?.label}</h2>
+            <p className="text-sm text-gray-500">{activeMeta?.desc} · {yearLabel ? `AY ${yearLabel.description || yearLabel.code}` : "All years"}</p>
           </div>
 
           <ActiveView data={data} />
