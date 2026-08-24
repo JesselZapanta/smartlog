@@ -9,10 +9,8 @@ import { useAuth } from "@/contexts/AuthContext";
 const REPORT_TITLES = {
   overview: "Executive Overview Report",
   interns: "Deployed Interns Report",
-  htes: "HTE Partners Report",
-  requirements: "Requirements Compliance Report",
-  dtr: "Attendance & DTR Report",
-  issues: "Issues & Evaluations Report",
+  monitoring: "Intern Monitoring Report",
+  evaluations: "Intern Evaluations Report",
 };
 
 function StatusBadge({ value }) {
@@ -420,6 +418,50 @@ export default function AdminReportPrintPage() {
                     <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Recent Evaluations</p>
                     <DataTable columns={[{ key: "student", label: "Student", bold: true }, { key: "date", label: "Date" }]} rows={(data.evaluations.recent || []).map((r) => ({ student: r.student, date: r.created_at }))} />
                   </div>
+                </div>
+              </div>
+            )}
+
+            {shouldShow(report, "monitoring") && (
+              <div>
+                <SectionTitle>Intern Monitoring Report</SectionTitle>
+                <div className="grid grid-cols-3 gap-2">
+                  {miniStatsBox("DTR Submissions", data.dtr.total)}
+                  {miniStatsBox("Journals", data.journals.total)}
+                  {miniStatsBox("Evaluations", data.evaluations.total)}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {Object.entries(data.dtr.by_status).map(([s, c]) => (
+                    <span key={s} className="inline-flex items-center gap-1 rounded border border-gray-200 px-2 py-1 text-[9px]">
+                      <StatusBadge value={s} /> <span className="font-mono font-bold">{c}</span>
+                    </span>
+                  ))}
+                  {Object.keys(data.dtr.by_status).length === 0 && <span className="text-[10px] text-gray-400">No DTR data</span>}
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div>
+                    <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Recent DTR</p>
+                    <DataTable columns={[{ key: "student", label: "Student", bold: true }, { key: "date", label: "Date" }, { key: "status", label: "Status" }]} rows={(data.dtr.recent || []).map((r) => ({ student: r.student, date: r.date, status: r.status }))} />
+                  </div>
+                  <div>
+                    <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Recent Journals</p>
+                    <DataTable columns={[{ key: "student", label: "Student", bold: true }, { key: "title", label: "Title" }]} rows={(data.journals.recent || []).map((r) => ({ student: r.student, title: r.title }))} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {shouldShow(report, "evaluations") && (
+              <div>
+                <SectionTitle>Intern Evaluations Report</SectionTitle>
+                <div className="grid grid-cols-3 gap-2">
+                  {miniStatsBox("Total Evaluations", data.evaluations.total)}
+                  {miniStatsBox("Journals", data.journals.total)}
+                  {miniStatsBox("Issues", data.issues.total, "text-red-700")}
+                </div>
+                <div className="mt-2">
+                  <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Recent Evaluations</p>
+                  <DataTable columns={[{ key: "student", label: "Student", bold: true }, { key: "date", label: "Date" }]} rows={(data.evaluations.recent || []).map((r) => ({ student: r.student, date: r.created_at }))} />
                 </div>
               </div>
             )}

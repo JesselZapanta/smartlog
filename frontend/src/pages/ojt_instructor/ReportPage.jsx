@@ -49,7 +49,7 @@ const REPORTS = [
   {
     key: "overview",
     label: "Executive Overview",
-    desc: "Institute-wide KPIs and distribution",
+    desc: "KPIs for deployed interns and monitoring",
     icon: BarChart3,
     tone: "green",
     statKey: "interns.total",
@@ -57,26 +57,26 @@ const REPORTS = [
   {
     key: "interns",
     label: "Deployed Interns",
-    desc: "Interns by institute, program & status",
+    desc: "By program, status & deployment stage",
     icon: GraduationCap,
     tone: "emerald",
     statKey: "interns.total",
   },
   {
-    key: "htes",
-    label: "HTE Partners",
-    desc: "Host training establishments",
-    icon: Building2,
-    tone: "blue",
-    statKey: "htes.total",
-  },
-  {
-    key: "dtr",
-    label: "Attendance & DTR",
-    desc: "Photo DTR, journals & hours",
+    key: "monitoring",
+    label: "Intern Monitoring",
+    desc: "Attendance, DTR & journals",
     icon: CalendarCheck,
     tone: "teal",
     statKey: "dtr.total",
+  },
+  {
+    key: "evaluations",
+    label: "Intern Evaluations",
+    desc: "Performance reviews and ratings",
+    icon: Star,
+    tone: "violet",
+    statKey: "evaluations.total",
   },
 ];
 
@@ -614,7 +614,7 @@ function RequirementsView({ data, onPrint, isPrinting }) {
 function DtrView({ data, onPrint, isPrinting }) {
   return (
     <div className="space-y-4 sm:space-y-5">
-      <ReportPrintBar onPrint={onPrint} reportKey="dtr" isPrinting={isPrinting} label="Print Attendance Report" />
+      <ReportPrintBar onPrint={onPrint} reportKey="monitoring" isPrinting={isPrinting} label="Print Monitoring Report" />
       <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         <StatCard label="DTR Submissions" value={data.dtr.total} icon={<CalendarCheck size={18} />} tone="blue" />
         <StatCard label="Daily Journals" value={data.journals.total} icon={<BookOpen size={18} />} tone="teal" />
@@ -685,6 +685,42 @@ function DtrView({ data, onPrint, isPrinting }) {
           )}
         </SectionCard>
       </div>
+    </div>
+  );
+}
+
+function EvaluationsView({ data, onPrint, isPrinting }) {
+  return (
+    <div className="space-y-4 sm:space-y-5">
+      <ReportPrintBar onPrint={onPrint} reportKey="evaluations" isPrinting={isPrinting} label="Print Evaluations Report" />
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <StatCard label="Total Evaluations" value={data.evaluations.total} icon={<Star size={18} />} tone="violet" />
+        <StatCard label="Journals" value={data.journals.total} helper={`${data.journals.recent?.length || 0} recent`} icon={<BookOpen size={18} />} tone="teal" />
+        <StatCard label="Issues" value={data.issues.total} helper={`${data.evaluations.recent?.length || 0} recent ratings`} icon={<AlertTriangle size={18} />} tone="amber" />
+      </section>
+
+      <SectionCard title="Recent Evaluations" subtitle="Latest performance reviews in this academic year">
+        {!(data.evaluations.recent || []).length ? (
+          <p className="py-6 text-center text-sm text-gray-400">No evaluations yet</p>
+        ) : (
+          <div className="space-y-2">
+            {data.evaluations.recent.map((r, i) => (
+              <div key={i} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5">
+                <span className="text-sm font-medium text-gray-800">{r.student}</span>
+                <span className="text-xs text-gray-500">{r.created_at}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </SectionCard>
+
+      <SectionCard title="Evaluations Summary" subtitle="Overall review activity">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {miniStat("Total Evaluations", data.evaluations.total)}
+          {miniStat("DTR Submissions", data.dtr.total)}
+          {miniStat("Journals", data.journals.total)}
+        </div>
+      </SectionCard>
     </div>
   );
 }
@@ -833,8 +869,8 @@ function IssuesView({ data, onPrint, isPrinting }) {
 const viewMap = {
   overview: OverviewView,
   interns: InternsView,
-  htes: HtesView,
-  dtr: DtrView,
+  monitoring: DtrView,
+  evaluations: EvaluationsView,
 };
 
 export default function InstructorReportPage() {
