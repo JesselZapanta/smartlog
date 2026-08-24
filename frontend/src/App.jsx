@@ -77,6 +77,7 @@ import CoordinatorReportPage from "@/pages/ojt_coordinator/ReportPage.jsx";
 import CoordinatorReportPrintPage from "@/pages/ojt_coordinator/CoordinatorReportPrintPage.jsx";
 import CoordinatorStudentPlacementPrintPage from "@/pages/ojt_coordinator/CoordinatorStudentPlacementPrintPage.jsx";
 import InstructorReportPage from "@/pages/ojt_instructor/ReportPage.jsx";
+import InstructorReportPrintPage from "@/pages/ojt_instructor/InstructorReportPrintPage.jsx";
 import InternReportPage from "@/pages/intern/ReportPage.jsx";
 import HteReportPage from "@/pages/hte/ReportPage.jsx";
 import ProtectedRoute from "@/components/ProtectedRoute.jsx";
@@ -686,6 +687,14 @@ function App() {
         element={
           <ProtectedRoute roles={["ojt_instructor"]}>
             <InstructorReportPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/reports/print"
+        element={
+          <ProtectedRoute roles={["ojt_instructor"]}>
+            <InstructorReportPrintPage />
           </ProtectedRoute>
         }
       />

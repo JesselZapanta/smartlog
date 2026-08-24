@@ -198,6 +198,8 @@ Route::middleware('auth:api')->group(function (): void {
 
         Route::get('/instructor/intern-evaluations', [App\Http\Controllers\Api\OjtInstructor\Evaluations\InternEvaluationController::class, 'index'])->name('api.instructor.intern-evaluations.index');
         Route::get('/instructor/intern-evaluations/{user:uuid}', [App\Http\Controllers\Api\OjtInstructor\Evaluations\InternEvaluationController::class, 'show'])->name('api.instructor.intern-evaluations.show');
+
+        Route::get('/instructor/reports', [App\Http\Controllers\Api\OjtInstructor\ReportController::class, 'index'])->name('api.instructor.reports');
     });
 
     Route::middleware('role:admin')->group(function (): void {
