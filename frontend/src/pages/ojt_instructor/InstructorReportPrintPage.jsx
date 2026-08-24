@@ -166,14 +166,10 @@ export default function AdminReportPrintPage() {
                   {miniStatsBox("Issues", data.issues.total, "text-red-700")}
                   {miniStatsBox("Evaluations", data.evaluations.total)}
                 </div>
-                <div className="mt-3 grid grid-cols-2 gap-3">
+                <div className="mt-3">
                   <DataTable
-                    columns={[{ key: "role", label: "Role", bold: true }, { key: "count", label: "Count", align: "right" }]}
-                    rows={Object.entries(data.users.by_role).map(([role, count]) => ({ role: role.replace(/_/g, " "), count }))}
-                  />
-                  <DataTable
-                    columns={[{ key: "institute", label: "Institute", bold: true }, { key: "count", label: "Count", align: "right" }]}
-                    rows={data.interns.by_institute.map((r) => ({ institute: r.institute, count: r.total }))}
+                    columns={[{ key: "program", label: "Program", bold: true }, { key: "count", label: "Count", align: "right" }]}
+                    rows={data.interns.by_program.map((r) => ({ program: r.program, count: r.total }))}
                   />
                 </div>
               </div>

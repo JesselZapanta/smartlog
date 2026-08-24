@@ -157,80 +157,22 @@ function OverviewView({ data, onPrint, isPrinting }) {
         <StatCard label="Photo DTR" value={data.dtr.total} helper={`${data.journals.total} journals`} icon={<CalendarCheck size={18} />} tone="amber" />
       </section>
 
-      <section className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2">
-        <SectionCard title="Users by Role" subtitle="Account distribution across the system">
-          <div className="space-y-2.5">
-            {Object.entries(data.users.by_role).length === 0 ? (
-              <p className="py-6 text-center text-sm text-gray-400">No users yet</p>
-            ) : (
-              Object.entries(data.users.by_role).map(([role, count]) => (
-                <div key={role} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5">
-                  <span className="text-sm font-medium capitalize text-gray-700">{role.replace(/_/g, " ")}</span>
-                  <span className="font-heading text-sm font-bold text-gray-900">{count}</span>
-                </div>
-              ))
-            )}
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              {miniStat("Verified", data.users.verified)}
-              {miniStat("Unverified", data.users.unverified)}
-            </div>
-          </div>
-        </SectionCard>
-
-        <SectionCard title="Interns by Institute" subtitle="Deployment per institute">
-          <div className="space-y-2.5">
-            {data.interns.by_institute.length === 0 ? (
-              <p className="py-6 text-center text-sm text-gray-400">No data</p>
-            ) : (
-              data.interns.by_institute.map((row) => (
-                <div key={row.institute} className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-3 py-2.5 shadow-sm">
-                  <span className="min-w-0 flex-1 truncate pr-3 text-sm font-medium text-gray-700">{row.institute}</span>
-                  <span className="font-heading text-sm font-bold text-green-700">{row.total}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </SectionCard>
-      </section>
-
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <SectionCard title="HTE Overview" subtitle={`${data.htes.by_status.active || data.htes.by_status.approved || 0} active of ${data.htes.total} partners`}>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(data.htes.by_status || {}).map(([s, c]) => (
-              <span key={s} className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1.5 text-xs font-semibold shadow-sm">
-                <StatusBadge value={s} /> <span className="font-heading">{c}</span>
-              </span>
-            ))}
-          </div>
-          <div className="mt-3 space-y-1.5">
-            {(data.htes.detail || []).slice(0, 4).map((h) => (
-              <div key={h.name} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-1.5 text-xs">
-                <span className="truncate pr-2 font-medium text-gray-700">{h.name}</span>
-                <span className="whitespace-nowrap font-heading font-bold text-gray-900">{h.assigned} assigned</span>
+      <SectionCard title="Interns by Program" subtitle="Programs under your institute">
+        <div className="space-y-2.5">
+          {data.interns.by_program.length === 0 ? (
+            <p className="py-6 text-center text-sm text-gray-400">No programs yet</p>
+          ) : (
+            data.interns.by_program.map((row) => (
+              <div key={row.program} className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-3 py-2.5 shadow-sm">
+                <span className="min-w-0 flex-1 truncate pr-3 text-sm font-medium text-gray-700">{row.program}</span>
+                <span className="font-heading text-sm font-bold text-green-700">{row.total}</span>
               </div>
-            ))}
-            {!(data.htes.detail || []).length && <p className="py-2 text-center text-xs text-gray-400">No HTEs</p>}
-          </div>
-        </SectionCard>
-        <SectionCard title="Requirements Compliance" subtitle={`${data.requirements.definitions_total} types · ${data.requirements.total} submissions`}>
-          <div className="space-y-2">
-            {(data.requirements.by_requirement || []).slice(0, 3).map((r) => (
-              <div key={r.name} className="rounded-xl border border-gray-100 p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="truncate text-sm font-medium text-gray-800">{r.name}</p>
-                  <StatusBadge value={r.is_active ? "active" : "inactive"} />
-                </div>
-                <div className="mt-2 grid grid-cols-3 gap-2 text-center">
-                  <span className="rounded bg-amber-50 py-1 text-xs font-bold text-amber-700">{r.pending} pending</span>
-                  <span className="rounded bg-green-50 py-1 text-xs font-bold text-green-700">{r.approved} approved</span>
-                  <span className="rounded bg-red-50 py-1 text-xs font-bold text-red-700">{r.rejected} rejected</span>
-                </div>
-              </div>
-            ))}
-            {!(data.requirements.by_requirement || []).length && <p className="py-6 text-center text-xs text-gray-400">No requirement types</p>}
-          </div>
-        </SectionCard>
-      </section>
+            ))
+          )}
+        </div>
+      </SectionCard>
+
+
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <SectionCard title="Recent Registrations" subtitle="Latest 6 interns in this AY">
