@@ -34,7 +34,7 @@ export default function CoordinatorStudentPlacementPrintPage() {
 
   return (
     <div className="bg-[#f3f4f6]">
-      <style>{`@media print { @page { size: Legal landscape; margin: 10mm 8mm 10mm 8mm; } html, body { margin: 0 !important; padding: 0 !important; background: white !important; } .no-print { display: none !important; } * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }`}</style>
+      <style>{`@media print { @page { size: Legal landscape; margin: 10mm 8mm 10mm 8mm; } html, body { margin: 0 !important; padding: 0 !important; background: white !important; } .no-print { display: none !important; } * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } .break-inside-avoid { break-inside: avoid !important; page-break-inside: avoid !important; } }`}</style>
 
       <div className="no-print sticky top-0 z-10 flex items-center justify-center border-b border-gray-200 bg-white px-4 py-3">
         <button
@@ -121,8 +121,8 @@ export default function CoordinatorStudentPlacementPrintPage() {
             </table>
           </div>
 
-          <div className="mt-10 flex justify-end sm:mt-14">
-            <div className="w-[42%] text-[9px] sm:w-[36%] sm:text-xs">
+          <div className="mt-10 flex justify-end break-inside-avoid break-before-auto sm:mt-14" style={{ breakInside: "avoid", pageBreakInside: "avoid" }}>
+            <div className="w-[42%] text-[9px] sm:w-[36%] sm:text-xs" style={{ breakInside: "avoid", pageBreakInside: "avoid" }}>
               <p className="text-gray-600">Prepared by:</p>
               <div className="mt-8 border-b border-gray-800 sm:mt-12" />
               <p className="mt-1.5 text-center font-heading text-[10px] font-bold uppercase tracking-wide text-gray-900 sm:text-xs">{coordinatorName}</p>
