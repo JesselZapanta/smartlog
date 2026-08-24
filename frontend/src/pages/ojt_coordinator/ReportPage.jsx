@@ -209,6 +209,104 @@ function OverviewView({ data, onPrint, isPrinting }) {
               </div>
             ))}
           </div>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {Object.entries(data.interns.by_ojt_status || {}).map(([s, c]) => (
+              <span key={s} className="inline-flex items-center gap-1.5 rounded-full bg-gray-50 px-2.5 py-1 text-[11px] font-medium text-gray-600 ring-1 ring-gray-200">
+                <span className="h-1.5 w-1.5 rounded-full bg-green-600" /> {String(s).replace(/-/g, " ")} <strong className="text-gray-900">{c}</strong>
+              </span>
+            ))}
+          </div>
+        </SectionCard>
+      </section>
+
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <SectionCard title="HTE Overview" subtitle={`${data.htes.active} active of ${data.htes.total} partners`}>
+          <div className="grid grid-cols-3 gap-2">
+            {miniStat("Active", data.htes.active)}
+            {miniStat("Inactive", data.htes.inactive)}
+            {miniStat("Programs", (data.programs_list || []).length)}
+          </div>
+          <div className="mt-3 space-y-1.5">
+            {(data.htes.detail || []).slice(0, 4).map((h) => (
+              <div key={h.name} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-1.5 text-xs">
+                <span className="truncate pr-2 font-medium text-gray-700">{h.name}</span>
+                <span className="whitespace-nowrap font-heading font-bold text-gray-900">{h.assigned} assigned</span>
+              </div>
+            ))}
+            {(data.htes.detail || []).length === 0 && <p className="py-2 text-center text-xs text-gray-400">No HTEs</p>}
+          </div>
+        </SectionCard>
+        <SectionCard title="Requirements Compliance" subtitle={`${data.requirements.definitions_total} types · ${data.requirements.total} submissions`}>
+          <div className="space-y-2">
+            {(data.requirements.by_requirement || []).slice(0, 3).map((r) => (
+              <div key={r.name} className="rounded-xl border border-gray-100 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-sm font-medium text-gray-800">{r.name}</p>
+                  <StatusBadge value={r.is_active ? "active" : "inactive"} />
+                </div>
+                <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+                  <span className="rounded bg-amber-50 py-1 text-xs font-bold text-amber-700">{r.pending} pending</span>
+                  <span className="rounded bg-green-50 py-1 text-xs font-bold text-green-700">{r.approved} approved</span>
+                  <span className="rounded bg-red-50 py-1 text-xs font-bold text-red-700">{r.rejected} rejected</span>
+                </div>
+              </div>
+            ))}
+            {(data.requirements.by_requirement || []).length === 0 && <p className="py-6 text-center text-xs text-gray-400">No requirement types</p>}
+          </div>
+        </SectionCard>
+      </section>
+
+      <SectionCard title="Attendance Snapshot" subtitle="DTR and journal activity in this academic year">
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(data.dtr.by_status || {}).map(([s, c]) => (
+            <span key={s} className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1.5 text-xs font-semibold shadow-sm">
+              <StatusBadge value={s} /> <span className="font-heading">{c}</span>
+            </span>
+          ))}
+          {Object.keys(data.dtr.by_status || {}).length === 0 && <span className="text-xs text-gray-400">No DTR data</span>}
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-teal-50 px-3 py-1.5 text-xs font-semibold text-teal-700 ring-1 ring-teal-100">
+            <BookOpen size={12} /> {data.journals.total} journals
+          </span>
+        </div>
+      </SectionCard>
+
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <SectionCard title="Recent Registrations" subtitle="Latest 6 interns in this AY">
+          {!(data.interns.recent || []).length ? (
+            <p className="py-6 text-center text-xs text-gray-400">No recent registrations</p>
+          ) : (
+            <div className="space-y-2">
+              {data.interns.recent.map((r, i) => (
+                <div key={i} className="flex items-center justify-between rounded-xl border border-gray-100 px-3 py-2">
+                  <div className="min-w-0 pr-2">
+                    <p className="truncate text-sm font-medium text-gray-800">{r.name}</p>
+                    <p className="text-xs text-gray-500">{r.program}</p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <StatusBadge value={r.status} />
+                    <p className="mt-0.5 text-[11px] text-gray-400">{r.ojt_status?.replace(/-/g, " ")}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </SectionCard>
+        <SectionCard title="Recent Issues" subtitle="Latest concerns reported">
+          {!(data.issues.recent || []).length ? (
+            <p className="py-6 text-center text-xs text-gray-400">No recent issues</p>
+          ) : (
+            <div className="space-y-2">
+              {data.issues.recent.map((r, i) => (
+                <div key={i} className="rounded-xl border border-gray-100 px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-sm font-medium text-gray-800">{r.student}</span>
+                    <StatusBadge value={r.status} />
+                  </div>
+                  <p className="mt-1 line-clamp-1 text-xs text-gray-500">{r.excerpt}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </SectionCard>
       </section>
 
@@ -234,6 +332,20 @@ function RegistrationsView({ data, onPrint, isPrinting }) {
         <StatCard label="Pending" value={data.interns.pending} helper="Awaiting approval" icon={<ClipboardCheck size={18} />} tone="amber" />
         <StatCard label="Rejected" value={data.interns.rejected} helper="Needs resubmission" icon={<AlertTriangle size={18} />} tone="red" />
       </section>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {[
+          { label: "Approval Rate", value: data.interns.total ? `${Math.round((data.interns.approved / data.interns.total) * 100)}%` : "—", sub: "approved of total" },
+          { label: "Pending Review", value: data.interns.pending, sub: "awaiting action" },
+          { label: "Deployed", value: (data.interns.by_ojt_status?.ongoing || 0) + (data.interns.by_ojt_status?.completed || 0), sub: "ongoing + completed" },
+        ].map((c) => (
+          <div key={c.label} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-400">{c.label}</p>
+            <p className="mt-1 font-heading text-xl font-bold text-gray-900">{c.value}</p>
+            <p className="text-xs text-gray-500">{c.sub}</p>
+          </div>
+        ))}
+      </div>
 
       <SectionCard title="Interns by Program" subtitle="Program-level distribution for the selected academic year">
         {data.interns.by_program.length === 0 ? (
@@ -277,6 +389,41 @@ function RegistrationsView({ data, onPrint, isPrinting }) {
           )}
         </div>
       </SectionCard>
+
+      <SectionCard title="Recent Registrations" subtitle="Latest 6 registrations in this academic year">
+        {!(data.interns.recent || []).length ? (
+          <p className="py-6 text-center text-sm text-gray-400">No registrations</p>
+        ) : (
+          <div className="overflow-hidden rounded-xl border border-gray-200">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50/50">
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Student</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Program</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Status</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">OJT</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.interns.recent.map((r, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-medium text-gray-800">{r.name}</TableCell>
+                      <TableCell className="text-xs text-gray-600">{r.program}</TableCell>
+                      <TableCell>
+                        <StatusBadge value={r.status} />
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge value={r.ojt_status} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
+      </SectionCard>
     </div>
   );
 }
@@ -290,6 +437,17 @@ function PlacementView({ data, onPrint, isPrinting }) {
         <StatCard label="Active" value={data.htes.active} icon={<UserCheck size={18} />} tone="green" />
         <StatCard label="Inactive" value={data.htes.inactive} icon={<AlertTriangle size={18} />} tone="amber" />
       </section>
+
+      <SectionCard title="HTE Status Overview" subtitle="Active vs inactive partners">
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(data.htes.by_status || {}).map(([s, c]) => (
+            <span key={s} className="inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1.5 text-xs font-semibold shadow-sm">
+              <StatusBadge value={s} /> <span className="font-heading">{c}</span>
+            </span>
+          ))}
+          {!Object.keys(data.htes.by_status || {}).length && <span className="text-xs text-gray-400">No HTE status data</span>}
+        </div>
+      </SectionCard>
 
       <SectionCard title="Top HTEs by Assigned Interns" subtitle="Partner establishments ranked by intern placements">
         {data.htes.top_htes.length === 0 ? (
@@ -313,6 +471,37 @@ function PlacementView({ data, onPrint, isPrinting }) {
                         <StatusBadge value={row.status} />
                       </TableCell>
                       <TableCell className="text-right font-heading font-bold text-gray-900">{row.total}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
+      </SectionCard>
+
+      <SectionCard title="All HTEs — Assignment Load" subtitle="Every HTE in your institute with current intern load">
+        {!(data.htes.detail || []).length ? (
+          <p className="py-6 text-center text-sm text-gray-400">No HTEs configured</p>
+        ) : (
+          <div className="overflow-hidden rounded-xl border border-gray-200">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50/50">
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">HTE</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Status</TableHead>
+                    <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-gray-500">Assigned Interns</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.htes.detail.map((h) => (
+                    <TableRow key={h.name}>
+                      <TableCell className="font-medium text-gray-800">{h.name}</TableCell>
+                      <TableCell>
+                        <StatusBadge value={h.status} />
+                      </TableCell>
+                      <TableCell className="text-right font-heading font-bold text-gray-900">{h.assigned}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -358,6 +547,51 @@ function RequirementsView({ data, onPrint, isPrinting }) {
           <p className="py-6 text-center text-sm text-gray-400">No requirement submissions in this academic year</p>
         )}
       </SectionCard>
+
+      <SectionCard title="Compliance per Requirement" subtitle="Approved vs total submissions per requirement type">
+        {!(data.requirements.by_requirement || []).length ? (
+          <p className="py-6 text-center text-sm text-gray-400">No requirement types configured</p>
+        ) : (
+          <div className="overflow-hidden rounded-xl border border-gray-200">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50/50">
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Requirement</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Type</TableHead>
+                    <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-gray-500">Pending</TableHead>
+                    <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-gray-500">Approved</TableHead>
+                    <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-gray-500">Total</TableHead>
+                    <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-gray-500">Compliance</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.requirements.by_requirement.map((r) => (
+                    <TableRow key={r.name}>
+                      <TableCell className="max-w-[180px] truncate font-medium text-gray-800">{r.name}</TableCell>
+                      <TableCell>
+                        <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold capitalize text-gray-600">{r.type?.replace(/_/g, " ")}</span>
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-amber-700">{r.pending}</TableCell>
+                      <TableCell className="text-right font-mono font-bold text-green-700">{r.approved}</TableCell>
+                      <TableCell className="text-right font-mono text-gray-900">{r.total}</TableCell>
+                      <TableCell className="text-right">
+                        {r.compliance != null ? (
+                          <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-bold ${r.compliance >= 80 ? "bg-green-50 text-green-700" : r.compliance >= 50 ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700"}`}>
+                            {r.compliance}%
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
+      </SectionCard>
     </div>
   );
 }
@@ -386,6 +620,42 @@ function DtrView({ data, onPrint, isPrinting }) {
           )}
         </div>
       </SectionCard>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <SectionCard title="Recent DTR Submissions" subtitle="Latest 5 photo DTR entries">
+          {!(data.dtr.recent || []).length ? (
+            <p className="py-6 text-center text-sm text-gray-400">No DTR entries</p>
+          ) : (
+            <div className="space-y-2">
+              {data.dtr.recent.map((r, i) => (
+                <div key={i} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/60 px-3 py-2">
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">{r.student}</p>
+                    <p className="text-xs text-gray-500">{r.date}</p>
+                  </div>
+                  <StatusBadge value={r.status} />
+                </div>
+              ))}
+            </div>
+          )}
+        </SectionCard>
+        <SectionCard title="Recent Journals" subtitle="Latest 5 daily journals">
+          {!(data.journals.recent || []).length ? (
+            <p className="py-6 text-center text-sm text-gray-400">No journals</p>
+          ) : (
+            <div className="space-y-2">
+              {data.journals.recent.map((r, i) => (
+                <div key={i} className="rounded-xl border border-gray-100 bg-white px-3 py-2 shadow-sm">
+                  <p className="truncate text-sm font-medium text-gray-800">{r.title || "Untitled"}</p>
+                  <p className="text-xs text-gray-500">
+                    {r.student} · {r.date}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </SectionCard>
+      </div>
     </div>
   );
 }
@@ -430,6 +700,42 @@ function IssuesView({ data, onPrint, isPrinting }) {
               ))
             )}
           </div>
+        </SectionCard>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <SectionCard title="Recent Issues" subtitle="Latest 5 concerns">
+          {!(data.issues.recent || []).length ? (
+            <p className="py-6 text-center text-sm text-gray-400">No recent issues</p>
+          ) : (
+            <div className="space-y-2">
+              {data.issues.recent.map((r, i) => (
+                <div key={i} className="rounded-xl border border-gray-100 px-3 py-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-sm font-medium text-gray-800">{r.student}</span>
+                    <StatusBadge value={r.status} />
+                  </div>
+                  <p className="mt-1 line-clamp-1 text-xs text-gray-500">
+                    <span className="font-semibold capitalize">{r.type?.replace(/_/g, " ")}:</span> {r.excerpt}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </SectionCard>
+        <SectionCard title="Recent Evaluations" subtitle="Latest intern ratings">
+          {!(data.evaluations.recent || []).length ? (
+            <p className="py-6 text-center text-sm text-gray-400">No evaluations yet</p>
+          ) : (
+            <div className="space-y-2">
+              {data.evaluations.recent.map((r, i) => (
+                <div key={i} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5">
+                  <span className="text-sm font-medium text-gray-800">{r.student}</span>
+                  <span className="text-xs text-gray-500">{r.created_at}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </SectionCard>
       </div>
 

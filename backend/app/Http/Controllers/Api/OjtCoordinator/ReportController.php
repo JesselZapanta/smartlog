@@ -30,13 +30,13 @@ class ReportController extends Controller
                 'data' => [
                     'institute' => null,
                     'academic_year' => null,
-                    'interns' => ['total' => 0, 'pending' => 0, 'approved' => 0, 'rejected' => 0, 'by_program' => [], 'by_ojt_status' => []],
-                    'htes' => ['total' => 0, 'active' => 0, 'inactive' => 0, 'top_htes' => []],
-                    'dtr' => ['total' => 0, 'by_status' => []],
-                    'journals' => ['total' => 0],
-                    'requirements' => ['total' => 0, 'by_status' => [], 'definitions_total' => 0],
-                    'issues' => ['total' => 0, 'by_status' => [], 'by_type' => []],
-                    'evaluations' => ['intern_ratings' => 0, 'hte_ratings' => 0],
+                    'interns' => ['total' => 0, 'pending' => 0, 'approved' => 0, 'rejected' => 0, 'by_program' => [], 'by_ojt_status' => [], 'recent' => []],
+                    'htes' => ['total' => 0, 'active' => 0, 'inactive' => 0, 'top_htes' => [], 'by_status' => [], 'detail' => []],
+                    'dtr' => ['total' => 0, 'by_status' => [], 'recent' => []],
+                    'journals' => ['total' => 0, 'recent' => []],
+                    'requirements' => ['total' => 0, 'by_status' => [], 'definitions_total' => 0, 'by_requirement' => []],
+                    'issues' => ['total' => 0, 'by_status' => [], 'by_type' => [], 'recent' => []],
+                    'evaluations' => ['intern_ratings' => 0, 'hte_ratings' => 0, 'recent' => []],
                     'programs_list' => [],
                 ],
             ]);
@@ -137,6 +137,110 @@ class ReportController extends Controller
             ->select('id', 'name', 'is_active')
             ->get();
 
+        $recentInterns = Intern::where('institute_id', $instituteId)
+            ->when($targetYearId, fn ($q) => $q->where('academic_year_id', $targetYearId))
+            ->with(['user', 'program'])
+            ->join('users', 'interns.user_id', '=', 'users.id')
+            ->orderByDesc('interns.created_at')
+            ->limit(6)
+            ->select('interns.*')
+            ->get()
+            ->map(fn (Intern $intern): array => [
+                'name' => $intern->user ? trim(implode(' ', array_filter([$intern->user->firstname, $intern->user->middlename, $intern->user->lastname, $intern->user->extension]))) : '—',
+                'program' => $intern->program?->name ?? '—',
+                'status' => $intern->status,
+                'ojt_status' => $intern->ojt_status,
+                'created_at' => $intern->created_at?->toDateString(),
+            ])
+            ->values();
+
+        $htesByStatus = Hte::where('institute_id', $instituteId)
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $htesDetail = Hte::where('institute_id', $instituteId)
+            ->withCount(['assignedInterns' => function ($q) use ($targetYearId): void {
+                if ($targetYearId) {
+                    $q->where('academic_year_id', $targetYearId);
+                }
+            }])
+            ->orderByDesc('assigned_interns_count')
+            ->get()
+            ->map(fn (Hte $hte): array => [
+                'name' => $hte->name,
+                'status' => $hte->status,
+                'assigned' => (int) $hte->assigned_interns_count,
+            ])
+            ->values();
+
+        $requirementsByRequirement = Requirement::where('institute_id', $instituteId)
+            ->get()
+            ->map(function (Requirement $req) use ($instituteId, $targetYearId): array {
+                $base = $req->submissions()->whereHas('user.intern', fn ($q) => $q->where('institute_id', $instituteId)->when($targetYearId, fn ($qq) => $qq->where('academic_year_id', $targetYearId)));
+                $total = (clone $base)->count();
+
+                return [
+                    'name' => $req->name,
+                    'type' => $req->type,
+                    'is_active' => $req->is_active,
+                    'total' => $total,
+                    'approved' => (clone $base)->where('status', 'approved')->count(),
+                    'pending' => (clone $base)->where('status', 'pending')->count(),
+                    'rejected' => (clone $base)->where('status', 'rejected')->count(),
+                    'compliance' => $total > 0 && $req->is_active ? round(((clone $base)->where('status', 'approved')->count() / max(1, $total)) * 100) : null,
+                ];
+            })
+            ->values();
+
+        $recentDtr = PhotoDtr::whereHas('intern', fn ($q) => $q->where('institute_id', $instituteId)->when($targetYearId, fn ($qq) => $qq->where('academic_year_id', $targetYearId)))
+            ->with(['intern.user'])
+            ->latest('dtr_date')
+            ->limit(5)
+            ->get()
+            ->map(fn (PhotoDtr $dtr): array => [
+                'student' => $dtr->intern?->user ? trim(implode(' ', array_filter([$dtr->intern->user->firstname, $dtr->intern->user->lastname]))) : '—',
+                'date' => $dtr->dtr_date,
+                'status' => $dtr->status,
+            ])
+            ->values();
+
+        $recentJournals = DailyJournal::whereHas('intern', fn ($q) => $q->where('institute_id', $instituteId)->when($targetYearId, fn ($qq) => $qq->where('academic_year_id', $targetYearId)))
+            ->with(['intern.user'])
+            ->latest('date')
+            ->limit(5)
+            ->get()
+            ->map(fn (DailyJournal $j): array => [
+                'student' => $j->intern?->user ? trim(implode(' ', array_filter([$j->intern->user->firstname, $j->intern->user->lastname]))) : '—',
+                'title' => $j->title ?? substr($j->content ?? '', 0, 40),
+                'date' => $j->date,
+            ])
+            ->values();
+
+        $recentIssues = Issue::whereHas('intern', fn ($q) => $q->where('institute_id', $instituteId)->when($targetYearId, fn ($qq) => $qq->where('academic_year_id', $targetYearId)))
+            ->with(['intern.user'])
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(fn (Issue $issue): array => [
+                'student' => $issue->intern?->user ? trim(implode(' ', array_filter([$issue->intern->user->firstname, $issue->intern->user->lastname]))) : '—',
+                'type' => $issue->type,
+                'status' => $issue->status,
+                'excerpt' => mb_strimwidth($issue->issues ?? $issue->description ?? '', 0, 60, '…'),
+            ])
+            ->values();
+
+        $recentEvaluations = InternEvaluation::whereHas('intern', fn ($q) => $q->where('institute_id', $instituteId)->when($targetYearId, fn ($qq) => $qq->where('academic_year_id', $targetYearId)))
+            ->with(['intern.user'])
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(fn (InternEvaluation $ev): array => [
+                'student' => $ev->intern?->user ? trim(implode(' ', array_filter([$ev->intern->user->firstname, $ev->intern->user->lastname]))) : '—',
+                'created_at' => $ev->created_at?->toDateString(),
+            ])
+            ->values();
+
         return response()->json([
             'data' => [
                 'institute' => $institute ? ['id' => $institute->id, 'name' => $institute->name] : null,
@@ -148,31 +252,38 @@ class ReportController extends Controller
                     'rejected' => $rejectedInterns,
                     'by_program' => $internsByProgram,
                     'by_ojt_status' => $internsByOjtStatus->toArray(),
+                    'recent' => $recentInterns,
                 ],
                 'htes' => [
                     'total' => $htesTotal,
                     'active' => $htesActive,
                     'inactive' => $htesInactive,
+                    'by_status' => $htesByStatus->toArray(),
                     'top_htes' => $topHtes,
+                    'detail' => $htesDetail,
                 ],
                 'dtr' => [
                     'total' => $totalDtr,
                     'by_status' => $dtrByStatus->toArray(),
+                    'recent' => $recentDtr,
                 ],
                 'journals' => [
                     'total' => $totalJournals,
+                    'recent' => $recentJournals,
                 ],
                 'requirements' => [
                     'total' => $totalRequirements,
                     'by_status' => $requirementsByStatus->toArray(),
                     'definitions_total' => $requirementDefinitions,
+                    'by_requirement' => $requirementsByRequirement,
                 ],
                 'issues' => [
                     'total' => $totalIssues,
                     'by_status' => $issuesByStatus->toArray(),
                     'by_type' => $issuesByType->toArray(),
+                    'recent' => $recentIssues,
                 ],
-                'evaluations' => $evaluations,
+                'evaluations' => array_merge($evaluations, ['recent' => $recentEvaluations]),
                 'programs_list' => $programsList,
             ],
         ]);
