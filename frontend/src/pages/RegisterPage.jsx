@@ -444,8 +444,18 @@ export default function RegisterPage() {
       });
       navigate(`/verify-email?email=${encodeURIComponent(values.email)}`);
     } catch (err) {
-      toast.error("Registration failed", { description: firstErrorMessage(err) });
       const errors = err.response?.data?.errors;
+      const emailMessages = Array.isArray(errors?.email) ? errors.email : [];
+      const duplicateEmail = emailMessages.some((message) =>
+        /already been taken|already exists|duplicate/i.test(message)
+      );
+
+      toast.error(duplicateEmail ? "Email already registered" : "Registration failed", {
+        description: duplicateEmail
+          ? `${values.email} is already in use. Sign in instead or use a different email.`
+          : firstErrorMessage(err),
+      });
+
       if (errors && typeof errors === "object") {
         const errorFields = Object.keys(errors);
         const targetStep = [1, 2, 3, 4].find((s) =>
@@ -463,6 +473,12 @@ export default function RegisterPage() {
             form.setError(name, { message: messages[0] });
           }
         });
+        if (emailMessages.length > 0 && !form.formState.errors.email) {
+          setStep(4);
+          form.setError("email", { message: emailMessages[0] });
+          document.getElementById("register-email")?.scrollIntoView({ behavior: "smooth", block: "center" });
+          document.getElementById("register-email")?.focus({ preventScroll: true });
+        }
       }
     } finally {
       setSubmitting(false);
@@ -470,11 +486,11 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 lg:h-[100dvh] lg:overflow-hidden">
       <AuthAnimatedSide />
 
-      <main className="flex flex-1 items-center justify-center p-4 sm:p-6 lg:p-10">
-        <div className="w-full max-w-2xl">
+      <main className="flex flex-1 flex-col overflow-y-auto p-4 sm:p-6 lg:p-10">
+        <div className="my-auto w-full max-w-2xl">
           <div className="relative -mx-4 -mt-4 mb-8 overflow-hidden rounded-b-[2rem] bg-gradient-to-br from-green-700 via-green-600 to-emerald-500 px-6 pb-8 pt-6 sm:mx-0 sm:mt-0 lg:hidden">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.12)_1px,transparent_0)] [background-size:20px_20px]" />
             <div className="relative flex items-center gap-3">
@@ -860,6 +876,7 @@ export default function RegisterPage() {
                                   <div className="relative">
                                     <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                                     <Input
+                                      id="register-email"
                                       type="email"
                                       placeholder="name@tcgc.edu.ph"
                                       className="h-11 rounded-xl pl-10"

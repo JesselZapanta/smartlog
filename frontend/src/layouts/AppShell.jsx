@@ -79,9 +79,9 @@ export default function AppShell({ children, navItems, bottomNavItems, portalLab
   const groupMoreItems = allGroupItems.filter((item) => !primaryBottomNav.some((p) => p.to === item.to));
   const settingsMoreItems = settingsGroupNav.filter((item) => !primaryBottomNav.some((p) => p.to === item.to));
   const footerMoreItems = footerNavItems.filter((item) => !primaryBottomNav.some((p) => p.to === item.to));
-  const moreNavItems = [...flatMoreItems, ...groupMoreItems, ...settingsMoreItems, ...footerMoreItems];
-  const hasMore = moreNavItems.length > 0;
-  const moreActive = moreNavItems.some((item) => location.pathname === item.to || location.pathname.startsWith(item.to + "/"));
+const moreNavItems = [...flatMoreItems, ...groupMoreItems, ...settingsMoreItems, ...footerMoreItems];
+const hasMore = true;
+const moreActive = moreNavItems.some((item) => location.pathname === item.to || location.pathname.startsWith(item.to + "/"));
 
   async function confirmLogout() {
     setLoggingOut(true);

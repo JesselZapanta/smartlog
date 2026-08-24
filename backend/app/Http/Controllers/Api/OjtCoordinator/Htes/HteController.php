@@ -380,6 +380,13 @@ class HteController extends Controller
 
         $user->load('hte.institute', 'hte.program');
 
+        UserNotification::notifyAdmins(
+            'admin_hte_created',
+            'New HTE created',
+            "{$request->user()->full_name} added {$data['name']} as a host training establishment.",
+            ['hte_uuid' => $user->uuid, 'hte_id' => $user->hte->id, 'institute_id' => $instituteId],
+        );
+
         return response()->json([
             'data' => new HteDetailResource($user->hte),
         ], 201);

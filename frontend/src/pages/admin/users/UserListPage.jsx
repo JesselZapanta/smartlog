@@ -14,6 +14,7 @@ import {
   ArrowDown,
   ChevronsUpDown,
   School,
+  CheckCircle2,
 } from "lucide-react";
 import AdminLayout from "@/layouts/AdminLayout.jsx";
 import PageHeader from "@/components/PageHeader.jsx";
@@ -246,13 +247,14 @@ export default function UserListPage() {
       <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ring-1 ring-gray-100">
         {loading ? (
           <div className="overflow-x-auto">
-            <Table className="min-w-[900px]">
+            <Table className="min-w-[1000px]">
               <TableHeader>
                 <TableRow className="bg-green-50 hover:bg-green-50">
                   <SortableHeader label="ID" column="id" sort="id" order={order} onSort={toggleOrder} />
                   <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">User</TableHead>
                   <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Role</TableHead>
                   <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Institute</TableHead>
+                  <SortableHeader label="Email Verified" column="email_verified_at" sort="email_verified_at" order={order} onSort={toggleOrder} />
                   <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-green-700">
                     Actions
                   </TableHead>
@@ -260,7 +262,7 @@ export default function UserListPage() {
               </TableHeader>
               <TableBody>
                 <TableRow>
-                  <TableCell colSpan={5} className="h-64">
+                  <TableCell colSpan={6} className="h-64">
                     <Loader2 size={28} className="mx-auto animate-spin text-green-600" />
                   </TableCell>
                 </TableRow>
@@ -286,13 +288,14 @@ export default function UserListPage() {
 
         {!loading && users.length > 0 && (
           <div className="overflow-x-auto">
-            <Table className="min-w-[900px]">
+            <Table className="min-w-[1000px]">
               <TableHeader>
                   <TableRow className="bg-green-50 hover:bg-green-50">
                     <SortableHeader label="ID" column="id" sort="id" order={order} onSort={toggleOrder} />
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">User</TableHead>
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Role</TableHead>
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Institute</TableHead>
+                    <SortableHeader label="Email Verified" column="email_verified_at" sort="email_verified_at" order={order} onSort={toggleOrder} />
                     <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-green-700">
                       Actions
                     </TableHead>
@@ -336,6 +339,17 @@ export default function UserListPage() {
                           <School size={14} className="text-gray-300" />
                           {user.institute || "—"}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        {user.email_verified_at ? (
+                          <Badge className="inline-flex items-center gap-1.5 rounded-full bg-green-50 font-semibold text-green-700 ring-1 ring-green-200">
+                            <CheckCircle2 size={12} /> Verified
+                          </Badge>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-500">
+                            Unverified
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">
