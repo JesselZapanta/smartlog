@@ -32,9 +32,9 @@ class DashboardController extends Controller
             'data' => match ($user->role) {
                 'admin' => $this->adminDashboard($request),
                 'ojt_coordinator' => $this->coordinatorDashboard($request),
-                'ojt_instructor' => $this->instructorDashboard(),
-                'intern' => $this->internDashboard($user),
-                'hte' => $this->hteDashboard($user),
+                'ojt_instructor' => $this->instructorDashboard($request),
+                'intern' => $this->internDashboard($request),
+                'hte' => $this->hteDashboard($request),
                 default => ['role' => $user->role],
             },
         ]);
@@ -595,17 +595,20 @@ class DashboardController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function instructorDashboard(): array
+    private function instructorDashboard(Request $request): array
     {
+        $academicYearId = $request->integer('academic_year_id');
         $activeTerm = AcademicTerm::where('status', 'active')
             ->latest('start_at')
             ->first();
+        $targetYearId = $academicYearId ?: ($activeTerm?->id);
 
         $now = now();
         $days = 30;
         $trendStart = $now->copy()->subDays($days - 1)->startOfDay();
 
         $internStatusCounts = Intern::query()
+            ->when($targetYearId, fn ($q) => $q->where('academic_year_id', $targetYearId))
             ->selectRaw('status, count(*) as total')
             ->groupBy('status')
             ->pluck('total', 'status');
@@ -626,6 +629,7 @@ class DashboardController extends Controller
             ->all();
 
         $ojtStatusCounts = Intern::query()
+            ->when($targetYearId, fn ($q) => $q->where('academic_year_id', $targetYearId))
             ->selectRaw('ojt_status, count(*) as total')
             ->groupBy('ojt_status')
             ->pluck('total', 'ojt_status');
@@ -647,6 +651,7 @@ class DashboardController extends Controller
             ->all();
 
         $dtrStatusCounts = PhotoDtr::query()
+            ->when($targetYearId, fn ($q) => $q->whereHas('intern', fn ($qq) => $qq->where('academic_year_id', $targetYearId)))
             ->selectRaw('status, count(*) as total')
             ->groupBy('status')
             ->pluck('total', 'status');
@@ -669,12 +674,14 @@ class DashboardController extends Controller
             ->all();
 
         $dtrTrend = PhotoDtr::query()
+            ->when($targetYearId, fn ($q) => $q->whereHas('intern', fn ($qq) => $qq->where('academic_year_id', $targetYearId)))
             ->whereBetween('dtr_date', [$trendStart->toDateString(), $now->toDateString()])
             ->selectRaw('dtr_date, count(*) as total')
             ->groupBy('dtr_date')
             ->pluck('total', 'dtr_date');
 
         $journalTrend = DailyJournal::query()
+            ->when($targetYearId, fn ($q) => $q->whereHas('intern', fn ($qq) => $qq->where('academic_year_id', $targetYearId)))
             ->whereBetween('date', [$trendStart->toDateString(), $now->toDateString()])
             ->selectRaw('date, count(*) as total')
             ->groupBy('date')
@@ -693,7 +700,7 @@ class DashboardController extends Controller
         })->values()->all();
 
         $topPrograms = Program::query()
-            ->withCount(['interns' => fn ($query) => $query->whereHas('user', fn ($userQuery) => $userQuery->where('role', 'intern'))])
+            ->withCount(['interns' => fn ($query) => $query->whereHas('user', fn ($userQuery) => $userQuery->where('role', 'intern'))->when($targetYearId, fn ($q) => $q->where('academic_year_id', $targetYearId))])
             ->orderByDesc('interns_count')
             ->get()
             ->map(fn (Program $program): array => [
@@ -704,14 +711,14 @@ class DashboardController extends Controller
             ->all();
 
         $requirementSubmissions = [
-            'total' => RequirementSubmission::count(),
-            'pending' => RequirementSubmission::where('status', 'pending')->count(),
-            'approved' => RequirementSubmission::where('status', 'approved')->count(),
-            'rejected' => RequirementSubmission::where('status', 'rejected')->count(),
+            'total' => RequirementSubmission::query()->when($targetYearId, fn ($q) => $q->whereHas('user.intern', fn ($qq) => $qq->where('academic_year_id', $targetYearId)))->count(),
+            'pending' => RequirementSubmission::query()->when($targetYearId, fn ($q) => $q->whereHas('user.intern', fn ($qq) => $qq->where('academic_year_id', $targetYearId)))->where('status', 'pending')->count(),
+            'approved' => RequirementSubmission::query()->when($targetYearId, fn ($q) => $q->whereHas('user.intern', fn ($qq) => $qq->where('academic_year_id', $targetYearId)))->where('status', 'approved')->count(),
+            'rejected' => RequirementSubmission::query()->when($targetYearId, fn ($q) => $q->whereHas('user.intern', fn ($qq) => $qq->where('academic_year_id', $targetYearId)))->where('status', 'rejected')->count(),
         ];
 
-        $issuesPending = Issue::where('status', 'pending')->count();
-        $issuesResolved = Issue::where('status', 'resolve')->count();
+        $issuesPending = Issue::query()->when($targetYearId, fn ($q) => $q->whereHas('intern', fn ($qq) => $qq->where('academic_year_id', $targetYearId)))->where('status', 'pending')->count();
+        $issuesResolved = Issue::query()->when($targetYearId, fn ($q) => $q->whereHas('intern', fn ($qq) => $qq->where('academic_year_id', $targetYearId)))->where('status', 'resolve')->count();
 
         $recentIssues = Issue::query()
             ->with(['intern.user', 'hte'])
@@ -868,8 +875,9 @@ class DashboardController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function internDashboard(User $user): array
+    private function internDashboard(Request $request): array
     {
+        $user = $request->user();
         $intern = $user->intern;
 
         if (! $intern) {
@@ -965,8 +973,9 @@ class DashboardController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function hteDashboard(User $user): array
+    private function hteDashboard(Request $request): array
     {
+        $user = $request->user();
         $hte = $user->hte;
 
         return [

@@ -8,32 +8,17 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const REPORT_TITLES = {
   overview: "Executive Overview Report",
-  interns: "Intern Deployment Report",
-  htes: "HTE Partners Report",
-  academic: "Academic Setup Report",
+  registrations: "Intern Registrations Report",
+  placement: "HTE Placement Report",
   requirements: "Requirements Compliance Report",
   dtr: "Attendance & DTR Report",
-  users: "User Accounts Report",
   issues: "Issues & Evaluations Report",
 };
 
 function StatusBadge({ value }) {
-  const colors = {
-    pending: "bg-amber-100 text-amber-700",
-    approved: "bg-green-100 text-green-700",
-    rejected: "bg-red-100 text-red-700",
-    checked: "bg-green-100 text-green-700",
-    submitted: "bg-blue-100 text-blue-700",
-    open: "bg-amber-100 text-amber-700",
-    resolved: "bg-green-100 text-green-700",
-    closed: "bg-gray-100 text-gray-600",
-    active: "bg-green-100 text-green-700",
-    inactive: "bg-gray-100 text-gray-600",
-    deployed: "bg-green-100 text-green-700",
-  };
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${colors[String(value)] || "bg-gray-100 text-gray-600"}`}>
-      {String(value).replace(/-/g, " ")}
+    <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[9px] font-bold uppercase text-gray-700">
+      {String(value).replace(/[-_]/g, " ")}
     </span>
   );
 }
@@ -59,7 +44,7 @@ function DataTable({ columns, rows }) {
           <tr key={i} className="border-b border-gray-100">
             {columns.map((col) => (
               <td key={col.key} className={`px-2 py-1.5 text-gray-800 ${col.align === "right" ? "text-right font-mono" : ""} ${col.bold ? "font-semibold" : ""}`}>
-                {col.render ? col.render(row) : row[col.key]}
+                {row[col.key]}
               </td>
             ))}
           </tr>
@@ -87,7 +72,7 @@ function shouldShow(report, key) {
   return !report || report === "overview" || report === key;
 }
 
-export default function AdminReportPrintPage() {
+export default function CoordinatorReportPrintPage() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const academicYearId = searchParams.get("academic_year_id") || "";
@@ -100,7 +85,7 @@ export default function AdminReportPrintPage() {
     const params = new URLSearchParams();
     if (academicYearId) params.set("academic_year_id", academicYearId);
     api
-      .get(`/reports?${params.toString()}`)
+      .get(`/coordinator/reports?${params.toString()}`)
       .then((res) => setData(res.data.data))
       .catch((err) => toast.error("Failed to load report", { description: firstErrorMessage(err) }))
       .finally(() => {
@@ -112,6 +97,7 @@ export default function AdminReportPrintPage() {
   }, [academicYearId]);
 
   const yearLabel = data?.academic_year?.description || data?.academic_year?.code || "All Academic Years";
+  const instituteLabel = data?.institute?.name || "All Institutes";
   const generatedAt = new Date().toLocaleString("en-US", {
     year: "numeric",
     month: "long",
@@ -119,8 +105,10 @@ export default function AdminReportPrintPage() {
     hour: "2-digit",
     minute: "2-digit",
   });
-  const title = REPORT_TITLES[report] || "SMARTLOG System Report";
-  const preparedName = user?.full_name || [user?.firstname, user?.middlename, user?.lastname, user?.extension].filter(Boolean).join(" ") || "—";
+  const title = REPORT_TITLES[report] || "Coordinator Report";
+
+  const coordinatorName =
+    user?.full_name || [user?.firstname, user?.middlename, user?.lastname, user?.extension].filter(Boolean).join(" ") || "—";
 
   return (
     <div className="bg-gray-100">
@@ -148,42 +136,17 @@ export default function AdminReportPrintPage() {
             <p className="text-[9px] font-bold uppercase tracking-widest text-green-700">Tangub City Global College</p>
             <h1 className="mt-1 font-heading text-lg font-bold text-gray-900">{title}</h1>
             <p className="text-[10px] text-gray-500">SMARTLOG OJT Monitoring System</p>
-            <p className="mt-2 inline-flex items-center rounded-full bg-green-50 px-3 py-1 text-[10px] font-semibold text-green-700 ring-1 ring-green-100">AY: {yearLabel}</p>
+            <p className="mt-2 inline-flex flex-wrap items-center justify-center gap-1.5">
+              <span className="rounded-full bg-green-50 px-3 py-1 text-[10px] font-semibold text-green-700 ring-1 ring-green-100">{instituteLabel}</span>
+              <span className="rounded-full bg-gray-50 px-3 py-1 text-[10px] font-semibold text-gray-600 ring-1 ring-gray-200">AY: {yearLabel}</span>
+            </p>
             <p className="mt-1 text-[9px] text-gray-400">Generated: {generatedAt}</p>
           </div>
 
           <div className="space-y-6">
-            {shouldShow(report, "overview") && (
+            {shouldShow(report, "registrations") && (
               <div>
-                <SectionTitle>Executive Overview</SectionTitle>
-                <div className="grid grid-cols-4 gap-2">
-                  {miniStatsBox("Total Users", data.users.total)}
-                  {miniStatsBox("Total Interns", data.interns.total, "text-green-700")}
-                  {miniStatsBox("HTE Partners", data.htes.total, "text-blue-700")}
-                  {miniStatsBox("DTR Submissions", data.dtr.total, "text-teal-700")}
-                </div>
-                <div className="mt-2 grid grid-cols-4 gap-2">
-                  {miniStatsBox("Journals", data.journals.total)}
-                  {miniStatsBox("Requirements", data.requirements.total)}
-                  {miniStatsBox("Issues", data.issues.total, "text-red-700")}
-                  {miniStatsBox("Evaluations", data.evaluations.total)}
-                </div>
-                <div className="mt-3 grid grid-cols-2 gap-3">
-                  <DataTable
-                    columns={[{ key: "role", label: "Role", bold: true }, { key: "count", label: "Count", align: "right" }]}
-                    rows={Object.entries(data.users.by_role).map(([role, count]) => ({ role: role.replace(/_/g, " "), count }))}
-                  />
-                  <DataTable
-                    columns={[{ key: "institute", label: "Institute", bold: true }, { key: "count", label: "Count", align: "right" }]}
-                    rows={data.interns.by_institute.map((r) => ({ institute: r.institute, count: r.total }))}
-                  />
-                </div>
-              </div>
-            )}
-
-            {shouldShow(report, "interns") && (
-              <div>
-                <SectionTitle>Intern Deployment Report</SectionTitle>
+                <SectionTitle>Intern Registration Summary</SectionTitle>
                 <div className="grid grid-cols-4 gap-2">
                   {miniStatsBox("Total", data.interns.total)}
                   {miniStatsBox("Approved", data.interns.approved, "text-green-700")}
@@ -192,24 +155,19 @@ export default function AdminReportPrintPage() {
                 </div>
                 <div className="mt-2">
                   <DataTable
-                    columns={[{ key: "institute", label: "Institute", bold: true }, { key: "count", label: "Count", align: "right" }]}
-                    rows={data.interns.by_institute.map((r) => ({ institute: r.institute, count: r.total }))}
-                  />
-                </div>
-                <div className="mt-2">
-                  <DataTable
-                    columns={[{ key: "program", label: "Program", bold: true }, { key: "count", label: "Count", align: "right" }]}
+                    columns={[{ key: "program", label: "Program", bold: true }, { key: "count", label: "Interns", align: "right" }]}
                     rows={data.interns.by_program.map((r) => ({ program: r.program, count: r.total }))}
                   />
                 </div>
                 <div className="mt-2">
-                  <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">OJT Status</p>
+                  <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">OJT Deployment Status</p>
                   <div className="flex flex-wrap gap-1.5">
                     {Object.entries(data.interns.by_ojt_status).map(([s, c]) => (
                       <span key={s} className="inline-flex items-center gap-1 rounded border border-gray-200 px-2 py-1 text-[9px]">
                         <StatusBadge value={s} /> <span className="font-mono font-bold">{c}</span>
                       </span>
                     ))}
+                    {Object.keys(data.interns.by_ojt_status).length === 0 && <span className="text-[10px] text-gray-400">No deployment data</span>}
                   </div>
                 </div>
                 <div className="mt-2">
@@ -217,40 +175,39 @@ export default function AdminReportPrintPage() {
                   <DataTable
                     columns={[
                       { key: "name", label: "Student", bold: true },
-                      { key: "institute", label: "Institute" },
                       { key: "program", label: "Program" },
                       { key: "status", label: "Status" },
+                      { key: "ojt", label: "OJT" },
                     ]}
-                    rows={(data.interns.recent || []).map((r) => ({ name: r.name, institute: r.institute, program: r.program, status: r.status }))}
+                    rows={(data.interns.recent || []).map((r) => ({ name: r.name, program: r.program, status: r.status, ojt: r.ojt_status }))}
                   />
                 </div>
               </div>
             )}
 
-            {shouldShow(report, "htes") && (
+            {shouldShow(report, "placement") && (
               <div>
-                <SectionTitle>HTE Partners Report</SectionTitle>
-                <div className="mb-2 grid grid-cols-3 gap-2">
+                <SectionTitle>HTE Placement Summary</SectionTitle>
+                <div className="grid grid-cols-3 gap-2">
                   {miniStatsBox("Total HTEs", data.htes.total)}
-                  {miniStatsBox("Institutes", data.institutes.total)}
-                  {miniStatsBox("Programs", data.programs.total)}
+                  {miniStatsBox("Active", data.htes.active, "text-green-700")}
+                  {miniStatsBox("Inactive", data.htes.inactive)}
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {Object.entries(data.htes.by_status).map(([s, c]) => (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {Object.entries(data.htes.by_status || {}).map(([s, c]) => (
                     <span key={s} className="inline-flex items-center gap-1 rounded border border-gray-200 px-2 py-1 text-[9px]">
                       <StatusBadge value={s} /> <span className="font-mono font-bold">{c}</span>
                     </span>
                   ))}
-                  {Object.keys(data.htes.by_status).length === 0 && <span className="text-[10px] text-gray-400">No HTE data</span>}
                 </div>
-                <div className="mt-3">
+                <div className="mt-2">
                   <DataTable
                     columns={[
-                      { key: "name", label: "Institute", bold: true },
-                      { key: "programs", label: "Programs", align: "right" },
-                      { key: "status", label: "Status", align: "right" },
+                      { key: "name", label: "Host Training Establishment", bold: true },
+                      { key: "status", label: "Status" },
+                      { key: "count", label: "Assigned Interns", align: "right" },
                     ]}
-                    rows={(data.institutes.list || []).map((r) => ({ name: r.name, programs: r.programs_count, status: r.is_active ? "active" : "inactive" }))}
+                    rows={data.htes.top_htes.map((r) => ({ name: r.name, status: r.status, count: r.total }))}
                   />
                 </div>
                 <div className="mt-2">
@@ -267,57 +224,14 @@ export default function AdminReportPrintPage() {
               </div>
             )}
 
-            {shouldShow(report, "academic") && (
-              <div>
-                <SectionTitle>Academic Setup Report</SectionTitle>
-                <div className="grid grid-cols-4 gap-2">
-                  {miniStatsBox("Institutes", data.institutes.total)}
-                  {miniStatsBox("Programs", data.programs.total)}
-                  {miniStatsBox("Academic Years", data.academic_terms.total)}
-                  {miniStatsBox("OJT Configs", (data.ojt_hours || []).length)}
-                </div>
-                <div className="mt-2">
-                  <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Academic Years</p>
-                  <DataTable
-                    columns={[
-                      { key: "code", label: "Code", bold: true },
-                      { key: "desc", label: "Description" },
-                      { key: "status", label: "Status" },
-                    ]}
-                    rows={(data.academic_terms.list || []).map((r) => ({ code: r.code, desc: r.description, status: r.status }))}
-                  />
-                </div>
-                <div className="mt-2">
-                  <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Programs</p>
-                  <DataTable
-                    columns={[
-                      { key: "program", label: "Program", bold: true },
-                      { key: "institute", label: "Institute" },
-                      { key: "status", label: "Status" },
-                    ]}
-                    rows={(data.programs_list || []).map((r) => ({ program: r.name, institute: r.institute?.name || "—", status: r.is_active ? "active" : "inactive" }))}
-                  />
-                </div>
-                <div className="mt-2">
-                  <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">OJT Hours</p>
-                  <DataTable
-                    columns={[
-                      { key: "institute", label: "Institute", bold: true },
-                      { key: "hours", label: "Hours", align: "right" },
-                    ]}
-                    rows={(data.ojt_hours || []).map((r) => ({ institute: r.institute?.name || "—", hours: r.hours }))}
-                  />
-                </div>
-              </div>
-            )}
-
             {shouldShow(report, "requirements") && (
               <div>
-                <SectionTitle>Requirements Compliance Report</SectionTitle>
-                <div className="grid grid-cols-3 gap-2">
+                <SectionTitle>Requirements Compliance</SectionTitle>
+                <div className="grid grid-cols-4 gap-2">
                   {miniStatsBox("Types", data.requirements.definitions_total)}
                   {miniStatsBox("Submissions", data.requirements.total)}
                   {miniStatsBox("Approved", data.requirements.by_status.approved || 0, "text-green-700")}
+                  {miniStatsBox("Pending", data.requirements.by_status.pending || 0, "text-amber-700")}
                 </div>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {Object.entries(data.requirements.by_status).map(([s, c]) => (
@@ -344,11 +258,11 @@ export default function AdminReportPrintPage() {
 
             {shouldShow(report, "dtr") && (
               <div>
-                <SectionTitle>Attendance & DTR Report</SectionTitle>
+                <SectionTitle>Attendance & DTR</SectionTitle>
                 <div className="grid grid-cols-3 gap-2">
                   {miniStatsBox("DTR Submissions", data.dtr.total)}
                   {miniStatsBox("Journals", data.journals.total)}
-                  {miniStatsBox("Evaluations", data.evaluations.total)}
+                  {miniStatsBox("Evaluations", data.evaluations.intern_ratings + data.evaluations.hte_ratings)}
                 </div>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {Object.entries(data.dtr.by_status).map(([s, c]) => (
@@ -357,16 +271,6 @@ export default function AdminReportPrintPage() {
                     </span>
                   ))}
                   {Object.keys(data.dtr.by_status).length === 0 && <span className="text-[10px] text-gray-400">No DTR data</span>}
-                </div>
-                <div className="mt-2">
-                  <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">OJT Hours per Institute</p>
-                  <DataTable
-                    columns={[
-                      { key: "institute", label: "Institute", bold: true },
-                      { key: "hours", label: "Required Hours", align: "right" },
-                    ]}
-                    rows={(data.ojt_hours || []).map((r) => ({ institute: r.institute?.name || "—", hours: r.hours }))}
-                  />
                 </div>
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   <div>
@@ -381,40 +285,29 @@ export default function AdminReportPrintPage() {
               </div>
             )}
 
-            {shouldShow(report, "users") && (
-              <div>
-                <SectionTitle>User Accounts Report</SectionTitle>
-                <div className="grid grid-cols-3 gap-2">
-                  {miniStatsBox("Total Users", data.users.total)}
-                  {miniStatsBox("Verified", data.users.verified, "text-green-700")}
-                  {miniStatsBox("Unverified", data.users.unverified, "text-amber-700")}
-                </div>
-                <div className="mt-2">
-                  <DataTable
-                    columns={[{ key: "role", label: "Role", bold: true }, { key: "count", label: "Count", align: "right" }]}
-                    rows={Object.entries(data.users.by_role).map(([role, count]) => ({ role: role.replace(/_/g, " "), count }))}
-                  />
-                </div>
-              </div>
-            )}
-
             {shouldShow(report, "issues") && (
               <div>
-                <SectionTitle>Issues & Evaluations Report</SectionTitle>
+                <SectionTitle>Issues & Evaluations</SectionTitle>
                 <div className="grid grid-cols-4 gap-2">
                   {miniStatsBox("Issues", data.issues.total, "text-red-700")}
-                  {miniStatsBox("Open", data.issues.by_status.open || 0, "text-amber-700")}
-                  {miniStatsBox("Resolved", data.issues.by_status.resolved || 0, "text-green-700")}
-                  {miniStatsBox("Evaluations", data.evaluations.total)}
+                  {miniStatsBox("Open", data.issues.by_status.pending || 0, "text-amber-700")}
+                  {miniStatsBox("Resolved", data.issues.by_status.resolve || 0, "text-green-700")}
+                  {miniStatsBox("Ratings", data.evaluations.intern_ratings + data.evaluations.hte_ratings)}
                 </div>
                 <div className="mt-2 grid grid-cols-2 gap-3">
                   <DataTable
-                    columns={[{ key: "status", label: "Status", bold: true }, { key: "count", label: "Count", align: "right" }]}
+                    columns={[{ key: "status", label: "Issue Status", bold: true }, { key: "count", label: "Count", align: "right" }]}
                     rows={Object.entries(data.issues.by_status).map(([s, c]) => ({ status: s, count: c }))}
                   />
                   <DataTable
-                    columns={[{ key: "type", label: "Type", bold: true }, { key: "count", label: "Count", align: "right" }]}
-                    rows={Object.entries(data.issues.by_type).map(([t, c]) => ({ type: (t || "N/A").replace(/_/g, " "), count: c }))}
+                    columns={[
+                      { key: "type", label: "Evaluation Type", bold: true },
+                      { key: "count", label: "Count", align: "right" },
+                    ]}
+                    rows={[
+                      { type: "Intern rated HTE", count: data.evaluations.intern_ratings },
+                      { type: "HTE rated Intern", count: data.evaluations.hte_ratings },
+                    ]}
                   />
                 </div>
                 <div className="mt-2 grid grid-cols-2 gap-2">
@@ -434,8 +327,8 @@ export default function AdminReportPrintPage() {
               <div className="w-[42%] text-[9px] sm:w-[36%] sm:text-xs" style={{ breakInside: "avoid", pageBreakInside: "avoid" }}>
                 <p className="text-gray-600">Prepared by:</p>
                 <div className="mt-8 border-b border-gray-800 sm:mt-12" />
-                <p className="mt-1.5 text-center font-heading text-[10px] font-bold uppercase tracking-wide text-gray-900 sm:text-xs">{preparedName}</p>
-                <p className="text-center text-[9px] text-gray-500 sm:text-[10px]">OJT, Placement and Alumni Affairs Office</p>
+                <p className="mt-1.5 text-center font-heading text-[10px] font-bold uppercase tracking-wide text-gray-900 sm:text-xs">{coordinatorName}</p>
+                <p className="text-center text-[9px] text-gray-500 sm:text-[10px]">{instituteLabel !== "All Institutes" ? `${instituteLabel} OJT Coordinator` : "OJT Coordinator"}</p>
               </div>
             </div>
 

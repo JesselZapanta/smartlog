@@ -158,6 +158,8 @@ Route::middleware('auth:api')->group(function (): void {
         Route::get('/coordinator/hte-evaluations/{hte:uuid}/{intern:uuid}', [App\Http\Controllers\Api\OjtCoordinator\Evaluations\HteEvaluationController::class, 'showForHte'])->withoutScopedBindings()->name('api.coordinator.hte-evaluations.showForHte');
 
         Route::get('/coordinator/issues/interns/options', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'internOptions'])->name('api.coordinator.issues.interns-options');
+        Route::get('/coordinator/reports', [App\Http\Controllers\Api\OjtCoordinator\ReportController::class, 'index'])->name('api.coordinator.reports');
+        Route::get('/coordinator/reports/placement', [App\Http\Controllers\Api\OjtCoordinator\ReportController::class, 'placement'])->name('api.coordinator.reports.placement');
         Route::get('/coordinator/issues', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'index'])->name('api.coordinator.issues.index');
         Route::post('/coordinator/issues', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'store'])->name('api.coordinator.issues.store');
         Route::get('/coordinator/issues/{issue}', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'show'])->name('api.coordinator.issues.show');
@@ -176,6 +178,8 @@ Route::middleware('auth:api')->group(function (): void {
         Route::get('/hte/evaluations', [HteEvaluationController::class, 'index'])->name('api.hte.evaluations.index');
         Route::get('/hte/evaluations/{user:uuid}', [HteEvaluationController::class, 'show'])->name('api.hte.evaluations.show');
         Route::post('/hte/evaluations/{user:uuid}', [HteEvaluationController::class, 'store'])->name('api.hte.evaluations.store');
+
+        Route::get('/hte/reports', [App\Http\Controllers\Api\Hte\ReportController::class, 'index'])->name('api.hte.reports');
 
         Route::get('/hte/issues/assignable-interns/options', [IssueController::class, 'assignableInterns'])->name('api.hte.issues.assignable-interns');
         Route::get('/hte/issues', [IssueController::class, 'index'])->name('api.hte.issues.index');
@@ -196,6 +200,8 @@ Route::middleware('auth:api')->group(function (): void {
 
         Route::get('/instructor/intern-evaluations', [App\Http\Controllers\Api\OjtInstructor\Evaluations\InternEvaluationController::class, 'index'])->name('api.instructor.intern-evaluations.index');
         Route::get('/instructor/intern-evaluations/{user:uuid}', [App\Http\Controllers\Api\OjtInstructor\Evaluations\InternEvaluationController::class, 'show'])->name('api.instructor.intern-evaluations.show');
+
+        Route::get('/instructor/reports', [App\Http\Controllers\Api\OjtInstructor\ReportController::class, 'index'])->name('api.instructor.reports');
     });
 
     Route::middleware('role:admin')->group(function (): void {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Loader2,
@@ -13,6 +13,13 @@ import {
   ClipboardCheck,
   MessageSquare,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import HteLayout from "@/layouts/HteLayout.jsx";
 import DashboardBanner from "@/components/DashboardBanner.jsx";
@@ -33,14 +40,40 @@ export default function HteDashboard() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [academicYears, setAcademicYears] = useState([]);
+  const [termsLoading, setTermsLoading] = useState(true);
+  const [filters, setFilters] = useState({ academicYearId: "" });
 
   useEffect(() => {
     api
-      .get("/dashboard")
+      .get("/academic-terms/options")
+      .then((res) => {
+        const list = res.data.data || [];
+        setAcademicYears(list);
+        const active = list.find((term) => term.status === "active");
+        if (active) setFilters((prev) => ({ ...prev, academicYearId: String(active.id) }));
+      })
+      .catch(() => {})
+      .finally(() => setTermsLoading(false));
+  }, []);
+
+  const load = useCallback(() => {
+    if (termsLoading) return;
+    setLoading(true);
+    setError("");
+    const params = new URLSearchParams();
+    if (filters.academicYearId) params.set("academic_year_id", filters.academicYearId);
+    const qs = params.toString();
+    api
+      .get(`/dashboard${qs ? `?${qs}` : ""}`)
       .then((res) => setData(res.data.data))
       .catch((err) => setError(firstErrorMessage(err)))
       .finally(() => setLoading(false));
-  }, []);
+  }, [filters, termsLoading]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   return (
     <HteLayout>
@@ -48,6 +81,26 @@ export default function HteDashboard() {
         roleLabel="HTE"
         subtitle="Manage your partnership with the college, verify intern attendance, and submit evaluations."
       />
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <Select
+          value={filters.academicYearId}
+          onValueChange={(value) => setFilters((prev) => ({ ...prev, academicYearId: value }))}
+          disabled={termsLoading}
+        >
+          <SelectTrigger className="h-11 w-full rounded-xl bg-white sm:w-[240px]">
+            <SelectValue placeholder={termsLoading ? "Loading years…" : "Academic Year"} />
+          </SelectTrigger>
+          <SelectContent>
+            {academicYears.map((term) => (
+              <SelectItem key={term.id} value={String(term.id)}>
+                {term.description || term.code}
+                {term.status === "active" ? " · Active" : ""}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {loading ? (
         <div className="flex h-64 items-center justify-center">

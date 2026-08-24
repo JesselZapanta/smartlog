@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Search, X, ArrowDown, ArrowUp, ChevronsUpDown,   Loader2, Users, Eye, Award, UserRound, Briefcase, Lightbulb, ArrowLeft } from "lucide-react";
+import { Search, X, ArrowDown, ArrowUp, ChevronsUpDown, Loader2, Users, Eye, Award, UserRound, Briefcase, Lightbulb, ArrowLeft, Printer } from "lucide-react";
 import CoordinatorLayout from "@/layouts/CoordinatorLayout.jsx";
 import PageHeader from "@/components/PageHeader.jsx";
 import api from "@/lib/api";
@@ -130,6 +130,8 @@ export default function CoordinatorHteInternListPage() {
   const [academicYear, setAcademicYear] = useState("all");
   const [order, setOrder] = useState("desc");
   const [page, setPage] = useState(1);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const iframeRef = useRef(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -200,18 +202,72 @@ export default function CoordinatorHteInternListPage() {
   })();
   const hasFilters = Boolean(search) || academicYear !== activeAcademicYearId;
 
+  const handlePrint = () => {
+    if (isPrinting) return;
+    setIsPrinting(true);
+    const params = new URLSearchParams();
+    if (academicYear !== "all") params.set("academic_year_id", academicYear);
+    const printUrl = `/coordinator/hte-evaluations/${hteUuid}/print?${params.toString()}`;
+    const ensureIframe = () => {
+      if (iframeRef.current) return iframeRef.current;
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "fixed";
+      iframe.style.inset = "0";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "none";
+      iframe.style.zIndex = "9999";
+      iframeRef.current = iframe;
+      document.body.appendChild(iframe);
+      return iframe;
+    };
+    const iframe = ensureIframe();
+    iframe.src = printUrl;
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      setIsPrinting(false);
+    };
+    const handler = (e) => {
+      if (e.data?.type === "smartlog-hte-interns-print-ready") {
+        setTimeout(() => {
+          try {
+            iframeRef.current?.contentWindow?.print();
+          } catch {}
+          finish();
+        }, 250);
+        window.removeEventListener("message", handler);
+        clearTimeout(fallback);
+      }
+    };
+    window.addEventListener("message", handler);
+    const fallback = setTimeout(finish, 8000);
+    iframe.addEventListener("load", () => setTimeout(finish, 3000), { once: true });
+  };
+
   return (
     <CoordinatorLayout>
-            <PageHeader
+      <PageHeader
         title="HTE Interns"
         subtitle="Interns who evaluated this HTE."
         icon={Users}
         action={
-          <Button asChild className="h-11 shrink-0 rounded-xl bg-white px-4 font-semibold text-green-700 shadow-sm hover:bg-green-50">
-            <Link to="/coordinator/hte-evaluations">
-              <ArrowLeft size={16} /> Back to HTEs
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handlePrint}
+              disabled={isPrinting}
+              className="h-11 shrink-0 rounded-xl bg-green-600 px-4 font-semibold text-white shadow-sm hover:bg-green-700 disabled:opacity-60 sm:bg-white sm:text-green-700 sm:hover:bg-green-50"
+            >
+              {isPrinting ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
+              {isPrinting ? "Preparing…" : "Print Report"}
+            </Button>
+            <Button asChild className="h-11 shrink-0 rounded-xl bg-white px-4 font-semibold text-green-700 shadow-sm hover:bg-green-50">
+              <Link to="/coordinator/hte-evaluations">
+                <ArrowLeft size={16} /> Back to HTEs
+              </Link>
+            </Button>
+          </div>
         }
       />
 
