@@ -161,7 +161,7 @@ export default function InstructorDashboard() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <Select
           value={filters.academicYearId}
           onValueChange={(value) => setFilters((prev) => ({ ...prev, academicYearId: value }))}
