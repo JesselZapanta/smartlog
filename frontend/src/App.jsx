@@ -33,6 +33,7 @@ import CoordinatorInternRequirementsDetailPage from "@/pages/ojt_coordinator/req
 import EvaluationListPage from "@/pages/ojt_coordinator/evaluations/EvaluationListPage.jsx";
 import CoordinatorInternEvaluationListPage from "@/pages/ojt_coordinator/evaluations/CoordinatorInternEvaluationListPage.jsx";
 import CoordinatorInternEvaluationDetailPage from "@/pages/ojt_coordinator/evaluations/CoordinatorInternEvaluationDetailPage.jsx";
+import CoordinatorInternEvaluationPrintPage from "@/pages/ojt_coordinator/evaluations/CoordinatorInternEvaluationPrintPage.jsx";
 import CoordinatorHteEvaluationListPage from "@/pages/ojt_coordinator/evaluations/CoordinatorHteEvaluationListPage.jsx";
 import CoordinatorHteInternListPage from "@/pages/ojt_coordinator/evaluations/CoordinatorHteInternListPage.jsx";
 import CoordinatorHteEvaluationDetailPage from "@/pages/ojt_coordinator/evaluations/CoordinatorHteEvaluationDetailPage.jsx";
@@ -336,6 +337,14 @@ function App() {
         element={
           <ProtectedRoute roles={["ojt_coordinator"]}>
             <CoordinatorInternEvaluationDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coordinator/intern-evaluations/:uuid/print"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <CoordinatorInternEvaluationPrintPage />
           </ProtectedRoute>
         }
       />
