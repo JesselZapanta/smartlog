@@ -10,6 +10,7 @@ import {
   LogIn,
   LogOut,
   RefreshCw,
+  SwitchCamera,
   Upload,
   X,
 } from "lucide-react";
@@ -59,6 +60,7 @@ export default function InternPhotoDtrPage() {
   const [capturedFile, setCapturedFile] = useState(null);
   const [capturedUrl, setCapturedUrl] = useState("");
   const [viewPhoto, setViewPhoto] = useState(null);
+  const [facingMode, setFacingMode] = useState("user");
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const fallbackInputRef = useRef(null);
@@ -110,7 +112,7 @@ export default function InternPhotoDtrPage() {
     setCapturedFile(null);
   }
 
-  async function startStream() {
+  async function startStream(mode = facingMode) {
     setStreamReady(false);
     if (!navigator.mediaDevices?.getUserMedia) {
       setCameraError("Camera is not available on this device.");
@@ -118,7 +120,7 @@ export default function InternPhotoDtrPage() {
     }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
+        video: { facingMode: { ideal: mode } },
         audio: false,
       });
       streamRef.current = stream;
@@ -127,9 +129,18 @@ export default function InternPhotoDtrPage() {
         await videoRef.current.play().catch(() => {});
       }
       setStreamReady(true);
+      setCameraError("");
     } catch {
       setCameraError("Camera unavailable — choose a photo instead.");
     }
+  }
+
+  async function toggleFacingMode() {
+    const next = facingMode === "user" ? "environment" : "user";
+    setFacingMode(next);
+    stopStream();
+    setStreamReady(false);
+    await startStream(next);
   }
 
   async function openCamera(slotKey) {
@@ -157,7 +168,12 @@ export default function InternPhotoDtrPage() {
       const canvas = document.createElement("canvas");
       canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
       canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
-      canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+      const ctx = canvas.getContext("2d");
+      if (facingMode === "user") {
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+      }
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
       if (!blob) {
         toast.error("Capture failed", { description: "Could not take the photo." });
@@ -387,6 +403,7 @@ export default function InternPhotoDtrPage() {
               autoPlay
               playsInline
               muted
+              style={{ transform: facingMode === "user" ? "scaleX(-1)" : undefined }}
               className="absolute inset-0 h-full w-full object-cover"
             />
           )}
@@ -401,7 +418,7 @@ export default function InternPhotoDtrPage() {
             >
               <X size={20} />
             </button>
-            <div className="min-w-0 text-center">
+            <div className="min-w-0 flex-1 text-center">
               <p className="text-[10px] font-bold uppercase tracking-widest text-white/70">
                 {SLOTS.find((s) => s.key === cameraSlot)?.label || "Clock"}
               </p>
@@ -411,6 +428,17 @@ export default function InternPhotoDtrPage() {
                   : `Take a photo to ${cameraSlot.endsWith("in") ? "clock in" : "clock out"}`}
               </p>
             </div>
+            {!capturedUrl && (
+              <button
+                type="button"
+                onClick={toggleFacingMode}
+                disabled={capturing}
+                aria-label={`Switch to ${facingMode === "user" ? "rear" : "front"} camera`}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/30 backdrop-blur disabled:opacity-50"
+              >
+                <SwitchCamera size={20} />
+              </button>
+            )}
           </div>
 
           <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col items-center gap-4 bg-gradient-to-t from-black/80 to-transparent px-6 pb-10 pt-20">
