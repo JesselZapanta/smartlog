@@ -36,6 +36,7 @@ import CoordinatorInternEvaluationDetailPage from "@/pages/ojt_coordinator/evalu
 import CoordinatorInternEvaluationPrintPage from "@/pages/ojt_coordinator/evaluations/CoordinatorInternEvaluationPrintPage.jsx";
 import CoordinatorHteEvaluationListPage from "@/pages/ojt_coordinator/evaluations/CoordinatorHteEvaluationListPage.jsx";
 import CoordinatorHteInternListPage from "@/pages/ojt_coordinator/evaluations/CoordinatorHteInternListPage.jsx";
+import CoordinatorHteInternsPrintPage from "@/pages/ojt_coordinator/evaluations/CoordinatorHteInternsPrintPage.jsx";
 import CoordinatorHteEvaluationDetailPage from "@/pages/ojt_coordinator/evaluations/CoordinatorHteEvaluationDetailPage.jsx";
 import CoordinatorHteEvaluationPrintPage from "@/pages/ojt_coordinator/evaluations/CoordinatorHteEvaluationPrintPage.jsx";
 import CoordinatorIssuesListPage from "@/pages/ojt_coordinator/issues/CoordinatorIssuesListPage.jsx";
@@ -362,6 +363,14 @@ function App() {
         element={
           <ProtectedRoute roles={["ojt_coordinator"]}>
             <CoordinatorHteInternListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coordinator/hte-evaluations/:hteUuid/print"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <CoordinatorHteInternsPrintPage />
           </ProtectedRoute>
         }
       />
