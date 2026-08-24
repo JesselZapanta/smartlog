@@ -48,6 +48,7 @@ import InstructorInternDtrLogsPage from "@/pages/ojt_instructor/monitoring/Instr
 import InstructorInternDtrPrintPage from "@/pages/ojt_instructor/monitoring/InstructorInternDtrPrintPage.jsx";
 import InstructorInternEvaluationListPage from "@/pages/ojt_instructor/evaluations/InstructorInternEvaluationListPage.jsx";
 import InstructorInternEvaluationDetailPage from "@/pages/ojt_instructor/evaluations/InstructorInternEvaluationDetailPage.jsx";
+import InstructorInternEvaluationPrintPage from "@/pages/ojt_instructor/evaluations/InstructorInternEvaluationPrintPage.jsx";
 import HteDashboard from "@/pages/hte/HteDashboard.jsx";
 import HteAssignedInternsPage from "@/pages/hte/interns/HteAssignedInternsPage.jsx";
 import HteAssignedInternDetailPage from "@/pages/hte/interns/HteAssignedInternDetailPage.jsx";
@@ -463,6 +464,14 @@ function App() {
         element={
           <ProtectedRoute roles={["ojt_instructor"]}>
             <InstructorInternEvaluationDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/intern-evaluations/:uuid/print"
+        element={
+          <ProtectedRoute roles={["ojt_instructor"]}>
+            <InstructorInternEvaluationPrintPage />
           </ProtectedRoute>
         }
       />
