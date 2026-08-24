@@ -27,15 +27,20 @@ export default function CoordinatorHteInternsPrintPage() {
   const [data, setData] = useState(null);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [terms, setTerms] = useState([]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ per_page: "100", page: "1", sort: "id", order: "desc" });
       if (academicYearId !== "all") params.set("academic_year_id", academicYearId);
-      const res = await api.get(`/coordinator/hte-evaluations/${hteUuid}/interns?${params.toString()}`);
+      const [res, termsRes] = await Promise.all([
+        api.get(`/coordinator/hte-evaluations/${hteUuid}/interns?${params.toString()}`),
+        api.get("/academic-terms/options").catch(() => ({ data: { data: [] } })),
+      ]);
       setData(res.data.data);
       setSummary(res.data.summary || null);
+      setTerms(termsRes.data.data || []);
     } catch (err) {
       toast.error("Failed to load HTE interns", { description: firstErrorMessage(err) });
     } finally {
@@ -50,7 +55,12 @@ export default function CoordinatorHteInternsPrintPage() {
     load();
   }, [load]);
 
-  const ayLabel = academicYearId === "all" ? "All Academic Years" : summary?.hte ? `${academicYearId}` : "—";
+  const ayLabel =
+    academicYearId === "all"
+      ? "All Academic Years"
+      : terms.find((t) => String(t.id) === String(academicYearId))?.description ||
+        terms.find((t) => String(t.id) === String(academicYearId))?.code ||
+        academicYearId;
   const generatedAt = new Date().toLocaleString("en-US", {
     year: "numeric",
     month: "long",
