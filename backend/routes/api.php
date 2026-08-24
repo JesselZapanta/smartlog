@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Admin\Interns\InternController as InternsInternCont
 use App\Http\Controllers\Api\Admin\LocationController;
 use App\Http\Controllers\Api\Admin\OjtHourController;
 use App\Http\Controllers\Api\Admin\ProgramController;
+use App\Http\Controllers\Api\Admin\ReportController;
 use App\Http\Controllers\Api\Admin\RequirementController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\AuthController;
@@ -240,5 +241,7 @@ Route::middleware('auth:api')->group(function (): void {
 
         Route::get('documents', [AdminDocumentController::class, 'index'])->name('api.documents.index');
         Route::get('documents/download', [AdminDocumentController::class, 'download'])->name('api.documents.download');
+
+        Route::get('reports', [ReportController::class, 'index'])->name('api.reports');
     });
 });

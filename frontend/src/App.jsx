@@ -72,6 +72,7 @@ import RequirementListPage from "@/pages/admin/requirements/RequirementListPage.
 import OjtHourListPage from "@/pages/admin/ojt-hours/OjtHourListPage.jsx";
 import DocumentsPage from "@/pages/admin/documents/DocumentsPage.jsx";
 import AdminReportPage from "@/pages/admin/ReportPage.jsx";
+import AdminReportPrintPage from "@/pages/admin/AdminReportPrintPage.jsx";
 import CoordinatorReportPage from "@/pages/ojt_coordinator/ReportPage.jsx";
 import InstructorReportPage from "@/pages/ojt_instructor/ReportPage.jsx";
 import InternReportPage from "@/pages/intern/ReportPage.jsx";
@@ -643,6 +644,14 @@ function App() {
         element={
           <ProtectedRoute roles={["admin"]}>
             <AdminReportPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/reports/print"
+        element={
+          <ProtectedRoute roles={["admin"]}>
+            <AdminReportPrintPage />
           </ProtectedRoute>
         }
       />
