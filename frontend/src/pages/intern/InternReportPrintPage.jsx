@@ -109,11 +109,31 @@ export default function InternReportPrintPage() {
       .catch((err) => toast.error("Failed to load report", { description: firstErrorMessage(err) }))
       .finally(() => {
         setLoading(false);
-        if (window.parent !== window) {
-          window.parent.postMessage({ type: "smartlog-report-print-ready" }, "*");
-        }
       });
   }, [academicYearId]);
+
+  useEffect(() => {
+    if (loading || !data) return;
+    const sendReady = async () => {
+      const imgs = Array.from(document.querySelectorAll("img"));
+      await Promise.all(
+        imgs.map((img) => {
+          if (img.complete && img.naturalWidth !== 0) return Promise.resolve();
+          return new Promise((resolve) => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+            setTimeout(resolve, 3000);
+          });
+        })
+      );
+      await new Promise((r) => setTimeout(r, 400));
+      if (window.parent !== window) {
+        window.parent.postMessage({ type: "smartlog-report-print-ready" }, "*");
+      }
+    };
+    const t = setTimeout(sendReady, 300);
+    return () => clearTimeout(t);
+  }, [loading, data]);
 
   const yearLabel = data?.academic_year?.description || data?.academic_year?.code || "All Academic Years";
   const generatedAt = new Date().toLocaleString("en-US", {
