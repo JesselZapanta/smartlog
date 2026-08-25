@@ -100,6 +100,7 @@ const statusTone = {
   submitted: "bg-blue-100 text-blue-700 ring-blue-200",
   verified: "bg-green-100 text-green-700 ring-green-200",
   flagged: "bg-red-100 text-red-700 ring-red-200",
+  not_submitted: "bg-gray-100 text-gray-500 ring-gray-200",
 };
 
 function StatusBadge({ value }) {
@@ -572,7 +573,7 @@ function RequirementsView({ data, onPrint, isPrinting }) {
         )}
       </SectionCard>
 
-      <SectionCard title="Compliance per Requirement" subtitle="Approved vs total per requirement type">
+      <SectionCard title="Compliance per Requirement" subtitle="Status per requirement type">
         {!(data.requirements.by_requirement || []).length ? (
           <p className="py-6 text-center text-sm text-gray-400">No requirement types configured</p>
         ) : (
@@ -583,23 +584,24 @@ function RequirementsView({ data, onPrint, isPrinting }) {
                   <TableRow className="bg-gray-50/50">
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Requirement</TableHead>
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Type</TableHead>
-                    <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-gray-500">Pending</TableHead>
-                    <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-gray-500">Approved</TableHead>
-                    <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-gray-500">Total</TableHead>
+                    <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-gray-500">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.requirements.by_requirement.map((r) => (
-                    <TableRow key={r.name}>
-                      <TableCell className="max-w-[180px] truncate font-medium text-gray-800">{r.name}</TableCell>
-                      <TableCell>
-                        <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold capitalize text-gray-600">{r.type?.replace(/_/g, " ")}</span>
-                      </TableCell>
-                      <TableCell className="text-right font-mono text-amber-700">{r.pending}</TableCell>
-                      <TableCell className="text-right font-mono font-bold text-green-700">{r.approved}</TableCell>
-                      <TableCell className="text-right font-mono text-gray-900">{r.total}</TableCell>
-                    </TableRow>
-                  ))}
+                  {data.requirements.by_requirement.map((r) => {
+                    const status = r.approved > 0 ? "approved" : r.rejected > 0 ? "rejected" : r.pending > 0 ? "pending" : "not_submitted";
+                    return (
+                      <TableRow key={r.name}>
+                        <TableCell className="max-w-[180px] truncate font-medium text-gray-800">{r.name}</TableCell>
+                        <TableCell>
+                          <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold capitalize text-gray-600">{r.type?.replace(/_/g, " ")}</span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <StatusBadge value={status} />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

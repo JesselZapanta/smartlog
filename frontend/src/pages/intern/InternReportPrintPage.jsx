@@ -26,6 +26,8 @@ function StatusBadge({ value }) {
     closed: "bg-gray-100 text-gray-600",
     active: "bg-green-100 text-green-700",
     inactive: "bg-gray-100 text-gray-600",
+    deployed: "bg-green-100 text-green-700",
+    not_submitted: "bg-gray-100 text-gray-500",
   };
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${colors[String(value)] || "bg-gray-100 text-gray-600"}`}>
@@ -312,11 +314,12 @@ export default function InternReportPrintPage() {
                     columns={[
                       { key: "name", label: "Requirement", bold: true },
                       { key: "type", label: "Type" },
-                      { key: "pending", label: "Pending", align: "right" },
-                      { key: "approved", label: "Approved", align: "right" },
-                      { key: "total", label: "Total", align: "right" },
+                      { key: "status", label: "Status", align: "right", render: (row) => <StatusBadge value={row.status} /> },
                     ]}
-                    rows={(data.requirements.by_requirement || []).map((r) => ({ name: r.name, type: r.type, pending: r.pending, approved: r.approved, total: r.total }))}
+                    rows={(data.requirements.by_requirement || []).map((r) => {
+                      const status = r.approved > 0 ? "approved" : r.rejected > 0 ? "rejected" : r.pending > 0 ? "pending" : "not_submitted";
+                      return { name: r.name, type: r.type, status };
+                    })}
                   />
                 </div>
               </div>
