@@ -123,7 +123,7 @@ function miniStat(label, value) {
 }
 
 function formatTime(value) {
-  if (!value) return "â€”";
+  if (!value) return " - ";
   const [hours, minutes] = value.split(":").map(Number);
   const period = hours >= 12 ? "PM" : "AM";
   const hour12 = hours % 12 || 12;
@@ -401,17 +401,17 @@ function DtrView({ data }) {
         </div>
       </SectionCard>
 
-      <SectionCard title="DTR Logs" subtitle="1 month per page â€” same as your DTR Logs page">
+      <SectionCard title="DTR Logs" subtitle="1 month per page - same as your DTR Logs page">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="h-9 rounded-xl" onClick={() => shiftMonth(-1)}>
-              â† Prev month
+              â† Prev month
             </Button>
             <Button variant="outline" size="sm" className="h-9 rounded-xl" onClick={() => shiftMonth(1)}>
               Next month â†’
             </Button>
             <span className="hidden text-xs font-semibold text-gray-500 sm:inline">
-              {from && to ? `${formatDate(from)} â€“ ${formatDate(to)}` : ""}
+              {from && to ? `${formatDate(from)} - ${formatDate(to)}` : ""}
             </span>
           </div>
           <Button onClick={handlePrint} disabled={printing} className="h-9 gap-1.5 rounded-xl bg-green-600 px-4 font-semibold text-white hover:bg-green-700 disabled:opacity-60">
@@ -435,7 +435,7 @@ function DtrView({ data }) {
           </div>
         </div>
         <p className="mt-2 text-center text-xs font-semibold text-gray-500 sm:hidden">
-          {from && to ? `${formatDate(from)} â€“ ${formatDate(to)}` : ""}
+          {from && to ? `${formatDate(from)} - ${formatDate(to)}` : ""}
         </p>
 
         {loadingDtr ? (
@@ -489,16 +489,16 @@ function DtrView({ data }) {
                                   <span className="font-mono text-xs font-bold text-gray-700">{formatTime(punched.time)}</span>
                                 </div>
                               ) : (
-                                <span className="text-sm text-gray-300">â€”</span>
+                                <span className="text-sm text-gray-300"> - </span>
                               )}
                             </TableCell>
                           );
                         })}
                         <TableCell>
-                          <span className="font-mono text-sm font-bold text-gray-700">{worked ? worked.hours : "â€”"}</span>
+                          <span className="font-mono text-sm font-bold text-gray-700">{worked ? worked.hours : " - "}</span>
                         </TableCell>
                         <TableCell>
-                          <span className="font-mono text-sm font-bold text-gray-700">{worked ? worked.minutes : "â€”"}</span>
+                          <span className="font-mono text-sm font-bold text-gray-700">{worked ? worked.minutes : " - "}</span>
                         </TableCell>
                         <TableCell>
                           <StatusPill status={record.status} />
@@ -526,7 +526,7 @@ function DtrView({ data }) {
       {viewPhoto && (
         <div className="fixed inset-0 z-[60] flex flex-col bg-black/95" onClick={() => setViewPhoto(null)}>
           <button type="button" onClick={() => setViewPhoto(null)} aria-label="Close photo" className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/30 backdrop-blur">
-            <span className="text-lg">Ã—</span>
+            <span className="text-lg">Ã - </span>
           </button>
           <div className="flex min-h-0 flex-1 items-center justify-center p-4">
             <img src={viewPhoto.url} alt={`${viewPhoto.label} photo`} onClick={(e) => e.stopPropagation()} className="max-h-full max-w-full rounded-2xl object-contain shadow-2xl" />
