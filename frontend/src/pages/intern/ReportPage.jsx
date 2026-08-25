@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   BarChart3,
@@ -33,6 +33,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { DatePicker } from "@/components/ui/date-picker";
+import OjtHoursCard from "@/components/OjtHoursCard.jsx";
 import InternLayout from "@/layouts/InternLayout.jsx";
 import PageHeader from "@/components/PageHeader.jsx";
 import StatCard from "@/components/StatCard.jsx";
@@ -120,7 +123,7 @@ function miniStat(label, value) {
 }
 
 function formatTime(value) {
-  if (!value) return "—";
+  if (!value) return "â€”";
   const [hours, minutes] = value.split(":").map(Number);
   const period = hours >= 12 ? "PM" : "AM";
   const hour12 = hours % 12 || 12;
@@ -136,7 +139,7 @@ function ReportPrintBar({ onPrint, reportKey, isPrinting, label }) {
         className="h-11 w-full justify-center whitespace-nowrap rounded-xl bg-green-600 px-5 font-semibold text-white hover:bg-green-700 disabled:opacity-60 sm:ml-auto sm:w-auto"
       >
         {isPrinting ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
-        {isPrinting ? "Preparing…" : label || "Print Report"}
+        {isPrinting ? "Preparingâ€¦" : label || "Print Report"}
       </Button>
     </div>
   );
@@ -178,7 +181,7 @@ function OverviewView({ data, onPrint, isPrinting }) {
             {miniStat("Approved", data.dtr.by_status?.checked || data.dtr.by_status?.approved || 0)}
           </div>
         </SectionCard>
-        <SectionCard title="Requirements Compliance" subtitle={`${data.requirements.definitions_total} types · ${data.requirements.total} submissions`}>
+        <SectionCard title="Requirements Compliance" subtitle={`${data.requirements.definitions_total} types Â· ${data.requirements.total} submissions`}>
           <div className="space-y-2">
             {(data.requirements.by_requirement || []).slice(0, 3).map((r) => (
               <div key={r.name} className="rounded-xl border border-gray-100 p-3">
@@ -209,7 +212,7 @@ function OverviewView({ data, onPrint, isPrinting }) {
                   <div>
                     <p className="text-sm font-medium text-gray-800">{formatDate(r.date)}</p>
                     <p className="font-mono text-xs text-gray-500">
-                      {formatTime(r.am_in)} → {formatTime(r.am_out)} · {formatTime(r.pm_in)} → {formatTime(r.pm_out)}
+                      {formatTime(r.am_in)} â†’ {formatTime(r.am_out)} Â· {formatTime(r.pm_in)} â†’ {formatTime(r.pm_out)}
                     </p>
                   </div>
                   <StatusBadge value={r.status} />
@@ -237,10 +240,146 @@ function OverviewView({ data, onPrint, isPrinting }) {
   );
 }
 
-function DtrView({ data, onPrint, isPrinting }) {
+const SLOTS = [
+  { key: "am_in", label: "AM In" },
+  { key: "am_out", label: "AM Out" },
+  { key: "pm_in", label: "PM In" },
+  { key: "pm_out", label: "PM Out" },
+];
+
+function computeHours(slots) {
+  const toMinutes = (time) => {
+    if (!time) return null;
+    const [hours, minutes] = time.split(":").map(Number);
+    return hours * 60 + minutes;
+  };
+  let total = 0;
+  for (const [inKey, outKey] of [
+    ["am_in", "am_out"],
+    ["pm_in", "pm_out"],
+  ]) {
+    const start = toMinutes(slots?.[inKey]?.time);
+    const end = toMinutes(slots?.[outKey]?.time);
+    if (start != null && end != null && end > start) {
+      total += end - start;
+    }
+  }
+  if (total <= 0) return null;
+  return { hours: Math.floor(total / 60), minutes: total % 60 };
+}
+
+function StatusPill({ status }) {
+  const tones = {
+    pending: "bg-amber-50 text-amber-700 ring-amber-200",
+    verified: "bg-indigo-50 text-indigo-700 ring-indigo-200",
+    checked: "bg-green-50 text-green-700 ring-green-200",
+    disapproved: "bg-red-50 text-red-600 ring-red-200",
+  };
+  const labels = {
+    pending: "Pending",
+    verified: "Verified by HTE",
+    checked: "Checked by instructor",
+    disapproved: "Disapproved",
+  };
+  return (
+    <Badge className={`inline-flex items-center gap-1.5 rounded-full font-semibold ring-1 ${tones[status] || tones.pending}`}>
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      {labels[status] || status}
+    </Badge>
+  );
+}
+
+function toYMD(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function DtrView({ data }) {
+  const [records, setRecords] = useState([]);
+  const [loadingDtr, setLoadingDtr] = useState(true);
+  const [from, setFrom] = useState(() => {
+    const d = new Date();
+    return toYMD(new Date(d.getFullYear(), d.getMonth(), 1));
+  });
+  const [to, setTo] = useState(() => {
+    const d = new Date();
+    return toYMD(new Date(d.getFullYear(), d.getMonth() + 1, 0));
+  });
+  const [printing, setPrinting] = useState(false);
+  const [viewPhoto, setViewPhoto] = useState(null);
+
+  useEffect(() => {
+    if (!viewPhoto) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [viewPhoto]);
+
+  const load = useCallback(async () => {
+    setLoadingDtr(true);
+    try {
+      const params = new URLSearchParams();
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+      const res = await api.get(`/intern/photo-dtr?${params.toString()}`);
+      setRecords(res.data.data || []);
+    } catch (err) {
+      toast.error("Failed to load DTR logs", { description: firstErrorMessage(err) });
+    } finally {
+      setLoadingDtr(false);
+    }
+  }, [from, to]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  function handlePrint() {
+    if (!from || !to || printing) return;
+    setPrinting(true);
+    const iframe = document.createElement("iframe");
+    iframe.src = `/intern/dtr-logs/print?from=${from}&to=${to}`;
+    iframe.style.position = "fixed";
+    iframe.style.top = "0";
+    iframe.style.left = "0";
+    iframe.style.width = "800px";
+    iframe.style.height = "600px";
+    iframe.style.border = "0";
+    iframe.style.opacity = "0";
+    iframe.style.pointerEvents = "none";
+    iframe.style.zIndex = "-1";
+    const cleanup = () => {
+      window.removeEventListener("message", onMessage);
+      setTimeout(() => iframe.remove(), 500);
+      setPrinting(false);
+    };
+    const onMessage = (event) => {
+      if (event.data?.type !== "smartlog-dtr-print-ready") return;
+      setTimeout(() => {
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } catch {
+          toast.error("Print failed", { description: "Could not open the print dialog." });
+        } finally {
+          cleanup();
+        }
+      }, 250);
+    };
+    window.addEventListener("message", onMessage);
+    document.body.appendChild(iframe);
+  }
+
+  function shiftMonth(dir) {
+    const base = from ? new Date(`${from}T00:00:00`) : new Date();
+    const next = new Date(base.getFullYear(), base.getMonth() + dir, 1);
+    setFrom(toYMD(new Date(next.getFullYear(), next.getMonth(), 1)));
+    setTo(toYMD(new Date(next.getFullYear(), next.getMonth() + 1, 0)));
+  }
+
   return (
     <div className="space-y-4 sm:space-y-5">
-      <ReportPrintBar onPrint={onPrint} reportKey="dtr" isPrinting={isPrinting} label="Print DTR Report" />
       <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         <StatCard label="Total DTR" value={data.dtr.total} icon={<CalendarCheck size={18} />} tone="teal" />
         <StatCard label="Approved" value={data.dtr.by_status?.checked || data.dtr.by_status?.approved || 0} icon={<CheckCircle2 size={18} />} tone="green" />
@@ -262,78 +401,142 @@ function DtrView({ data, onPrint, isPrinting }) {
         </div>
       </SectionCard>
 
-      <SectionCard title="DTR History" subtitle="Your photo DTR records">
-        {!(data.dtr.recent || []).length ? (
-          <p className="py-8 text-center text-sm text-gray-400">No DTR entries yet</p>
+      <SectionCard title="DTR Logs" subtitle="1 month per page â€” same as your DTR Logs page">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="h-9 rounded-xl" onClick={() => shiftMonth(-1)}>
+              â† Prev month
+            </Button>
+            <Button variant="outline" size="sm" className="h-9 rounded-xl" onClick={() => shiftMonth(1)}>
+              Next month â†’
+            </Button>
+            <span className="hidden text-xs font-semibold text-gray-500 sm:inline">
+              {from && to ? `${formatDate(from)} â€“ ${formatDate(to)}` : ""}
+            </span>
+          </div>
+          <Button onClick={handlePrint} disabled={printing} className="h-9 gap-1.5 rounded-xl bg-green-600 px-4 font-semibold text-white hover:bg-green-700 disabled:opacity-60">
+            {printing ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}
+            {printing ? "Preparingâ€¦" : "Print report"}
+          </Button>
+        </div>
+
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="flex items-center gap-2">
+            <span className="w-8 shrink-0 text-[10px] font-bold uppercase tracking-wider text-gray-400">From</span>
+            <div className="min-w-0 flex-1">
+              <DatePicker value={from} onChange={setFrom} placeholder="From date" maxDate={to ? new Date(`${to}T00:00:00`) : undefined} />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-8 shrink-0 text-[10px] font-bold uppercase tracking-wider text-gray-400">To</span>
+            <div className="min-w-0 flex-1">
+              <DatePicker value={to} onChange={setTo} placeholder="To date" minDate={from ? new Date(`${from}T00:00:00`) : undefined} />
+            </div>
+          </div>
+        </div>
+        <p className="mt-2 text-center text-xs font-semibold text-gray-500 sm:hidden">
+          {from && to ? `${formatDate(from)} â€“ ${formatDate(to)}` : ""}
+        </p>
+
+        {loadingDtr ? (
+          <div className="mt-4 flex h-40 items-center justify-center">
+            <Loader2 size={24} className="animate-spin text-green-600" />
+          </div>
+        ) : records.length === 0 ? (
+          <div className="mt-4 flex flex-col items-center gap-2 rounded-2xl border border-dashed border-gray-200 py-8 text-center">
+            <Clock3 size={20} className="text-gray-300" />
+            <p className="text-sm font-semibold text-gray-500">No records in this range</p>
+            <p className="text-xs text-gray-400">Adjust the date filter or clock in on the Photo DTR page.</p>
+          </div>
         ) : (
-          <>
-            <div className="hidden overflow-hidden rounded-xl border border-gray-200 sm:block">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gray-50/50">
-                      <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Date</TableHead>
-                      <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">AM In</TableHead>
-                      <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">AM Out</TableHead>
-                      <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">PM In</TableHead>
-                      <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">PM Out</TableHead>
-                      <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.dtr.recent.map((r, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="whitespace-nowrap font-medium text-gray-800">{formatDate(r.date)}</TableCell>
-                        <TableCell className="font-mono text-xs text-gray-600">{formatTime(r.am_in)}</TableCell>
-                        <TableCell className="font-mono text-xs text-gray-600">{formatTime(r.am_out)}</TableCell>
-                        <TableCell className="font-mono text-xs text-gray-600">{formatTime(r.pm_in)}</TableCell>
-                        <TableCell className="font-mono text-xs text-gray-600">{formatTime(r.pm_out)}</TableCell>
+          <div className="mt-4 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ring-1 ring-gray-100">
+            <div className="overflow-x-auto">
+              <Table className="min-w-[900px]">
+                <TableHeader>
+                  <TableRow className="bg-green-50 hover:bg-green-50">
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Date</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">AM In</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">AM Out</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">PM In</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">PM Out</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Hours</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Minutes</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {records.map((record) => {
+                    const worked = computeHours(record.slots);
+                    return (
+                      <TableRow key={record.id} className="group border-b border-gray-50 transition-colors last:border-0 hover:bg-green-50/40">
                         <TableCell>
-                          <StatusBadge value={r.status} />
+                          <span className="text-sm font-bold text-gray-800">{formatDate(record.dtr_date)}</span>
+                        </TableCell>
+                        {SLOTS.map((slot) => {
+                          const punched = record.slots?.[slot.key];
+                          return (
+                            <TableCell key={slot.key}>
+                              {punched?.time ? (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setViewPhoto({ url: punched.photo_url, label: slot.label, time: formatTime(punched.time) })}
+                                    className="cursor-zoom-in"
+                                    aria-label={`View ${slot.label} photo`}
+                                  >
+                                    <img src={punched.photo_url} alt={`${slot.label} photo`} className="h-8 w-8 shrink-0 rounded-lg object-cover ring-1 ring-gray-200" />
+                                  </button>
+                                  <span className="font-mono text-xs font-bold text-gray-700">{formatTime(punched.time)}</span>
+                                </div>
+                              ) : (
+                                <span className="text-sm text-gray-300">â€”</span>
+                              )}
+                            </TableCell>
+                          );
+                        })}
+                        <TableCell>
+                          <span className="font-mono text-sm font-bold text-gray-700">{worked ? worked.hours : "â€”"}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-mono text-sm font-bold text-gray-700">{worked ? worked.minutes : "â€”"}</span>
+                        </TableCell>
+                        <TableCell>
+                          <StatusPill status={record.status} />
                         </TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
-            <div className="grid grid-cols-1 gap-3 sm:hidden">
-              {data.dtr.recent.map((r, i) => (
-                <div key={i} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold text-gray-800">{formatDate(r.date)}</p>
-                    <StatusBadge value={r.status} />
-                  </div>
-                  <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                    <div className="rounded-lg bg-gray-50 px-2.5 py-2">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">AM</p>
-                      <p className="font-mono font-semibold text-gray-700">
-                        {formatTime(r.am_in)} → {formatTime(r.am_out)}
-                      </p>
-                    </div>
-                    <div className="rounded-lg bg-gray-50 px-2.5 py-2">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">PM</p>
-                      <p className="font-mono font-semibold text-gray-700">
-                        {formatTime(r.pm_in)} → {formatTime(r.pm_out)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
+          </div>
         )}
+
+        <SectionCard title="OJT Hours" subtitle={`${data.ojt_hours?.earned ?? 0} of ${data.ojt_hours?.required ?? 0} hours completed`}>
+          <div className="relative h-4 overflow-hidden rounded-full bg-gray-100">
+            <div className="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all" style={{ width: `${data.ojt_hours?.progress ?? 0}%` }} />
+          </div>
+          <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+            <span className="font-mono font-semibold text-green-700">{data.ojt_hours?.earned ?? 0}h earned</span>
+            <span className="font-mono">{data.ojt_hours?.remaining ?? 0}h remaining</span>
+          </div>
+        </SectionCard>
       </SectionCard>
 
-      <SectionCard title="OJT Hours" subtitle={`${data.ojt_hours?.earned ?? 0} of ${data.ojt_hours?.required ?? 0} hours completed`}>
-        <div className="relative h-4 overflow-hidden rounded-full bg-gray-100">
-          <div className="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all" style={{ width: `${data.ojt_hours?.progress ?? 0}%` }} />
+      {viewPhoto && (
+        <div className="fixed inset-0 z-[60] flex flex-col bg-black/95" onClick={() => setViewPhoto(null)}>
+          <button type="button" onClick={() => setViewPhoto(null)} aria-label="Close photo" className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/30 backdrop-blur">
+            <span className="text-lg">Ã—</span>
+          </button>
+          <div className="flex min-h-0 flex-1 items-center justify-center p-4">
+            <img src={viewPhoto.url} alt={`${viewPhoto.label} photo`} onClick={(e) => e.stopPropagation()} className="max-h-full max-w-full rounded-2xl object-contain shadow-2xl" />
+          </div>
+          <div className="pb-6 pt-2 text-center">
+            <p className="text-sm font-bold text-white">{viewPhoto.label}</p>
+            <p className="mt-0.5 font-mono text-xs text-white/60">{viewPhoto.time}</p>
+          </div>
         </div>
-        <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-          <span className="font-mono font-semibold text-green-700">{data.ojt_hours?.earned ?? 0}h earned</span>
-          <span className="font-mono">{data.ojt_hours?.remaining ?? 0}h remaining</span>
-        </div>
-      </SectionCard>
+      )}
     </div>
   );
 }
@@ -571,8 +774,8 @@ export default function InternReportPage() {
             className="h-11 whitespace-nowrap rounded-xl bg-white font-semibold text-green-700 shadow-sm hover:bg-green-50 disabled:opacity-60"
           >
             {isPrinting ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
-            <span className="hidden sm:inline">{isPrinting ? "Preparing…" : "Print Executive Report"}</span>
-            <span className="sm:hidden">{isPrinting ? "Preparing…" : "Print Report"}</span>
+            <span className="hidden sm:inline">{isPrinting ? "Preparingâ€¦" : "Print Executive Report"}</span>
+            <span className="sm:hidden">{isPrinting ? "Preparingâ€¦" : "Print Report"}</span>
           </Button>
         }
       />
@@ -580,19 +783,19 @@ export default function InternReportPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Select value={academicYearId} onValueChange={setAcademicYearId} disabled={termsLoading}>
           <SelectTrigger className="h-11 w-full rounded-xl sm:w-[240px]">
-            <SelectValue placeholder={termsLoading ? "Loading years…" : "Academic Year"} />
+            <SelectValue placeholder={termsLoading ? "Loading yearsâ€¦" : "Academic Year"} />
           </SelectTrigger>
           <SelectContent>
             {academicYears.map((term) => (
               <SelectItem key={term.id} value={String(term.id)}>
                 {term.description || term.code}
-                {term.status === "active" ? " · Active" : ""}
+                {term.status === "active" ? " Â· Active" : ""}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
         <p className="text-xs font-medium text-gray-500">
-          <span className="font-heading font-bold text-gray-900">{REPORTS.length}</span> reports available · filtered by academic year
+          <span className="font-heading font-bold text-gray-900">{REPORTS.length}</span> reports available Â· filtered by academic year
         </p>
       </div>
 
