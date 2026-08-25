@@ -198,7 +198,7 @@ export default function CoordinatorInternEvaluationDetailPage() {
             className="h-11 whitespace-nowrap rounded-xl bg-green-600 px-5 font-semibold text-white hover:bg-green-700 disabled:opacity-60"
           >
             {isPrinting ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
-            {isPrinting ? "Preparing…" : "Print Report"}
+            {isPrinting ? "Preparing..." : "Print Report"}
           </Button>
         )}
       </div>

@@ -335,7 +335,7 @@ export default function CoordinatorIssueFormDialog({ open, onOpenChange, onSaved
               >
                 {submitting ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" /> Saving…
+                    <Loader2 size={16} className="animate-spin" /> Saving...
                   </>
                 ) : (
                   <>

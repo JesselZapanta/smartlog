@@ -196,7 +196,7 @@ export default function OjtHourFormDialog({ open, onOpenChange, ojtHour, institu
               >
                 {submitting ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" /> Saving…
+                    <Loader2 size={16} className="animate-spin" /> Saving...
                   </>
                 ) : (
                   <>

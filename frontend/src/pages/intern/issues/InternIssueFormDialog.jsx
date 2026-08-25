@@ -223,7 +223,7 @@ export default function InternIssueFormDialog({ open, onOpenChange, onSaved, iss
                 >
                   {submitting ? (
                     <>
-                      <Loader2 size={16} className="animate-spin" /> {isEdit ? "Saving…" : "Reporting…"}
+                      <Loader2 size={16} className="animate-spin" /> {isEdit ? "Saving..." : "Reporting..."}
                     </>
                   ) : (
                     <>

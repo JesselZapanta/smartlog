@@ -757,7 +757,7 @@ export default function ProfilePage() {
                     >
                       {savingAccount ? (
                         <>
-                          <Loader2 size={16} className="animate-spin" /> Saving…
+                          <Loader2 size={16} className="animate-spin" /> Saving...
                         </>
                       ) : (
                         <>Save changes</>
@@ -820,7 +820,7 @@ export default function ProfilePage() {
                           >
                             <FormControl>
                               <SelectTrigger className="data-[size=default]:h-11 w-full rounded-xl">
-                                <SelectValue placeholder={loadingProvinces ? "Loading provinces…" : "Select province"} />
+                                <SelectValue placeholder={loadingProvinces ? "Loading provinces..." : "Select province"} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -846,7 +846,7 @@ export default function ProfilePage() {
                           >
                             <FormControl>
                               <SelectTrigger className="data-[size=default]:h-11 w-full rounded-xl">
-                                <SelectValue placeholder={loadingCities ? "Loading cities…" : "Select city / municipality"} />
+                                <SelectValue placeholder={loadingCities ? "Loading cities..." : "Select city / municipality"} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -872,7 +872,7 @@ export default function ProfilePage() {
                           >
                             <FormControl>
                               <SelectTrigger className="data-[size=default]:h-11 w-full rounded-xl">
-                                <SelectValue placeholder={loadingBarangays ? "Loading barangays…" : "Select barangay"} />
+                                <SelectValue placeholder={loadingBarangays ? "Loading barangays..." : "Select barangay"} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -895,7 +895,7 @@ export default function ProfilePage() {
                     >
                       {savingLocation ? (
                         <>
-                          <Loader2 size={16} className="animate-spin" /> Saving…
+                          <Loader2 size={16} className="animate-spin" /> Saving...
                         </>
                       ) : (
                         <>Save address</>
@@ -982,7 +982,7 @@ export default function ProfilePage() {
                       >
                         {savingPassword ? (
                           <>
-                            <Loader2 size={16} className="animate-spin" /> Saving…
+                            <Loader2 size={16} className="animate-spin" /> Saving...
                           </>
                         ) : (
                           <>Update password</>
@@ -1166,7 +1166,7 @@ export default function ProfilePage() {
                         >
                           {savingIntern ? (
                             <>
-                              <Loader2 size={16} className="animate-spin" /> Saving…
+                              <Loader2 size={16} className="animate-spin" /> Saving...
                             </>
                           ) : (
                             <>Save intern details</>
@@ -1247,7 +1247,7 @@ export default function ProfilePage() {
                       >
                         {savingHte ? (
                           <>
-                            <Loader2 size={16} className="animate-spin" /> Saving…
+                            <Loader2 size={16} className="animate-spin" /> Saving...
                           </>
                         ) : (
                           <>Save HTE details</>

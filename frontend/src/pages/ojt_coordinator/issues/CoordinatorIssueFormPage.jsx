@@ -557,7 +557,7 @@ export default function CoordinatorIssueFormPage() {
                 >
                   {submitting ? (
                     <>
-                      <Loader2 size={16} className="animate-spin" /> Saving…
+                      <Loader2 size={16} className="animate-spin" /> Saving...
                     </>
                   ) : (
                     <>

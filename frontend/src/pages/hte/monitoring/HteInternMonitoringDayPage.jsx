@@ -473,7 +473,7 @@ export default function HteInternMonitoringDayPage() {
                     }
                     className="h-11 w-full rounded-xl border-green-200 text-sm font-semibold text-green-700 hover:bg-green-50 sm:w-auto"
                   >
-                    <ShieldCheck size={16} /> Verify journals…
+                    <ShieldCheck size={16} /> Verify journals...
                   </Button>
                   <Button
                     type="button"
@@ -484,7 +484,7 @@ export default function HteInternMonitoringDayPage() {
                     }
                     className="h-11 w-full rounded-xl border-red-200 text-sm font-semibold text-red-600 hover:bg-red-50 sm:w-auto"
                   >
-                    <Flag size={16} /> Flag journals…
+                    <Flag size={16} /> Flag journals...
                   </Button>
                 </div>
               </div>
@@ -581,7 +581,7 @@ export default function HteInternMonitoringDayPage() {
                 onChange={(event) => setRemarks(event.target.value)}
                 rows={3}
                 maxLength={1000}
-                placeholder="Required — explain why this journal is flagged…"
+                placeholder="Required — explain why this journal is flagged..."
                 className="mt-1 rounded-xl text-sm leading-relaxed"
               />
 

@@ -163,7 +163,7 @@ function ReportPrintBar({ onPrint, reportKey, isPrinting, label }) {
         className="h-11 w-full justify-center whitespace-nowrap rounded-xl bg-green-600 px-5 font-semibold text-white hover:bg-green-700 disabled:opacity-60 sm:ml-auto sm:w-auto"
       >
         {isPrinting ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
-        {isPrinting ? "Preparing…" : label || "Print Report"}
+        {isPrinting ? "Preparing..." : label || "Print Report"}
       </Button>
     </div>
   );
@@ -805,7 +805,7 @@ function StudentPlacementView({ academicYearId, onPrint, isPrinting }) {
         <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative w-full min-w-0 sm:max-w-sm">
             <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search student, program, company…" className="h-11 rounded-xl pl-9" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search student, program, company..." className="h-11 rounded-xl pl-9" />
           </div>
           <p className="shrink-0 text-xs font-medium text-gray-500 sm:text-right">
             Showing <span className="font-heading font-bold text-gray-900">{filtered.length}</span> of {rows.length}
@@ -1013,8 +1013,8 @@ export default function CoordinatorReportPage() {
             className="h-11 whitespace-nowrap rounded-xl bg-white font-semibold text-green-700 shadow-sm hover:bg-green-50 disabled:opacity-60"
           >
             {isPrinting ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
-            <span className="hidden sm:inline">{isPrinting ? "Preparing…" : "Print Executive Report"}</span>
-            <span className="sm:hidden">{isPrinting ? "Preparing…" : "Print Report"}</span>
+            <span className="hidden sm:inline">{isPrinting ? "Preparing..." : "Print Executive Report"}</span>
+            <span className="sm:hidden">{isPrinting ? "Preparing..." : "Print Report"}</span>
           </Button>
         }
       />
@@ -1022,7 +1022,7 @@ export default function CoordinatorReportPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Select value={academicYearId} onValueChange={setAcademicYearId} disabled={termsLoading}>
           <SelectTrigger className="h-11 w-full rounded-xl sm:w-[240px]">
-            <SelectValue placeholder={termsLoading ? "Loading years…" : "Academic Year"} />
+            <SelectValue placeholder={termsLoading ? "Loading years..." : "Academic Year"} />
           </SelectTrigger>
           <SelectContent>
             {academicYears.map((term) => (

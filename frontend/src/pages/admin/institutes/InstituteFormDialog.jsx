@@ -203,7 +203,7 @@ export default function InstituteFormDialog({ open, onOpenChange, institute, onS
                     <FormControl>
                       <div className="relative">
                         <Textarea
-                          placeholder="Programs offered, career opportunities, and other details…"
+                          placeholder="Programs offered, career opportunities, and other details..."
                           className="min-h-32 resize-y rounded-xl pl-10 pt-3"
                           {...field}
                         />
@@ -227,7 +227,7 @@ export default function InstituteFormDialog({ open, onOpenChange, institute, onS
               >
                 {submitting ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" /> Saving…
+                    <Loader2 size={16} className="animate-spin" /> Saving...
                   </>
                 ) : (
                   <>

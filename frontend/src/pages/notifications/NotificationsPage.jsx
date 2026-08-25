@@ -48,7 +48,7 @@ function getPageList(current, total) {
   const withEllipsis = [];
   let prev = 0;
   pages.sort((a, b) => a - b).forEach((page) => {
-    if (prev && page - prev > 1) withEllipsis.push("…");
+    if (prev && page - prev > 1) withEllipsis.push("...");
     withEllipsis.push(page);
     prev = page;
   });

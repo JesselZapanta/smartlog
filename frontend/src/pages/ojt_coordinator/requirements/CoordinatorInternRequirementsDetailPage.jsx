@@ -646,7 +646,7 @@ actingId={actingId}
           <Textarea
             value={reason}
             onChange={(event) => setReason(event.target.value)}
-            placeholder="e.g. Document is not notarized…"
+            placeholder="e.g. Document is not notarized..."
             className="min-h-28 rounded-xl"
           />
           <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -669,7 +669,7 @@ actingId={actingId}
             >
               {rejecting ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" /> Rejecting…
+                  <Loader2 size={16} className="animate-spin" /> Rejecting...
                 </>
               ) : (
                 <>
@@ -706,7 +706,7 @@ actingId={actingId}
             >
               {deploying ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" /> Deploying…
+                  <Loader2 size={16} className="animate-spin" /> Deploying...
                 </>
               ) : (
                 <>
@@ -802,7 +802,7 @@ actingId={actingId}
             >
               {completing ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" /> Completing…
+                  <Loader2 size={16} className="animate-spin" /> Completing...
                 </>
               ) : (
                 <>

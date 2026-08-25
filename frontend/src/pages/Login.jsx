@@ -180,7 +180,7 @@ export default function Login() {
                 >
                   {submitting ? (
                     <>
-                      <Loader2 size={16} className="animate-spin" /> Signing in…
+                      <Loader2 size={16} className="animate-spin" /> Signing in...
                     </>
                   ) : (
                     <>

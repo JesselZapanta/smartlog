@@ -133,7 +133,7 @@ export default function InternDashboard() {
           disabled={termsLoading}
         >
           <SelectTrigger className="h-11 w-full rounded-xl bg-white sm:w-[240px]">
-            <SelectValue placeholder={termsLoading ? "Loading years…" : "Academic Year"} />
+            <SelectValue placeholder={termsLoading ? "Loading years..." : "Academic Year"} />
           </SelectTrigger>
           <SelectContent>
             {academicYears.map((term) => (

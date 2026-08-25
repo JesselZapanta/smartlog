@@ -509,7 +509,7 @@ export default function ResubmitRegistrationPage() {
                             <Select disabled={loadingRegions} onValueChange={onRegionChange} value={regionValue}>
                               <FormControl>
                                 <SelectTrigger className={selectClass}>
-                                  <SelectValue placeholder={loadingRegions ? "Loading regions…" : "Select region"} />
+                                  <SelectValue placeholder={loadingRegions ? "Loading regions..." : "Select region"} />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
@@ -540,7 +540,7 @@ export default function ResubmitRegistrationPage() {
                             >
                               <FormControl>
                                 <SelectTrigger className={selectClass}>
-                                  <SelectValue placeholder={loadingProvinces ? "Loading provinces…" : "Select province"} />
+                                  <SelectValue placeholder={loadingProvinces ? "Loading provinces..." : "Select province"} />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
@@ -571,7 +571,7 @@ export default function ResubmitRegistrationPage() {
                             >
                               <FormControl>
                                 <SelectTrigger className={selectClass}>
-                                  <SelectValue placeholder={loadingCities ? "Loading cities…" : "Select city / municipality"} />
+                                  <SelectValue placeholder={loadingCities ? "Loading cities..." : "Select city / municipality"} />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
@@ -602,7 +602,7 @@ export default function ResubmitRegistrationPage() {
                             >
                               <FormControl>
                                 <SelectTrigger className={selectClass}>
-                                  <SelectValue placeholder={loadingBarangays ? "Loading barangays…" : "Select barangay"} />
+                                  <SelectValue placeholder={loadingBarangays ? "Loading barangays..." : "Select barangay"} />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
@@ -633,7 +633,7 @@ export default function ResubmitRegistrationPage() {
                     <Button type="submit" className="h-11 gap-2 rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700" disabled={submitting}>
                       {submitting ? (
                         <>
-                          <Loader2 size={16} className="animate-spin" /> Resubmitting…
+                          <Loader2 size={16} className="animate-spin" /> Resubmitting...
                         </>
                       ) : (
                         <>
@@ -673,7 +673,7 @@ export default function ResubmitRegistrationPage() {
               >
                 {submitting ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" /> Resubmitting…
+                    <Loader2 size={16} className="animate-spin" /> Resubmitting...
                   </>
                 ) : (
                   <>

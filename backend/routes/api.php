@@ -104,6 +104,8 @@ Route::middleware('auth:api')->group(function (): void {
         Route::post('/intern/journals/{journal}', [DailyJournalController::class, 'update'])->name('api.intern.journals.update');
         Route::delete('/intern/journals/{journal}', [DailyJournalController::class, 'destroy'])->name('api.intern.journals.destroy');
 
+        Route::get('/intern/reports', [App\Http\Controllers\Api\Intern\ReportController::class, 'index'])->name('api.intern.reports');
+
         Route::get('/intern/issues/hte', [App\Http\Controllers\Api\Intern\IssueController::class, 'hteInfo'])->name('api.intern.issues.hte');
         Route::get('/intern/issues', [App\Http\Controllers\Api\Intern\IssueController::class, 'index'])->name('api.intern.issues.index');
         Route::post('/intern/issues', [App\Http\Controllers\Api\Intern\IssueController::class, 'store'])->name('api.intern.issues.store');

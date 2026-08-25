@@ -269,7 +269,7 @@ export default function InstructorInternDtrLogsPage() {
             className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-green-200 px-4 text-sm font-semibold text-green-700 transition-colors hover:bg-green-50 disabled:opacity-60 lg:w-auto"
           >
             {printing ? <Loader2 size={15} className="animate-spin" /> : <Printer size={15} />}
-            {printing ? "Preparing…" : "Print report"}
+            {printing ? "Preparing..." : "Print report"}
           </button>
           <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:w-auto lg:gap-2">
             <div className="flex min-w-0 items-center gap-2">

@@ -375,7 +375,7 @@ export default function InternPhotoDtrPage() {
                                   } disabled:opacity-70`}
                                 >
                                   {punching ? <Loader2 size={14} className="animate-spin" /> : <ClockIcon size={14} />}
-                                  {punching ? "Saving…" : clockLabel(slot.key)}
+                                  {punching ? "Saving..." : clockLabel(slot.key)}
                                 </button>
                                 {periodLocked && (
                                   <p className="text-[10px] font-semibold text-gray-400">{lockHint}</p>
@@ -502,7 +502,7 @@ export default function InternPhotoDtrPage() {
                   {capturing || !streamReady ? <Loader2 size={30} className="animate-spin" /> : <Camera size={30} />}
                 </button>
                 <p className="text-[11px] font-semibold uppercase tracking-widest text-white/60">
-                  {capturing ? "Capturing…" : streamReady ? "Tap to capture" : "Starting camera…"}
+                  {capturing ? "Capturing..." : streamReady ? "Tap to capture" : "Starting camera..."}
                 </p>
               </>
             )}

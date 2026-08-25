@@ -48,7 +48,7 @@ export default function InstituteProgramFields({
             >
               <FormControl>
                 <SelectTrigger className={selectClass}>
-                  <SelectValue placeholder={loadingInstitutes ? "Loading institutes…" : "Select institute"} />
+                  <SelectValue placeholder={loadingInstitutes ? "Loading institutes..." : "Select institute"} />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
@@ -79,7 +79,7 @@ export default function InstituteProgramFields({
                 <SelectTrigger className={selectClass}>
                   <SelectValue
                     placeholder={
-                      loadingPrograms ? "Loading programs…" : instituteId ? "Select program" : "Select institute first"
+                      loadingPrograms ? "Loading programs..." : instituteId ? "Select program" : "Select institute first"
                     }
                   />
                 </SelectTrigger>

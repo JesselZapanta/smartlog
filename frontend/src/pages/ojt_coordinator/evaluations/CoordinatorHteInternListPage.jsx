@@ -260,7 +260,7 @@ export default function CoordinatorHteInternListPage() {
               className="h-11 shrink-0 rounded-xl bg-green-600 px-4 font-semibold text-white shadow-sm hover:bg-green-700 disabled:opacity-60 sm:bg-white sm:text-green-700 sm:hover:bg-green-50"
             >
               {isPrinting ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
-              {isPrinting ? "Preparing…" : "Print Report"}
+              {isPrinting ? "Preparing..." : "Print Report"}
             </Button>
             <Button asChild className="h-11 shrink-0 rounded-xl bg-white px-4 font-semibold text-green-700 shadow-sm hover:bg-green-50">
               <Link to="/coordinator/hte-evaluations">
@@ -277,7 +277,7 @@ export default function CoordinatorHteInternListPage() {
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search name or email…"
+            placeholder="Search name or email..."
             className="h-11 rounded-xl pl-10 pr-10"
           />
           {search && (

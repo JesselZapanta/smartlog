@@ -402,7 +402,7 @@ const moreActive = moreNavItems.some((item) => location.pathname === item.to || 
             <Button variant="destructive" className="h-11 flex-1 rounded-xl sm:flex-initial" disabled={loggingOut} onClick={confirmLogout}>
               {loggingOut ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" /> Logging out…
+                  <Loader2 size={16} className="animate-spin" /> Logging out...
                 </>
               ) : (
                 <>

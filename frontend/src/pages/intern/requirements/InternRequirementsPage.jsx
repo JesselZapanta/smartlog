@@ -180,7 +180,7 @@ function RequirementCard({ requirement, submittingId, removingId, onFile, onRemo
             >
               {submittingId === requirement.id ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" /> Uploading…
+                  <Loader2 size={16} className="animate-spin" /> Uploading...
                 </>
               ) : (
                 <>

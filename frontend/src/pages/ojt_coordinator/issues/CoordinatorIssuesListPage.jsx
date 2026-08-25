@@ -222,7 +222,7 @@ export default function CoordinatorIssuesListPage() {
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search issue, intern or HTE…"
+            placeholder="Search issue, intern or HTE..."
             className="h-11 rounded-xl pl-10 pr-10"
           />
           {search && (
@@ -457,7 +457,7 @@ export default function CoordinatorIssuesListPage() {
             <Button variant="destructive" className="h-11 rounded-xl" disabled={deleting} onClick={handleDelete}>
               {deleting ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" /> Deleting…
+                  <Loader2 size={16} className="animate-spin" /> Deleting...
                 </>
               ) : (
                 <>

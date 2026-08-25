@@ -1129,7 +1129,7 @@ export default function UserFormPage() {
                               <Select disabled={loadingRegions} onValueChange={onRegionChange} value={codes.region || undefined}>
                                 <FormControl>
                                   <SelectTrigger className="data-[size=default]:h-11 w-full rounded-xl">
-                                    <SelectValue placeholder={loadingRegions ? "Loading regions…" : "Select region"} />
+                                    <SelectValue placeholder={loadingRegions ? "Loading regions..." : "Select region"} />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
@@ -1160,7 +1160,7 @@ export default function UserFormPage() {
                               >
                                 <FormControl>
                                   <SelectTrigger className="data-[size=default]:h-11 w-full rounded-xl">
-                                    <SelectValue placeholder={loadingProvinces ? "Loading provinces…" : "Select province"} />
+                                    <SelectValue placeholder={loadingProvinces ? "Loading provinces..." : "Select province"} />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
@@ -1191,7 +1191,7 @@ export default function UserFormPage() {
                               >
                                 <FormControl>
                                   <SelectTrigger className="data-[size=default]:h-11 w-full rounded-xl">
-                                    <SelectValue placeholder={loadingCities ? "Loading cities…" : "Select city / municipality"} />
+                                    <SelectValue placeholder={loadingCities ? "Loading cities..." : "Select city / municipality"} />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
@@ -1222,7 +1222,7 @@ export default function UserFormPage() {
                               >
                                 <FormControl>
                                   <SelectTrigger className="data-[size=default]:h-11 w-full rounded-xl">
-                                    <SelectValue placeholder={loadingBarangays ? "Loading barangays…" : "Select barangay"} />
+                                    <SelectValue placeholder={loadingBarangays ? "Loading barangays..." : "Select barangay"} />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
@@ -1465,7 +1465,7 @@ export default function UserFormPage() {
                       >
                         {submitting ? (
                           <>
-                            <Loader2 size={16} className="animate-spin" /> Saving…
+                            <Loader2 size={16} className="animate-spin" /> Saving...
                           </>
                         ) : (
                           <>

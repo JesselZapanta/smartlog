@@ -260,7 +260,7 @@ export default function ProgramListPage() {
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search name or description…"
+            placeholder="Search name or description..."
             className="h-11 rounded-xl pl-10 pr-10"
           />
           {search && (
@@ -490,7 +490,7 @@ export default function ProgramListPage() {
             <Button variant="destructive" className="h-11 rounded-xl" disabled={deleting} onClick={handleDelete}>
               {deleting ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" /> Deleting…
+                  <Loader2 size={16} className="animate-spin" /> Deleting...
                 </>
               ) : (
                 <>

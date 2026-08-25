@@ -266,7 +266,7 @@ export default function AcademicTermFormDialog({ open, onOpenChange, term, onSav
               >
                 {submitting ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" /> Saving…
+                    <Loader2 size={16} className="animate-spin" /> Saving...
                   </>
                 ) : (
                   <>

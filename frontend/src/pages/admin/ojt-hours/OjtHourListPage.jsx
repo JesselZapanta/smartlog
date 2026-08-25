@@ -217,7 +217,7 @@ export default function OjtHourListPage() {
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search institute…"
+            placeholder="Search institute..."
             className="h-11 rounded-xl pl-10 pr-10"
           />
           {search && (
@@ -396,7 +396,7 @@ export default function OjtHourListPage() {
             <Button variant="destructive" className="h-11 rounded-xl" disabled={deleting} onClick={handleDelete}>
               {deleting ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" /> Deleting…
+                  <Loader2 size={16} className="animate-spin" /> Deleting...
                 </>
               ) : (
                 <>

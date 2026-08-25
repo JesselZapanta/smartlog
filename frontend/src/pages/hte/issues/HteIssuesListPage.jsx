@@ -262,7 +262,7 @@ export default function HteIssuesListPage() {
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search issues or intern…"
+            placeholder="Search issues or intern..."
             className="h-11 rounded-xl pl-10 pr-10"
           />
           {search && (
@@ -516,7 +516,7 @@ export default function HteIssuesListPage() {
             <Button variant="destructive" className="h-11 rounded-xl" disabled={deleting} onClick={handleDelete}>
               {deleting ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" /> Deleting…
+                  <Loader2 size={16} className="animate-spin" /> Deleting...
                 </>
               ) : (
                 <>

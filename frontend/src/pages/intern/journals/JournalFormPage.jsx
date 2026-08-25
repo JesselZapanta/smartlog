@@ -782,7 +782,7 @@ export default function JournalFormPage() {
                 className="h-11 rounded-xl border-red-200 px-4 text-sm font-semibold text-red-600 hover:bg-red-50 sm:px-6"
               >
                 {deleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                {deleting ? "Deleting…" : "Delete entry"}
+                {deleting ? "Deleting..." : "Delete entry"}
               </Button>
             )}
             <Button
@@ -792,7 +792,7 @@ export default function JournalFormPage() {
               className="h-11 rounded-xl bg-green-600 px-4 text-sm font-semibold shadow-sm hover:bg-green-700 active:scale-[0.99] sm:px-6"
             >
               {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-              {saving ? "Saving…" : entry ? "Save changes" : "Submit journal"}
+              {saving ? "Saving..." : entry ? "Save changes" : "Submit journal"}
             </Button>
           </div>
 
@@ -936,7 +936,7 @@ export default function JournalFormPage() {
                   {capturing || !streamReady ? <Loader2 size={30} className="animate-spin" /> : <Camera size={30} />}
                 </button>
                 <p className="text-[11px] font-semibold uppercase tracking-widest text-white/60">
-                  {capturing ? "Capturing…" : streamReady ? "Tap to capture" : "Starting camera…"}
+                  {capturing ? "Capturing..." : streamReady ? "Tap to capture" : "Starting camera..."}
                 </p>
               </>
             )}
