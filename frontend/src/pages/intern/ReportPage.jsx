@@ -34,8 +34,6 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DatePicker } from "@/components/ui/date-picker";
-import OjtHoursCard from "@/components/OjtHoursCard.jsx";
 import InternLayout from "@/layouts/InternLayout.jsx";
 import PageHeader from "@/components/PageHeader.jsx";
 import StatCard from "@/components/StatCard.jsx";
@@ -362,6 +360,12 @@ function DtrView({ data }) {
 
   return (
     <div className="space-y-4 sm:space-y-5">
+      <div className="flex justify-end">
+        <Button onClick={handlePrint} disabled={printing} className="h-9 gap-1.5 rounded-xl bg-green-600 px-4 font-semibold text-white hover:bg-green-700 disabled:opacity-60">
+          {printing ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}
+          {printing ? "Preparing..." : "Print report"}
+        </Button>
+      </div>
       <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         <StatCard label="Total DTR" value={data.dtr.total} icon={<CalendarCheck size={18} />} tone="teal" />
         <StatCard label="Approved" value={data.dtr.by_status?.checked || data.dtr.by_status?.approved || 0} icon={<CheckCircle2 size={18} />} tone="green" />
@@ -384,13 +388,6 @@ function DtrView({ data }) {
       </SectionCard>
 
       <SectionCard title="DTR Logs" subtitle="All your DTR logs — 1 month per page on print">
-        <div className="flex justify-end">
-          <Button onClick={handlePrint} disabled={printing} className="h-9 gap-1.5 rounded-xl bg-green-600 px-4 font-semibold text-white hover:bg-green-700 disabled:opacity-60">
-            {printing ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}
-            {printing ? "Preparing..." : "Print report"}
-          </Button>
-        </div>
-
         {loadingDtr ? (
           <div className="mt-4 flex h-40 items-center justify-center">
             <Loader2 size={24} className="animate-spin text-green-600" />
@@ -464,16 +461,16 @@ function DtrView({ data }) {
             </div>
           </div>
         )}
+      </SectionCard>
 
-        <SectionCard title="OJT Hours" subtitle={`${data.ojt_hours?.earned ?? 0} of ${data.ojt_hours?.required ?? 0} hours completed`}>
-          <div className="relative h-4 overflow-hidden rounded-full bg-gray-100">
-            <div className="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all" style={{ width: `${data.ojt_hours?.progress ?? 0}%` }} />
-          </div>
-          <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-            <span className="font-mono font-semibold text-green-700">{data.ojt_hours?.earned ?? 0}h earned</span>
-            <span className="font-mono">{data.ojt_hours?.remaining ?? 0}h remaining</span>
-          </div>
-        </SectionCard>
+      <SectionCard title="OJT Hours" subtitle={`${data.ojt_hours?.earned ?? 0} of ${data.ojt_hours?.required ?? 0} hours completed`}>
+        <div className="relative h-4 overflow-hidden rounded-full bg-gray-100">
+          <div className="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all" style={{ width: `${data.ojt_hours?.progress ?? 0}%` }} />
+        </div>
+        <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+          <span className="font-mono font-semibold text-green-700">{data.ojt_hours?.earned ?? 0}h earned</span>
+          <span className="font-mono">{data.ojt_hours?.remaining ?? 0}h remaining</span>
+        </div>
       </SectionCard>
 
       {viewPhoto && (
