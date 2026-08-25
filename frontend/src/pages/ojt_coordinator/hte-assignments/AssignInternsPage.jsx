@@ -414,7 +414,7 @@ export default function AssignInternsPage() {
                           disabled={loadingMore}
                         >
                           {loadingMore ? <Loader2 size={15} className="animate-spin" /> : null}
-                          {loadingMore ? "Loading…" : "Load more"}
+                          {loadingMore ? "Loading..." : "Load more"}
                         </Button>
                       )}
                       <Button

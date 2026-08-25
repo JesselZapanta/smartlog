@@ -227,7 +227,7 @@ export default function CoordinatorInternRequirementsPage() {
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search intern name or email…"
+            placeholder="Search intern name or email..."
             className="h-11 rounded-xl pl-10 pr-10"
           />
           {search && (

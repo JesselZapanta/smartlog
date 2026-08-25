@@ -279,7 +279,7 @@ export default function ForgotPasswordPage() {
                   >
                     {sending ? (
                       <>
-                        <Loader2 size={16} className="animate-spin" /> Sending…
+                        <Loader2 size={16} className="animate-spin" /> Sending...
                       </>
                     ) : (
                       <>
@@ -348,7 +348,7 @@ export default function ForgotPasswordPage() {
                   >
                     {verifying ? (
                       <>
-                        <Loader2 size={16} className="animate-spin" /> Verifying…
+                        <Loader2 size={16} className="animate-spin" /> Verifying...
                       </>
                     ) : (
                       <>
@@ -367,7 +367,7 @@ export default function ForgotPasswordPage() {
                     >
                       {sending ? (
                         <>
-                          <Loader2 size={15} className="animate-spin" /> Sending…
+                          <Loader2 size={15} className="animate-spin" /> Sending...
                         </>
                       ) : cooldown > 0 ? (
                         <>Resend code in {cooldown}s</>
@@ -467,7 +467,7 @@ export default function ForgotPasswordPage() {
                   >
                     {resetting ? (
                       <>
-                        <Loader2 size={16} className="animate-spin" /> Resetting…
+                        <Loader2 size={16} className="animate-spin" /> Resetting...
                       </>
                     ) : (
                       <>

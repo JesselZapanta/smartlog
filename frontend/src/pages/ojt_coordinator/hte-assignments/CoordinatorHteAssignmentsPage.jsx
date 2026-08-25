@@ -189,7 +189,7 @@ export default function CoordinatorHteAssignmentsPage() {
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search HTE…"
+            placeholder="Search HTE..."
             className="h-11 rounded-xl pl-10 pr-10"
           />
           {search && (

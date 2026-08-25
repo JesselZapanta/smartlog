@@ -470,7 +470,7 @@ const duration = dtr ? computeDuration(dtr.slots) : null;
                     }
                     className="h-11 w-full rounded-xl border-green-200 text-sm font-semibold text-green-700 hover:bg-green-50 sm:w-auto"
                   >
-                    <ShieldCheck size={16} /> Check journals…
+                    <ShieldCheck size={16} /> Check journals...
                   </Button>
                   <Button
                     type="button"
@@ -481,7 +481,7 @@ const duration = dtr ? computeDuration(dtr.slots) : null;
                     }
                     className="h-11 w-full rounded-xl border-red-200 text-sm font-semibold text-red-600 hover:bg-red-50 sm:w-auto"
                   >
-                    <X size={16} /> Reject journals…
+                    <X size={16} /> Reject journals...
                   </Button>
                 </div>
               </div>
@@ -578,7 +578,7 @@ const duration = dtr ? computeDuration(dtr.slots) : null;
                     onChange={(event) => setRemarks(event.target.value)}
                     rows={3}
                     maxLength={1000}
-                    placeholder="Required — explain why this journal is rejected…"
+                    placeholder="Required — explain why this journal is rejected..."
                     className="mt-1 rounded-xl text-sm leading-relaxed"
                   />
 

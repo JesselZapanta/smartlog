@@ -144,7 +144,7 @@ export default function NotificationBell() {
 
         {loading && items.length === 0 ? (
           <div className="flex items-center justify-center gap-2 py-10 text-sm text-gray-400">
-            <Loader2 size={16} className="animate-spin" /> Loading…
+            <Loader2 size={16} className="animate-spin" /> Loading...
           </div>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-10 text-sm text-gray-400">

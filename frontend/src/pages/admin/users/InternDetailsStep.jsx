@@ -53,7 +53,7 @@ export default function InternDetailsStep({
                   <FormControl>
                     <SelectTrigger className={selectClass}>
                       <SelectValue
-                        placeholder={loadingTerms ? "Loading academic years…" : "Select academic year"}
+                        placeholder={loadingTerms ? "Loading academic years..." : "Select academic year"}
                       />
                     </SelectTrigger>
                   </FormControl>

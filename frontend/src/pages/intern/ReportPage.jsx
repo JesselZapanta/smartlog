@@ -139,7 +139,7 @@ function ReportPrintBar({ onPrint, reportKey, isPrinting, label }) {
         className="h-11 w-full justify-center whitespace-nowrap rounded-xl bg-green-600 px-5 font-semibold text-white hover:bg-green-700 disabled:opacity-60 sm:ml-auto sm:w-auto"
       >
         {isPrinting ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
-        {isPrinting ? "Preparingâ€¦" : label || "Print Report"}
+        {isPrinting ? "Preparing..." : label || "Print Report"}
       </Button>
     </div>
   );
@@ -416,7 +416,7 @@ function DtrView({ data }) {
           </div>
           <Button onClick={handlePrint} disabled={printing} className="h-9 gap-1.5 rounded-xl bg-green-600 px-4 font-semibold text-white hover:bg-green-700 disabled:opacity-60">
             {printing ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}
-            {printing ? "Preparingâ€¦" : "Print report"}
+            {printing ? "Preparing..." : "Print report"}
           </Button>
         </div>
 
@@ -774,8 +774,8 @@ export default function InternReportPage() {
             className="h-11 whitespace-nowrap rounded-xl bg-white font-semibold text-green-700 shadow-sm hover:bg-green-50 disabled:opacity-60"
           >
             {isPrinting ? <Loader2 size={16} className="animate-spin" /> : <Printer size={16} />}
-            <span className="hidden sm:inline">{isPrinting ? "Preparingâ€¦" : "Print Executive Report"}</span>
-            <span className="sm:hidden">{isPrinting ? "Preparingâ€¦" : "Print Report"}</span>
+            <span className="hidden sm:inline">{isPrinting ? "Preparing..." : "Print Executive Report"}</span>
+            <span className="sm:hidden">{isPrinting ? "Preparing..." : "Print Report"}</span>
           </Button>
         }
       />
@@ -783,7 +783,7 @@ export default function InternReportPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Select value={academicYearId} onValueChange={setAcademicYearId} disabled={termsLoading}>
           <SelectTrigger className="h-11 w-full rounded-xl sm:w-[240px]">
-            <SelectValue placeholder={termsLoading ? "Loading yearsâ€¦" : "Academic Year"} />
+            <SelectValue placeholder={termsLoading ? "Loading years..." : "Academic Year"} />
           </SelectTrigger>
           <SelectContent>
             {academicYears.map((term) => (

@@ -489,7 +489,7 @@ export default function CoordinatorHteFormPage() {
               {isEdit ? "Edit HTE" : "Add New HTE"}
             </h1>
             <p className="text-sm text-gray-500">
-              {institute ? `For ${institute.name}` : "Loading your institute…"}
+              {institute ? `For ${institute.name}` : "Loading your institute..."}
             </p>
           </div>
         </div>
@@ -664,7 +664,7 @@ export default function CoordinatorHteFormPage() {
                               >
                                 <FormControl>
                                   <SelectTrigger className={selectClass}>
-                                    <SelectValue placeholder={loadingRegions ? "Loading regions…" : "Select region"} />
+                                    <SelectValue placeholder={loadingRegions ? "Loading regions..." : "Select region"} />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
@@ -694,7 +694,7 @@ export default function CoordinatorHteFormPage() {
                                   <SelectTrigger className={selectClass}>
                                     <SelectValue
                                       placeholder={
-                                        loadingProvinces ? "Loading provinces…" : codes.region ? "Select province" : "Select region first"
+                                        loadingProvinces ? "Loading provinces..." : codes.region ? "Select province" : "Select region first"
                                       }
                                     />
                                   </SelectTrigger>
@@ -726,7 +726,7 @@ export default function CoordinatorHteFormPage() {
                                   <SelectTrigger className={selectClass}>
                                     <SelectValue
                                       placeholder={
-                                        loadingCities ? "Loading cities…" : codes.province ? "Select city / municipality" : "Select province first"
+                                        loadingCities ? "Loading cities..." : codes.province ? "Select city / municipality" : "Select province first"
                                       }
                                     />
                                   </SelectTrigger>
@@ -758,7 +758,7 @@ export default function CoordinatorHteFormPage() {
                                   <SelectTrigger className={selectClass}>
                                     <SelectValue
                                       placeholder={
-                                        loadingBarangays ? "Loading barangays…" : codes.city ? "Select barangay" : "Select city first"
+                                        loadingBarangays ? "Loading barangays..." : codes.city ? "Select barangay" : "Select city first"
                                       }
                                     />
                                   </SelectTrigger>
@@ -812,7 +812,7 @@ export default function CoordinatorHteFormPage() {
                               >
                                 <FormControl>
                                   <SelectTrigger className={selectClass}>
-                                    <SelectValue placeholder={loadingPrograms ? "Loading programs…" : "Select program"} />
+                                    <SelectValue placeholder={loadingPrograms ? "Loading programs..." : "Select program"} />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
@@ -1069,7 +1069,7 @@ export default function CoordinatorHteFormPage() {
                       >
                         {submitting ? (
                           <>
-                            <Loader2 size={16} className="animate-spin" /> Saving…
+                            <Loader2 size={16} className="animate-spin" /> Saving...
                           </>
                         ) : (
                           <>

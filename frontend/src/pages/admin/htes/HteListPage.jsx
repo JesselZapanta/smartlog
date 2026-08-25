@@ -187,7 +187,7 @@ export default function HteListPage() {
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search HTE or contact…"
+            placeholder="Search HTE or contact..."
             className="h-11 rounded-xl pl-10 pr-10"
           />
           {search && (

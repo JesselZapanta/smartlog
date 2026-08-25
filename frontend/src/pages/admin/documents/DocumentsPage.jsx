@@ -307,7 +307,7 @@ export default function DocumentsPage() {
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search intern or requirement…"
+            placeholder="Search intern or requirement..."
             className="h-11 rounded-xl pl-10 pr-10"
           />
           {search && (
@@ -405,7 +405,7 @@ export default function DocumentsPage() {
             {instituteId === "all"
               ? "Select an institute to pick specific requirements — or leave blank to include every approved file."
               : requirementsLoading
-                ? "Loading requirements for this institute…"
+                ? "Loading requirements for this institute..."
                 : requirements.length === 0
                   ? "No active requirements for this institute."
                   : "Check requirements to narrow the bulk download. Leave unchecked to include all approved files from this institute."}
@@ -455,7 +455,7 @@ export default function DocumentsPage() {
             <p className="text-sm font-semibold text-gray-900">
               {loading ? (
                 <span className="inline-flex items-center gap-1.5 text-gray-500">
-                  <Loader2 size={14} className="animate-spin" /> Loading files…
+                  <Loader2 size={14} className="animate-spin" /> Loading files...
                 </span>
               ) : totalFiles === 0 ? (
                 "No approved files match"
@@ -475,7 +475,7 @@ export default function DocumentsPage() {
         >
           {downloading ? (
             <>
-              <Loader2 size={16} className="animate-spin" /> Preparing ZIP…
+              <Loader2 size={16} className="animate-spin" /> Preparing ZIP...
             </>
           ) : (
             <>

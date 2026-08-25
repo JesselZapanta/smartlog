@@ -265,7 +265,7 @@ export default function RequirementFormDialog({ open, onOpenChange, requirement,
                     <FormControl>
                       <div className="relative">
                         <Textarea
-                          placeholder="Additional details about the requirement…"
+                          placeholder="Additional details about the requirement..."
                           className="min-h-32 resize-y rounded-xl pl-10 pt-3"
                           {...field}
                         />
@@ -289,7 +289,7 @@ export default function RequirementFormDialog({ open, onOpenChange, requirement,
               >
                 {submitting ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" /> Saving…
+                    <Loader2 size={16} className="animate-spin" /> Saving...
                   </>
                 ) : (
                   <>

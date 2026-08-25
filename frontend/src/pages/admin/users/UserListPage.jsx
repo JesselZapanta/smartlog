@@ -210,7 +210,7 @@ export default function UserListPage() {
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search name or email…"
+            placeholder="Search name or email..."
             className="h-11 rounded-xl pl-10 pr-10"
           />
           {search && (
@@ -455,7 +455,7 @@ export default function UserListPage() {
             >
               {deleting ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" /> Deleting…
+                  <Loader2 size={16} className="animate-spin" /> Deleting...
                 </>
               ) : (
                 <>

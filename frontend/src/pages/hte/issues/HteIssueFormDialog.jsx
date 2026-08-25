@@ -261,7 +261,7 @@ export default function HteIssueFormDialog({ open, onOpenChange, onSaved, issue,
                 >
                   {submitting ? (
                     <>
-                      <Loader2 size={16} className="animate-spin" /> {isEdit ? "Saving…" : "Reporting…"}
+                      <Loader2 size={16} className="animate-spin" /> {isEdit ? "Saving..." : "Reporting..."}
                     </>
                   ) : (
                     <>

@@ -222,7 +222,7 @@ export default function VerifyEmailPage() {
                 >
                   {submitting ? (
                     <>
-                      <Loader2 size={16} className="animate-spin" /> Verifying…
+                      <Loader2 size={16} className="animate-spin" /> Verifying...
                     </>
                   ) : (
                     <>
@@ -241,7 +241,7 @@ export default function VerifyEmailPage() {
                   >
                     {resending ? (
                       <>
-                        <Loader2 size={15} className="animate-spin" /> Sending…
+                        <Loader2 size={15} className="animate-spin" /> Sending...
                       </>
                     ) : cooldown > 0 ? (
                       <>Resend code in {cooldown}s</>

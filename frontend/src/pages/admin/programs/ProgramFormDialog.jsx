@@ -234,7 +234,7 @@ export default function ProgramFormDialog({ open, onOpenChange, program, institu
                     <FormControl>
                       <div className="relative">
                         <Textarea
-                          placeholder="Additional details about the program…"
+                          placeholder="Additional details about the program..."
                           className="min-h-32 resize-y rounded-xl pl-10 pt-3"
                           {...field}
                         />
@@ -258,7 +258,7 @@ export default function ProgramFormDialog({ open, onOpenChange, program, institu
               >
                 {submitting ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" /> Saving…
+                    <Loader2 size={16} className="animate-spin" /> Saving...
                   </>
                 ) : (
                   <>

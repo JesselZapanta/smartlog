@@ -182,7 +182,7 @@ export default function RegistrationApprovalDetailPage() {
             >
               {acting ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" /> Approving…
+                  <Loader2 size={16} className="animate-spin" /> Approving...
                 </>
               ) : (
                 <>
@@ -235,7 +235,7 @@ export default function RegistrationApprovalDetailPage() {
             >
               {acting ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" /> Rejecting…
+                  <Loader2 size={16} className="animate-spin" /> Rejecting...
                 </>
               ) : (
                 <>

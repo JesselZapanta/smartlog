@@ -227,7 +227,7 @@ export default function EvaluationFormDialog({ open, onOpenChange, criterion, on
               >
                 {submitting ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" /> Saving…
+                    <Loader2 size={16} className="animate-spin" /> Saving...
                   </>
                 ) : (
                   <>
