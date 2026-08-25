@@ -410,33 +410,13 @@ function DtrView({ data }) {
             <Button variant="outline" size="sm" className="h-9 rounded-xl" onClick={() => shiftMonth(1)}>
               Next month â†’
             </Button>
-            <span className="hidden text-xs font-semibold text-gray-500 sm:inline">
-              {from && to ? `${formatDate(from)} - ${formatDate(to)}` : ""}
-            </span>
+
           </div>
           <Button onClick={handlePrint} disabled={printing} className="h-9 gap-1.5 rounded-xl bg-green-600 px-4 font-semibold text-white hover:bg-green-700 disabled:opacity-60">
             {printing ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}
             {printing ? "Preparing..." : "Print report"}
           </Button>
         </div>
-
-        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <div className="flex items-center gap-2">
-            <span className="w-8 shrink-0 text-[10px] font-bold uppercase tracking-wider text-gray-400">From</span>
-            <div className="min-w-0 flex-1">
-              <DatePicker value={from} onChange={setFrom} placeholder="From date" maxDate={to ? new Date(`${to}T00:00:00`) : undefined} />
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-8 shrink-0 text-[10px] font-bold uppercase tracking-wider text-gray-400">To</span>
-            <div className="min-w-0 flex-1">
-              <DatePicker value={to} onChange={setTo} placeholder="To date" minDate={from ? new Date(`${from}T00:00:00`) : undefined} />
-            </div>
-          </div>
-        </div>
-        <p className="mt-2 text-center text-xs font-semibold text-gray-500 sm:hidden">
-          {from && to ? `${formatDate(from)} - ${formatDate(to)}` : ""}
-        </p>
 
         {loadingDtr ? (
           <div className="mt-4 flex h-40 items-center justify-center">
