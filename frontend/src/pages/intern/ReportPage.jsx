@@ -501,40 +501,37 @@ function JournalsView({ data, onPrint, isPrinting }) {
         <StatCard label="OJT Progress" value={`${data.ojt_hours?.progress ?? 0}%`} icon={<TrendingUp size={18} />} tone="green" />
       </section>
 
-      <SectionCard title="Daily Journals" subtitle="Your submitted daily entries">
+      <SectionCard title="Daily Journals" subtitle="Your submitted daily entries — title, journal, status and photos">
         {!(data.journals.recent || []).length ? (
           <p className="py-8 text-center text-sm text-gray-400">No journals yet</p>
         ) : (
-          <>
-            <div className="hidden overflow-hidden rounded-xl border border-gray-200 sm:block">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gray-50/50">
-                      <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Date</TableHead>
-                      <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Title</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.journals.recent.map((r, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="whitespace-nowrap text-sm text-gray-600">{formatDate(r.date)}</TableCell>
-                        <TableCell className="font-medium text-gray-800">{r.title || "Untitled"}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:hidden">
-              {data.journals.recent.map((r, i) => (
-                <div key={i} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-                  <p className="font-heading text-sm font-bold text-gray-900">{r.title || "Untitled"}</p>
-                  <p className="mt-1 text-xs text-gray-500">{formatDate(r.date)}</p>
+          <div className="space-y-3">
+            {data.journals.recent.map((r, i) => (
+              <div key={i} className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+                <div className="flex flex-col gap-1.5 border-b border-gray-100 bg-gray-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="truncate font-heading text-sm font-bold text-gray-900">{r.title || "Untitled"}</p>
+                    <p className="text-xs text-gray-500">{formatDate(r.date)}</p>
+                  </div>
+                  <StatusBadge value={r.status || "pending"} />
                 </div>
-              ))}
-            </div>
-          </>
+                <div className="px-4 py-3">
+                  <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-700">
+                    {r.journal || <span className="italic text-gray-400">No journal content</span>}
+                  </p>
+                  {r.photos && r.photos.length > 0 && (
+                    <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                      {r.photos.map((url, idx) => (
+                        <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="group overflow-hidden rounded-xl ring-1 ring-gray-200">
+                          <img src={url} alt={`Journal photo ${idx + 1}`} className="h-20 w-full object-cover transition group-hover:scale-[1.02] sm:h-24" loading="lazy" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </SectionCard>
     </div>

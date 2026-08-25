@@ -9,6 +9,7 @@ use App\Models\Intern;
 use App\Models\PhotoDtr;
 use App\Models\Requirement;
 use App\Models\RequirementSubmission;
+use App\Support\StorageUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -76,10 +77,12 @@ class ReportController extends Controller
             $recentJournals = collect();
         } else {
             $totalJournals = (clone $journalBase)->count();
-            $recentJournals = (clone $journalBase)->latest('date')->limit(5)->get()->map(fn (DailyJournal $j): array => [
+            $recentJournals = (clone $journalBase)->with('photos')->latest('date')->limit(5)->get()->map(fn (DailyJournal $j): array => [
                 'date' => $j->date,
-                'title' => $j->title ?? mb_strimwidth($j->content ?? '', 0, 40, '…'),
-                'status' => $j->status ?? null,
+                'title' => $j->title,
+                'journal' => $j->journal,
+                'status' => $j->status,
+                'photos' => $j->photos->map(fn ($p) => StorageUrl::url($p->photo))->filter()->values(),
             ])->values();
         }
 

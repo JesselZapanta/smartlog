@@ -239,14 +239,34 @@ export default function InternReportPrintPage() {
                   {miniStatsBox("Total Journals", data.journals.total, "text-emerald-700")}
                   {miniStatsBox("OJT Progress", `${data.ojt_hours?.progress ?? 0}%`, "text-green-700")}
                 </div>
-                <div className="mt-2">
-                  <DataTable
-                    columns={[
-                      { key: "date", label: "Date", bold: true },
-                      { key: "title", label: "Title" },
-                    ]}
-                    rows={(data.journals.recent || []).map((r) => ({ date: formatDate(r.date), title: r.title || "Untitled" }))}
-                  />
+                <div className="mt-3 space-y-3">
+                  {(data.journals.recent || []).length === 0 ? (
+                    <p className="py-6 text-center text-[10px] text-gray-400">No journals yet</p>
+                  ) : (
+                    (data.journals.recent || []).map((r, i) => (
+                      <div key={i} className="break-inside-avoid overflow-hidden rounded border border-gray-200">
+                        <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-2 py-1.5">
+                          <div className="min-w-0">
+                            <p className="truncate text-[10px] font-bold text-gray-900">{r.title || "Untitled"}</p>
+                            <p className="text-[9px] text-gray-500">{formatDate(r.date)}</p>
+                          </div>
+                          <StatusBadge value={r.status || "pending"} />
+                        </div>
+                        <div className="px-2 py-1.5">
+                          <p className="whitespace-pre-wrap break-words text-[10px] leading-relaxed text-gray-700">
+                            {r.journal || <span className="italic text-gray-400">No journal content</span>}
+                          </p>
+                          {r.photos && r.photos.length > 0 && (
+                            <div className="mt-2 grid grid-cols-4 gap-1.5">
+                              {r.photos.map((url, idx) => (
+                                <img key={idx} src={url} alt={`Journal photo ${idx + 1}`} className="h-16 w-full rounded object-cover ring-1 ring-gray-200" />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             )}
