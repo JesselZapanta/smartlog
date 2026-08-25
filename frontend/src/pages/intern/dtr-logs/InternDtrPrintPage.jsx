@@ -52,7 +52,7 @@ function DtrForm({ records, from, to, name }) {
   const sameMonth = fromDate.getMonth() === toDate.getMonth() && fromDate.getFullYear() === toDate.getFullYear();
   const monthLabel = sameMonth
     ? fromDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })
-    : `${fromDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })} – ${toDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+    : `${fromDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${toDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
 
   const days = daysInRange(from, to);
   const byDate = Object.fromEntries(records.map((record) => [record.dtr_date, record]));
@@ -94,7 +94,7 @@ function DtrForm({ records, from, to, name }) {
             <div className="flex items-center gap-1.5">
               <p className="shrink-0 text-[8px] italic">Regular days</p>
               <p className="flex-1 border-b border-black pb-0.5 text-center text-[8px] font-bold not-italic">
-                {fromDate.getDate()} – {toDate.getDate()}
+                {fromDate.getDate()} - {toDate.getDate()}
               </p>
             </div>
             <div className="flex items-center gap-1.5">
@@ -173,19 +173,42 @@ export default function InternDtrPrintPage() {
   const [searchParams] = useSearchParams();
   const from = searchParams.get("from") || "";
   const to = searchParams.get("to") || "";
+  const isAll = !from || !to;
   const { user } = useAuth();
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [months, setMonths] = useState([]);
 
   useEffect(() => {
-    if (!from || !to) {
-      setLoading(false);
-      return;
-    }
     setLoading(true);
+    const url = isAll ? `/intern/photo-dtr` : `/intern/photo-dtr?from=${from}&to=${to}`;
     api
-      .get(`/intern/photo-dtr?from=${from}&to=${to}`)
-      .then((res) => setRecords(res.data.data || []))
+      .get(url)
+      .then((res) => {
+        const data = res.data.data || [];
+        setRecords(data);
+        if (isAll && data.length > 0) {
+          const byMonth = {};
+          data.forEach((r) => {
+            const ym = r.dtr_date.slice(0, 7);
+            if (!byMonth[ym]) byMonth[ym] = [];
+            byMonth[ym].push(r);
+          });
+          const sorted = Object.keys(byMonth).sort();
+          const ranges = sorted.map((ym) => {
+            const [y, m] = ym.split("-").map(Number);
+            const first = `${ym}-01`;
+            const lastDay = new Date(y, m, 0).getDate();
+            const last = `${ym}-${String(lastDay).padStart(2, "0")}`;
+            return { from: first, to: last, ym };
+          });
+          setMonths(ranges);
+        } else if (!isAll) {
+          setMonths([{ from, to, ym: from.slice(0, 7) }]);
+        } else {
+          setMonths([]);
+        }
+      })
       .catch((err) => toast.error("Failed to load DTR", { description: firstErrorMessage(err) }))
       .finally(() => {
         setLoading(false);
@@ -193,15 +216,15 @@ export default function InternDtrPrintPage() {
           window.parent.postMessage({ type: "smartlog-dtr-print-ready" }, "*");
         }
       });
-  }, [from, to]);
+  }, [from, to, isAll]);
 
   return (
     <div className="bg-gray-100">
-      <style>{`@media print { @page { size: Letter landscape; margin: 4mm; } html, body { margin: 0 !important; padding: 0 !important; } .no-print { display: none !important; } body { background: white !important; } }`}</style>
+      <style>{`@media print { @page { size: Letter landscape; margin: 4mm; } html, body { margin: 0 !important; padding: 0 !important; } .no-print { display: none !important; } body { background: white !important; } .page-break { break-after: page; page-break-after: always; } }`}</style>
 
       <div className="no-print sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3">
         <Link
-          to={`/intern/dtr-logs?from=${from}&to=${to}`}
+          to={isAll ? `/intern/dtr-logs` : `/intern/dtr-logs?from=${from}&to=${to}`}
           className="inline-flex min-h-11 items-center gap-2 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-100"
         >
           <ArrowLeft size={16} /> Back to DTR Logs
@@ -219,9 +242,23 @@ export default function InternDtrPrintPage() {
         <div className="flex items-center justify-center py-24">
           <Loader2 size={28} className="animate-spin text-green-600" />
         </div>
-      ) : !from || !to ? (
+      ) : isAll && months.length === 0 ? (
+        <div className="mx-auto max-w-md px-4 py-24 text-center text-sm text-gray-600">No DTR records yet.</div>
+      ) : !isAll && (!from || !to) ? (
         <div className="mx-auto max-w-md px-4 py-24 text-center text-sm text-gray-600">
           Missing date range. Go back and pick a From/To date.
+        </div>
+      ) : isAll ? (
+        <div className="bg-white">
+          {months.map((range, idx) => (
+            <div key={range.ym} className={idx < months.length - 1 ? "page-break" : ""}>
+              <div className="mx-auto grid w-full grid-cols-3 gap-1.5 overflow-hidden bg-white p-1.5 print:overflow-hidden">
+                <DtrForm records={records} from={range.from} to={range.to} name={user?.full_name} />
+                <DtrForm records={records} from={range.from} to={range.to} name={user?.full_name} />
+                <DtrForm records={records} from={range.from} to={range.to} name={user?.full_name} />
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <div className="mx-auto grid w-full grid-cols-3 gap-1.5 overflow-hidden bg-white p-1.5 print:overflow-hidden">

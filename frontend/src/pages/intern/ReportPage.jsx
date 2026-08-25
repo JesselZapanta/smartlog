@@ -296,14 +296,6 @@ function toYMD(date) {
 function DtrView({ data }) {
   const [records, setRecords] = useState([]);
   const [loadingDtr, setLoadingDtr] = useState(true);
-  const [from, setFrom] = useState(() => {
-    const d = new Date();
-    return toYMD(new Date(d.getFullYear(), d.getMonth(), 1));
-  });
-  const [to, setTo] = useState(() => {
-    const d = new Date();
-    return toYMD(new Date(d.getFullYear(), d.getMonth() + 1, 0));
-  });
   const [printing, setPrinting] = useState(false);
   const [viewPhoto, setViewPhoto] = useState(null);
 
@@ -319,27 +311,24 @@ function DtrView({ data }) {
   const load = useCallback(async () => {
     setLoadingDtr(true);
     try {
-      const params = new URLSearchParams();
-      if (from) params.set("from", from);
-      if (to) params.set("to", to);
-      const res = await api.get(`/intern/photo-dtr?${params.toString()}`);
+      const res = await api.get(`/intern/photo-dtr`);
       setRecords(res.data.data || []);
     } catch (err) {
       toast.error("Failed to load DTR logs", { description: firstErrorMessage(err) });
     } finally {
       setLoadingDtr(false);
     }
-  }, [from, to]);
+  }, []);
 
   useEffect(() => {
     load();
   }, [load]);
 
   function handlePrint() {
-    if (!from || !to || printing) return;
+    if (printing) return;
     setPrinting(true);
     const iframe = document.createElement("iframe");
-    iframe.src = `/intern/dtr-logs/print?from=${from}&to=${to}`;
+    iframe.src = `/intern/dtr-logs/print`;
     iframe.style.position = "fixed";
     iframe.style.top = "0";
     iframe.style.left = "0";
@@ -371,13 +360,6 @@ function DtrView({ data }) {
     document.body.appendChild(iframe);
   }
 
-  function shiftMonth(dir) {
-    const base = from ? new Date(`${from}T00:00:00`) : new Date();
-    const next = new Date(base.getFullYear(), base.getMonth() + dir, 1);
-    setFrom(toYMD(new Date(next.getFullYear(), next.getMonth(), 1)));
-    setTo(toYMD(new Date(next.getFullYear(), next.getMonth() + 1, 0)));
-  }
-
   return (
     <div className="space-y-4 sm:space-y-5">
       <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
@@ -401,17 +383,8 @@ function DtrView({ data }) {
         </div>
       </SectionCard>
 
-      <SectionCard title="DTR Logs" subtitle="1 month per page - same as your DTR Logs page">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="h-9 rounded-xl" onClick={() => shiftMonth(-1)}>
-              â† Prev month
-            </Button>
-            <Button variant="outline" size="sm" className="h-9 rounded-xl" onClick={() => shiftMonth(1)}>
-              Next month â†’
-            </Button>
-
-          </div>
+      <SectionCard title="DTR Logs" subtitle="All your DTR logs — 1 month per page on print">
+        <div className="flex justify-end">
           <Button onClick={handlePrint} disabled={printing} className="h-9 gap-1.5 rounded-xl bg-green-600 px-4 font-semibold text-white hover:bg-green-700 disabled:opacity-60">
             {printing ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />}
             {printing ? "Preparing..." : "Print report"}
@@ -425,8 +398,8 @@ function DtrView({ data }) {
         ) : records.length === 0 ? (
           <div className="mt-4 flex flex-col items-center gap-2 rounded-2xl border border-dashed border-gray-200 py-8 text-center">
             <Clock3 size={20} className="text-gray-300" />
-            <p className="text-sm font-semibold text-gray-500">No records in this range</p>
-            <p className="text-xs text-gray-400">Adjust the date filter or clock in on the Photo DTR page.</p>
+            <p className="text-sm font-semibold text-gray-500">No records</p>
+            <p className="text-xs text-gray-400">Clock in on the Photo DTR page.</p>
           </div>
         ) : (
           <div className="mt-4 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ring-1 ring-gray-100">
@@ -469,16 +442,16 @@ function DtrView({ data }) {
                                   <span className="font-mono text-xs font-bold text-gray-700">{formatTime(punched.time)}</span>
                                 </div>
                               ) : (
-                                <span className="text-sm text-gray-300"> - </span>
+                                <span className="text-sm text-gray-300">-</span>
                               )}
                             </TableCell>
                           );
                         })}
                         <TableCell>
-                          <span className="font-mono text-sm font-bold text-gray-700">{worked ? worked.hours : " - "}</span>
+                          <span className="font-mono text-sm font-bold text-gray-700">{worked ? worked.hours : "-"}</span>
                         </TableCell>
                         <TableCell>
-                          <span className="font-mono text-sm font-bold text-gray-700">{worked ? worked.minutes : " - "}</span>
+                          <span className="font-mono text-sm font-bold text-gray-700">{worked ? worked.minutes : "-"}</span>
                         </TableCell>
                         <TableCell>
                           <StatusPill status={record.status} />
@@ -506,7 +479,7 @@ function DtrView({ data }) {
       {viewPhoto && (
         <div className="fixed inset-0 z-[60] flex flex-col bg-black/95" onClick={() => setViewPhoto(null)}>
           <button type="button" onClick={() => setViewPhoto(null)} aria-label="Close photo" className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/30 backdrop-blur">
-            <span className="text-lg">Ã - </span>
+            <span className="text-lg">x</span>
           </button>
           <div className="flex min-h-0 flex-1 items-center justify-center p-4">
             <img src={viewPhoto.url} alt={`${viewPhoto.label} photo`} onClick={(e) => e.stopPropagation()} className="max-h-full max-w-full rounded-2xl object-contain shadow-2xl" />
