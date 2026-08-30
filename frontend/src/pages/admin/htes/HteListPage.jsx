@@ -329,12 +329,12 @@ export default function HteListPage() {
                           <Button
                             asChild
                             variant="ghost"
-                            size="icon"
                             aria-label={`View ${hte.name}`}
-                            className="h-10 w-10 rounded-xl text-gray-400 transition-colors hover:bg-green-50 hover:text-green-700 group-hover:text-gray-500"
+                            className="h-10 rounded-xl px-3 text-xs font-semibold text-green-700 transition-colors hover:bg-green-50"
                           >
-                            <Link to={`/admin/htes/${hte.uuid}`}>
-                              <Eye size={16} />
+                            <Link to={`/admin/htes/${hte.uuid}`} className="inline-flex items-center">
+                              <Eye size={15} className="mr-1.5" />
+                              View
                             </Link>
                           </Button>
                         </div>

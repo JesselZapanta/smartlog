@@ -309,8 +309,8 @@ export default function HteAssignedInternsPage() {
                   </div>
                   <div className="mt-3 flex gap-2 border-t border-gray-50 pt-3">
                     <Button asChild variant="outline" className="h-10 flex-1 rounded-xl border-green-200 text-green-700 hover:bg-green-50">
-                      <Link to={`/hte/interns/${intern.uuid}`}>
-                        <Eye size={15} /> View details
+                      <Link to={`/hte/interns/${intern.uuid}`} className="inline-flex items-center">
+                        <Eye size={15} className="mr-1.5" /> View details
                       </Link>
                     </Button>
                   </div>
@@ -369,12 +369,12 @@ export default function HteAssignedInternsPage() {
                           <Button
                             asChild
                             variant="ghost"
-                            size="icon"
                             aria-label={`View ${intern.full_name}`}
-                            className="h-10 w-10 rounded-xl text-gray-400 transition-colors hover:bg-green-50 hover:text-green-700 group-hover:text-gray-500"
+                            className="h-10 rounded-xl px-3 text-xs font-semibold text-green-700 transition-colors hover:bg-green-50"
                           >
-                            <Link to={`/hte/interns/${intern.uuid}`}>
-                              <Eye size={16} />
+                            <Link to={`/hte/interns/${intern.uuid}`} className="inline-flex items-center">
+                              <Eye size={15} className="mr-1.5" />
+                              View
                             </Link>
                           </Button>
                         </div>
