@@ -179,7 +179,7 @@ export default function HteListPage() {
 
   return (
     <AdminLayout>
-            <PageHeader title="Host Training Est." subtitle="View all HTE accounts and their placement details." icon={Store} />
+            <PageHeader title="Host Training Establishment" subtitle="View all HTE accounts and their placement details." icon={Store} />
 
       <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:p-4">
         <div className="relative w-full sm:max-w-xs">

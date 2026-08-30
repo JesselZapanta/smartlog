@@ -206,7 +206,7 @@ class DashboardController extends Controller
             ],
             'role_breakdown' => [
                 ['role' => 'intern', 'label' => 'Interns', 'count' => User::where('role', 'intern')->count()],
-                ['role' => 'hte', 'label' => 'Host Training Est.', 'count' => User::where('role', 'hte')->count()],
+                ['role' => 'hte', 'label' => 'Host Training Establishment', 'count' => User::where('role', 'hte')->count()],
                 ['role' => 'ojt_coordinator', 'label' => 'Coordinators', 'count' => User::where('role', 'ojt_coordinator')->count()],
                 ['role' => 'ojt_instructor', 'label' => 'Instructors', 'count' => User::where('role', 'ojt_instructor')->count()],
                 ['role' => 'admin', 'label' => 'Admins', 'count' => User::where('role', 'admin')->count()],

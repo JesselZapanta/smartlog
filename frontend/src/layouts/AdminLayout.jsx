@@ -12,7 +12,7 @@ const sidebarNav = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/admin/users", label: "User Management", icon: ShieldCheck },
   { to: "/admin/interns", label: "Interns", icon: Users },
-  { to: "/admin/htes", label: "Host Training Est.", icon: Store },
+  { to: "/admin/htes", label: "Host Training Establishment", icon: Store },
   { to: "/admin/requirements", label: "Requirements", icon: FileText },
   { to: "/admin/documents", label: "Documents", icon: Files },
   { to: "/admin/reports", label: "Report", icon: BarChart3 },
