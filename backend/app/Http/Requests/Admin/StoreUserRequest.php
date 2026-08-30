@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Rules\PhMobile;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -23,7 +24,7 @@ class StoreUserRequest extends FormRequest
             'middlename' => ['nullable', 'string', 'max:255'],
             'lastname' => ['required', 'string', 'max:255'],
             'extension' => ['nullable', 'string', 'max:10'],
-            'contact_number' => ['nullable', 'string', 'max:20'],
+            'contact_number' => ['nullable', 'string', 'max:20', new PhMobile],
             'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
             'role' => ['required', Rule::in(['admin', 'intern', 'ojt_instructor', 'ojt_coordinator', 'hte'])],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],

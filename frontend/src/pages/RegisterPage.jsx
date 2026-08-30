@@ -49,6 +49,7 @@ import AuthAnimatedSide from "@/components/AuthAnimatedSide.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { getInitials } from "@/pages/admin/users/constants.js";
+import { isValidPhMobile, phMobileMessage } from "@/lib/ph.js";
 import InternDetailsStep from "@/pages/admin/users/InternDetailsStep.jsx";
 import {
   getRegions,
@@ -64,7 +65,7 @@ const accountFields = {
   middlename: z.string(),
   lastname: z.string().min(1, "Last name is required"),
   extension: z.string(),
-  contact_number: z.string(),
+  contact_number: z.string().refine((v) => !v || isValidPhMobile(v), { message: phMobileMessage }),
   profile_picture: z.union([z.string(), z.instanceof(File)]).optional(),
 };
 
@@ -82,10 +83,10 @@ const internFields = {
   place_of_birth: z.string(),
   fathers_name: z.string(),
   fathers_occupation: z.string(),
-  fathers_contact: z.string(),
+  fathers_contact: z.string().refine((v) => !v || isValidPhMobile(v), { message: phMobileMessage }),
   mothers_name: z.string(),
   mothers_occupation: z.string(),
-  mothers_contact: z.string(),
+  mothers_contact: z.string().refine((v) => !v || isValidPhMobile(v), { message: phMobileMessage }),
   parents_guardian_address: z.string(),
   practicum_instructor: z.string(),
   cor: z.union([z.string(), z.instanceof(File)]),

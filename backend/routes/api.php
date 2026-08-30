@@ -73,6 +73,7 @@ Route::middleware('auth:api')->group(function (): void {
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('api.profile');
     Route::put('/profile', [ProfileController::class, 'updateAccount'])->name('api.profile.update');
+    Route::delete('/profile/avatar', [ProfileController::class, 'destroyAvatar'])->name('api.profile.avatar.destroy');
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('api.profile.password.update');
     Route::put('/profile/location', [ProfileController::class, 'updateLocation'])->name('api.profile.location.update');
     Route::put('/profile/intern', [ProfileController::class, 'updateIntern'])
