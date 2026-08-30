@@ -149,6 +149,22 @@ class ProfileController extends Controller
         ]);
     }
 
+    public function destroyAvatar(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user->profile_picture) {
+            Storage::disk('public')->delete($user->profile_picture);
+            $user->update(['profile_picture' => null]);
+        }
+
+        return response()->json([
+            'data' => [
+                'user' => new UserResource($user->refresh()),
+            ],
+        ]);
+    }
+
     /**
      * Change the authenticated user's password after confirming the current one.
      */

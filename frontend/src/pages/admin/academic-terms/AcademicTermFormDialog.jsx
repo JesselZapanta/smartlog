@@ -17,7 +17,6 @@ import { firstErrorMessage } from "@/lib/errors";
 import { statusOptions } from "@/pages/admin/academic-terms/constants.js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
   DialogContent,
@@ -225,7 +224,7 @@ export default function AcademicTermFormDialog({ open, onOpenChange, term, onSav
                         Start date *
                       </FormLabel>
                       <FormControl>
-                        <DatePicker value={field.value} onChange={field.onChange} placeholder="Pick start date" />
+                        <Input type="date" className="h-11 rounded-xl" {...field} />
                       </FormControl>
                       <div className="min-h-[1.25rem]"><FormMessage /></div>
                     </FormItem>
@@ -241,7 +240,7 @@ export default function AcademicTermFormDialog({ open, onOpenChange, term, onSav
                         End date *
                       </FormLabel>
                       <FormControl>
-                        <DatePicker value={field.value} onChange={field.onChange} placeholder="Pick end date" />
+                        <Input type="date" className="h-11 rounded-xl" {...field} />
                       </FormControl>
                       <div className="min-h-[1.25rem]"><FormMessage /></div>
                     </FormItem>

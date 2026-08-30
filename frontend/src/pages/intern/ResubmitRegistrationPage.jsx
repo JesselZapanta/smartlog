@@ -33,6 +33,7 @@ import {
 import InternLayout from "@/layouts/InternLayout.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
+import { isValidPhMobile, phMobileMessage } from "@/lib/ph.js";
 import InternDetailsStep from "@/pages/admin/users/InternDetailsStep.jsx";
 import {
   getRegions,
@@ -51,10 +52,10 @@ const resubmitSchema = z.object({
   place_of_birth: z.string().min(1, "Place of birth is required"),
   fathers_name: z.string().min(1, "Father's name is required"),
   fathers_occupation: z.string().min(1, "Father's occupation is required"),
-  fathers_contact: z.string().min(1, "Father's contact is required"),
+  fathers_contact: z.string().min(1, "Father's contact is required").refine((v) => isValidPhMobile(v), { message: phMobileMessage }),
   mothers_name: z.string().min(1, "Mother's name is required"),
   mothers_occupation: z.string().min(1, "Mother's occupation is required"),
-  mothers_contact: z.string().min(1, "Mother's contact is required"),
+  mothers_contact: z.string().min(1, "Mother's contact is required").refine((v) => isValidPhMobile(v), { message: phMobileMessage }),
   parents_guardian_address: z.string().min(1, "Parents / guardian address is required"),
   practicum_instructor: z.string().min(1, "Practicum instructor is required"),
   cor: z.union([z.string(), z.instanceof(File)]).optional(),

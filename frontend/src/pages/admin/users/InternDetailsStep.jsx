@@ -7,7 +7,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -86,12 +85,7 @@ export default function InternDetailsStep({
             <FormItem>
               <FormLabel className={labelClass}>Date of birth *</FormLabel>
               <FormControl>
-                <DatePicker
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Pick date of birth"
-                  maxDate={new Date()}
-                />
+                <Input type="date" className="h-11 rounded-xl" {...field} />
               </FormControl>
               <div className="min-h-[1.25rem]"><FormMessage /></div>
             </FormItem>

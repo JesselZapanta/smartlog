@@ -62,6 +62,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { isValidPhMobile, phMobileMessage } from "@/lib/ph.js";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import PageLoader from "@/components/PageLoader";
 
@@ -99,7 +100,7 @@ const accountSchema = z.object({
   middlename: z.string(),
   lastname: z.string().min(1, "Last name is required"),
   extension: z.string(),
-  contact_number: z.string(),
+  contact_number: z.string().refine((v) => !v || isValidPhMobile(v), { message: phMobileMessage }),
   email: z.string().min(1, "Email is required").email("Enter a valid email address"),
   profile_picture: z.union([z.string(), z.instanceof(File)]).optional(),
 });
@@ -116,10 +117,10 @@ const internSchema = z.object({
   place_of_birth: z.string().min(1, "Place of birth is required"),
   fathers_name: z.string().min(1, "Father's name is required"),
   fathers_occupation: z.string().min(1, "Father's occupation is required"),
-  fathers_contact: z.string().min(1, "Father's contact is required"),
+  fathers_contact: z.string().min(1, "Father's contact is required").refine((v) => isValidPhMobile(v), { message: phMobileMessage }),
   mothers_name: z.string().min(1, "Mother's name is required"),
   mothers_occupation: z.string().min(1, "Mother's occupation is required"),
-  mothers_contact: z.string().min(1, "Mother's contact is required"),
+  mothers_contact: z.string().min(1, "Mother's contact is required").refine((v) => isValidPhMobile(v), { message: phMobileMessage }),
   parents_guardian_address: z.string().min(1, "Parents / guardian address is required"),
   practicum_instructor: z.string().min(1, "Practicum instructor is required"),
 });
@@ -183,6 +184,7 @@ export default function ProfilePage() {
 
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [savingAccount, setSavingAccount] = useState(false);
+  const [removingAvatar, setRemovingAvatar] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [savingLocation, setSavingLocation] = useState(false);
   const [savingIntern, setSavingIntern] = useState(false);
@@ -404,10 +406,27 @@ export default function ProfilePage() {
     setAvatarPreview(URL.createObjectURL(file));
   }
 
-  function removeAvatar() {
-    if (avatarPreview) URL.revokeObjectURL(avatarPreview);
-    setAvatarPreview(null);
-    accountForm.setValue("profile_picture", "");
+  async function removeAvatar() {
+    if (avatarPreview) {
+      URL.revokeObjectURL(avatarPreview);
+      setAvatarPreview(null);
+      accountForm.setValue("profile_picture", "");
+      return;
+    }
+    if (!profile?.user?.profile_picture) return;
+    setRemovingAvatar(true);
+    try {
+      const res = await api.delete("/profile/avatar");
+      const updatedUser = res.data.data.user;
+      setProfile((p) => ({ ...p, user: updatedUser }));
+      await refreshUser();
+      accountForm.setValue("profile_picture", "");
+      toast.success("Profile photo removed");
+    } catch (err) {
+      toast.error("Failed to remove photo", { description: firstErrorMessage(err) });
+    } finally {
+      setRemovingAvatar(false);
+    }
   }
 
   async function saveAccount() {
@@ -631,8 +650,9 @@ export default function ProfilePage() {
                     aria-label="Remove photo"
                     className="h-7 w-7 shrink-0 rounded-md px-0 text-red-600 hover:bg-red-50"
                     onClick={removeAvatar}
+                    disabled={removingAvatar}
                   >
-                    <Trash2 size={10} />
+                    {removingAvatar ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
                   </Button>
                 )}
                 <input

@@ -6,7 +6,7 @@ import OjtHoursCard from "@/components/OjtHoursCard.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { Badge } from "@/components/ui/badge";
-import { DatePicker } from "@/components/ui/date-picker";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -220,12 +220,7 @@ export default function InternDtrLogsPage() {
                 From
               </label>
               <div className="min-w-0 flex-1">
-                <DatePicker
-                  value={from}
-                  onChange={setFrom}
-                  placeholder="From date"
-                  maxDate={to ? new Date(`${to}T00:00:00`) : undefined}
-                />
+                <Input id="dtr-from" type="date" className="h-11 rounded-xl" value={from} onChange={(e) => setFrom(e.target.value)} max={to || undefined} />
               </div>
             </div>
             <div className="flex min-w-0 items-center gap-2">
@@ -233,12 +228,7 @@ export default function InternDtrLogsPage() {
                 To
               </label>
               <div className="min-w-0 flex-1">
-                <DatePicker
-                  value={to}
-                  onChange={setTo}
-                  placeholder="To date"
-                  minDate={from ? new Date(`${from}T00:00:00`) : undefined}
-                />
+                <Input id="dtr-to" type="date" className="h-11 rounded-xl" value={to} onChange={(e) => setTo(e.target.value)} min={from || undefined} />
               </div>
             </div>
           </div>

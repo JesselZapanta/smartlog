@@ -37,6 +37,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PasswordInput from "@/components/PasswordInput.jsx";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { isValidPhMobile, phMobileMessage } from "@/lib/ph.js";
 import {
   Card,
   CardContent,
@@ -64,7 +65,7 @@ const accountFields = {
   middlename: z.string(),
   lastname: z.string().min(1, "Last name is required"),
   extension: z.string(),
-  contact_number: z.string(),
+  contact_number: z.string().refine((v) => !v || isValidPhMobile(v), { message: phMobileMessage }),
   profile_picture: z.union([z.string(), z.instanceof(File)]).optional(),
 };
 
