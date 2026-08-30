@@ -35,4 +35,24 @@ class Institute extends Model
     {
         return $this->hasOne(OjtHour::class);
     }
+
+    public function htes(): HasMany
+    {
+        return $this->hasMany(Hte::class);
+    }
+
+    public function coordinators(): HasMany
+    {
+        return $this->hasMany(Coordinator::class);
+    }
+
+    public function requirements(): HasMany
+    {
+        return $this->hasMany(Requirement::class);
+    }
+
+    public function evaluationCriteria(): HasMany
+    {
+        return $this->hasMany(EvaluationCriterion::class);
+    }
 }

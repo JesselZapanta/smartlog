@@ -95,6 +95,16 @@ class ProgramController extends Controller
 
     public function destroy(Program $program): JsonResponse
     {
+        if ($program->interns()->exists()
+            || $program->htes()->exists()
+            || $program->coordinators()->exists()
+        ) {
+            return response()->json([
+                'message' => 'Cannot delete program with existing records.',
+                'errors' => ['program' => ['This program cannot be deleted because it still has related interns or HTEs. Reassign them first.']],
+            ], 422);
+        }
+
         $program->delete();
 
         return response()->json([
