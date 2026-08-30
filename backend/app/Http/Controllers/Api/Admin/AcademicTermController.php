@@ -95,6 +95,13 @@ class AcademicTermController extends Controller
 
     public function destroy(AcademicTerm $academicTerm): JsonResponse
     {
+        if ($academicTerm->interns()->exists()) {
+            return response()->json([
+                'message' => 'Cannot delete academic term with existing interns.',
+                'errors' => ['academic_term' => ['This academic term cannot be deleted because interns are still assigned to it. Reassign them first.']],
+            ], 422);
+        }
+
         $academicTerm->delete();
 
         return response()->json([

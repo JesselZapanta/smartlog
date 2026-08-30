@@ -89,6 +89,20 @@ class InstituteController extends Controller
 
     public function destroy(Institute $institute): JsonResponse
     {
+        if ($institute->programs()->exists()
+            || $institute->interns()->exists()
+            || $institute->htes()->exists()
+            || $institute->coordinators()->exists()
+            || $institute->requirements()->exists()
+            || $institute->evaluationCriteria()->exists()
+            || $institute->ojtHour()->exists()
+        ) {
+            return response()->json([
+                'message' => 'Cannot delete institute with existing records.',
+                'errors' => ['institute' => ['This institute cannot be deleted because it still has related programs, interns, HTEs, or requirements. Remove or reassign them first.']],
+            ], 422);
+        }
+
         $institute->delete();
 
         return response()->json([

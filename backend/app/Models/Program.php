@@ -31,4 +31,14 @@ class Program extends Model
     {
         return $this->hasMany(Intern::class);
     }
+
+    public function htes(): HasMany
+    {
+        return $this->hasMany(Hte::class);
+    }
+
+    public function coordinators(): HasMany
+    {
+        return $this->hasMany(Coordinator::class);
+    }
 }
