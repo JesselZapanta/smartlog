@@ -68,7 +68,7 @@ export default function PublicHeader() {
               </Button>
               <Button asChild className="h-11 rounded-xl bg-green-600 px-5 font-semibold text-white hover:bg-green-700">
                 <Link to="/register">
-                  Get Started <ArrowRight size={16} />
+                  Create an account <ArrowRight size={16} />
                 </Link>
               </Button>
             </>
@@ -154,7 +154,7 @@ export default function PublicHeader() {
                     <SheetClose asChild>
                       <Button asChild className="h-12 rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700">
                         <Link to="/register" onClick={() => setOpen(false)} className="inline-flex items-center justify-center gap-1.5">
-                          Get Started <ArrowRight size={14} />
+                          Create an account <ArrowRight size={14} />
                         </Link>
                       </Button>
                     </SheetClose>
