@@ -5,15 +5,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import {
-  GraduationCap,
   Mail,
   Lock,
   Eye,
   EyeOff,
   ArrowRight,
   ShieldCheck,
-  UserRound,
-  Building2,
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -35,12 +32,6 @@ const loginSchema = z.object({
   email: z.string().min(1, "Email is required").email("Enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
-
-const demoAccounts = [
-  { role: "Admin", icon: UserRound, email: "admin@smartlog.test" },
-  { role: "Intern", icon: GraduationCap, email: "intern@smartlog.test" },
-  { role: "HTE", icon: Building2, email: "hte@smartlog.test" },
-];
 
 export default function Login() {
   const navigate = useNavigate();
@@ -75,12 +66,6 @@ export default function Login() {
     } finally {
       setSubmitting(false);
     }
-  }
-
-  function onDemoSignIn(account) {
-    form.setValue("email", account.email, { shouldValidate: true });
-    form.setValue("password", "password", { shouldValidate: true });
-    form.handleSubmit(onSubmit)();
   }
 
   return (
@@ -188,29 +173,6 @@ export default function Login() {
                     </>
                   )}
                 </Button>
-
-                <div className="mt-6 flex items-center gap-3">
-                  <span className="h-px flex-1 bg-gray-200" />
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-gray-400">
-                    Quick demo access
-                  </span>
-                  <span className="h-px flex-1 bg-gray-200" />
-                </div>
-
-                <div className="mt-4 grid grid-cols-3 gap-2">
-                  {demoAccounts.map((account) => (
-                    <button
-                      key={account.role}
-                      type="button"
-                      disabled={submitting}
-                      onClick={() => onDemoSignIn(account)}
-                      className="flex min-h-11 flex-col items-center justify-center gap-1 rounded-xl border border-gray-200 bg-gray-50/60 py-2 text-xs font-semibold text-gray-600 transition-colors hover:border-green-600/30 hover:bg-green-50 hover:text-green-700 disabled:opacity-60"
-                    >
-                      <account.icon size={16} className="text-green-600" />
-                      {account.role}
-                    </button>
-                  ))}
-                </div>
               </form>
             </Form>
 
