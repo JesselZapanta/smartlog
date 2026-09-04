@@ -314,25 +314,38 @@ export default function CoordinatorDashboard() {
               {data.interns_by_program.length === 0 ? (
                 <p className="py-12 text-center text-sm text-gray-400">No programs deployed yet.</p>
               ) : (
-                <div className="w-full" style={{ height: Math.max(200, data.interns_by_program.length * 42) }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data.interns_by_program} layout="vertical" margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-                      <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                      <YAxis
-                        type="category"
-                        dataKey="name"
-                        width={110}
-                        tick={{ fontSize: 11, fill: "#374151", fontWeight: 600 }}
-                        tickLine={false}
-                        axisLine={false}
-                        interval={0}
-                      />
-                      <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(22,163,74,0.06)" }} />
-                      <Bar dataKey="count" name="Interns" fill="#16a34a" radius={[0, 8, 8, 0]} barSize={14} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                (() => {
+                  const chartData = data.interns_by_program.map((p) => {
+                    const short = p.name?.match(/\(([^)]+)\)/)?.[1]?.trim() || p.name;
+                    return { ...p, shortName: short, fullName: p.name };
+                  });
+                  return (
+                    <div className="w-full" style={{ height: Math.max(200, chartData.length * 52) }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartData} layout="vertical" margin={{ top: 4, right: 16, left: 4, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
+                          <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                          <YAxis
+                            type="category"
+                            dataKey="shortName"
+                            width={96}
+                            tick={{ fontSize: 11, fill: "#374151", fontWeight: 700 }}
+                            tickLine={false}
+                            axisLine={false}
+                            interval={0}
+                          />
+                          <Tooltip
+                            contentStyle={tooltipStyle}
+                            cursor={{ fill: "rgba(22,163,74,0.06)" }}
+                            labelFormatter={(label) => chartData.find((d) => d.shortName === label)?.fullName || label}
+                            formatter={(value) => [value, "Interns"]}
+                          />
+                          <Bar dataKey="count" name="Interns" fill="#16a34a" radius={[0, 8, 8, 0]} barSize={14} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  );
+                })()
               )}
             </ChartCard>
           </section>
