@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\AcademicTerm;
+use App\Models\Coordinator;
 use App\Models\Hte;
 use App\Models\Institute;
 use App\Models\Intern;
@@ -48,6 +49,7 @@ test('instructor sees deployed, hours completed and completed interns', function
     $institute = instructorInternInstitute();
     $program = instructorInternProgram($institute);
     $instructor = User::factory()->create(['role' => 'ojt_instructor']);
+    Coordinator::create(['user_id' => $instructor->id, 'institute_id' => $institute->id, 'program_id' => $program->id]);
 
     instructorInternRecord($institute, $program);
     instructorInternRecord($institute, $program, [], ['ojt_status' => 'hours_completed']);
@@ -65,6 +67,7 @@ test('instructor can search and filter deployed interns by academic year', funct
     $institute = instructorInternInstitute();
     $program = instructorInternProgram($institute);
     $instructor = User::factory()->create(['role' => 'ojt_instructor']);
+    Coordinator::create(['user_id' => $instructor->id, 'institute_id' => $institute->id, 'program_id' => $program->id]);
 
     $juan = instructorInternRecord($institute, $program, [
         'firstname' => 'Juan',
@@ -93,6 +96,7 @@ test('instructor can view a deployed intern detail', function () {
     $institute = instructorInternInstitute();
     $program = instructorInternProgram($institute);
     $instructor = User::factory()->create(['role' => 'ojt_instructor']);
+    Coordinator::create(['user_id' => $instructor->id, 'institute_id' => $institute->id, 'program_id' => $program->id]);
 
     $hteUser = User::factory()->create(['role' => 'hte']);
     $hte = Hte::create([
@@ -118,6 +122,7 @@ test('instructor can view an intern who completed their hours', function () {
     $institute = instructorInternInstitute();
     $program = instructorInternProgram($institute);
     $instructor = User::factory()->create(['role' => 'ojt_instructor']);
+    Coordinator::create(['user_id' => $instructor->id, 'institute_id' => $institute->id, 'program_id' => $program->id]);
     $intern = instructorInternRecord($institute, $program, [], ['ojt_status' => 'hours_completed']);
 
     $this->actingAs($instructor, 'api')
@@ -130,6 +135,7 @@ test('instructor can view a completed intern detail', function () {
     $institute = instructorInternInstitute();
     $program = instructorInternProgram($institute);
     $instructor = User::factory()->create(['role' => 'ojt_instructor']);
+    Coordinator::create(['user_id' => $instructor->id, 'institute_id' => $institute->id, 'program_id' => $program->id]);
     $intern = instructorInternRecord($institute, $program, [], ['ojt_status' => 'completed']);
 
     $this->actingAs($instructor, 'api')
@@ -142,6 +148,7 @@ test('instructor cannot view a non-deployed intern', function () {
     $institute = instructorInternInstitute();
     $program = instructorInternProgram($institute);
     $instructor = User::factory()->create(['role' => 'ojt_instructor']);
+    Coordinator::create(['user_id' => $instructor->id, 'institute_id' => $institute->id, 'program_id' => $program->id]);
     $intern = instructorInternRecord($institute, $program, [], ['ojt_status' => 'pending']);
 
     $this->actingAs($instructor, 'api')

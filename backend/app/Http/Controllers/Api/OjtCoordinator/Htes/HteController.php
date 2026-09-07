@@ -249,6 +249,20 @@ class HteController extends Controller
             ->get();
 
         foreach ($interns as $intern) {
+            if ($intern->ojt_status !== 'pending'
+                || $intern->photoDtrs()->exists()
+                || $intern->journals()->exists()
+                || $intern->evaluations()->exists()
+                || $intern->hteEvaluations()->exists()
+            ) {
+                return response()->json([
+                    'message' => 'Cannot unassign a deployed intern with existing records.',
+                    'errors' => ['intern_ids' => ["{$intern->user->full_name} is already deployed and has attendance/journal records and cannot be unassigned."]],
+                ], 422);
+            }
+        }
+
+        foreach ($interns as $intern) {
             $intern->forceFill(['assigned_hte' => null])->save();
         }
 
@@ -293,6 +307,16 @@ class HteController extends Controller
             ->get();
 
         foreach ($interns as $intern) {
+            if ($intern->ojt_status !== 'pending'
+                || $intern->photoDtrs()->exists()
+                || $intern->journals()->exists()
+            ) {
+                return response()->json([
+                    'message' => 'Cannot assign an already deployed intern.',
+                    'errors' => ['intern_ids' => ["{$intern->user->full_name} is already deployed and cannot be assigned again."]],
+                ], 422);
+            }
+
             $intern->forceFill(['assigned_hte' => $hte->id])->save();
 
             UserNotification::notify(

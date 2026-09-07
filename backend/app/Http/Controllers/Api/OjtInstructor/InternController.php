@@ -21,7 +21,24 @@ class InternController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $instituteId = $request->user()->coordinator?->institute_id;
+
+        if (! $instituteId) {
+            return response()->json([
+                'data' => [],
+                'meta' => [
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => 10,
+                    'total' => 0,
+                    'from' => null,
+                    'to' => null,
+                ],
+            ]);
+        }
+
         $query = Intern::with(['user', 'institute', 'program', 'academicYear'])
+            ->where('institute_id', $instituteId)
             ->whereIn('ojt_status', ['ongoing', 'hours_completed', 'completed'])
             ->withCount([
                 'journals',
@@ -78,12 +95,17 @@ class InternController extends Controller
     /**
      * View-only detail for a deployed intern.
      */
-    public function show(User $user): JsonResponse
+    public function show(Request $request, User $user): JsonResponse
     {
+        $instituteId = $request->user()->coordinator?->institute_id;
         $intern = $user->intern;
 
         if (! $intern || ! in_array($intern->ojt_status, ['ongoing', 'hours_completed', 'completed'], true)) {
             abort(404, 'This intern is not deployed.');
+        }
+
+        if ($instituteId && (int) $intern->institute_id !== (int) $instituteId) {
+            abort(404, 'This intern is not in your institute.');
         }
 
         $intern->loadMissing([
@@ -103,10 +125,15 @@ class InternController extends Controller
 
     public function photoDtr(User $user, Request $request): JsonResponse
     {
+        $instituteId = $request->user()->coordinator?->institute_id;
         $intern = $user->intern;
 
         if (! $intern || ! in_array($intern->ojt_status, ['ongoing', 'hours_completed', 'completed'], true)) {
             abort(404, 'This intern is not deployed.');
+        }
+
+        if ($instituteId && (int) $intern->institute_id !== (int) $instituteId) {
+            abort(404, 'This intern is not in your institute.');
         }
 
         $records = PhotoDtr::with(['verifier', 'checker'])
@@ -135,14 +162,19 @@ class InternController extends Controller
         ]);
     }
 
-    public function ojtHours(User $user): JsonResponse
+    public function ojtHours(Request $request, User $user): JsonResponse
     {
+        $instituteId = $request->user()->coordinator?->institute_id;
         $intern = $user->intern;
 
         abort_unless($intern, 404, 'This user has no intern record.');
 
         if (! in_array($intern->ojt_status, ['ongoing', 'hours_completed', 'completed'], true)) {
             abort(404, 'This intern is not deployed.');
+        }
+
+        if ($instituteId && (int) $intern->institute_id !== (int) $instituteId) {
+            abort(404, 'This intern is not in your institute.');
         }
 
         return response()->json([

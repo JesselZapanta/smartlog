@@ -171,7 +171,7 @@ class InternMonitoringController extends Controller
     }
 
     /**
-     * Ensure the intern exists and is currently deployed.
+     * Ensure the intern exists, is currently deployed and belongs to the instructor's institute.
      */
     private function authorizeIntern(User $user): Intern
     {
@@ -179,6 +179,12 @@ class InternMonitoringController extends Controller
 
         if (! $intern || ! in_array($intern->ojt_status, ['ongoing', 'hours_completed', 'completed'], true)) {
             abort(404, 'This intern is not deployed.');
+        }
+
+        $instituteId = auth()->user()?->coordinator?->institute_id;
+
+        if ($instituteId && (int) $intern->institute_id !== (int) $instituteId) {
+            abort(404, 'This intern is not in your institute.');
         }
 
         return $intern;

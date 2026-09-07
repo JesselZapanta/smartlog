@@ -369,6 +369,34 @@ export default function HteInternMonitoringDayPage() {
                 </span>
               </div>
 
+              {dtr && (
+                <div className="mt-4">
+                  <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Time in / Time out photos</p>
+                  <div className="mt-2.5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                    {SLOTS.map((slot) => {
+                      const entry = dtr.slots?.[slot.key];
+                      return (
+                        <div key={slot.key} className="overflow-hidden rounded-xl border border-gray-100 bg-gray-50">
+                          <div className="aspect-square overflow-hidden bg-gray-100">
+                            {entry?.photo_url ? (
+                              <a href={entry.photo_url} target="_blank" rel="noreferrer" aria-label={`View ${slot.label} photo`}>
+                                <img src={entry.photo_url} alt={`${slot.label} photo`} className="h-full w-full object-cover transition-opacity hover:opacity-90" />
+                              </a>
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-gray-400">No photo</div>
+                            )}
+                          </div>
+                          <div className="bg-white px-2.5 py-2">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{slot.label}</p>
+                            <p className="font-mono text-xs font-bold text-gray-800">{formatTime(entry?.time)}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {dtr?.status === "flagged" && dtr.remarks && (
                 <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-red-50 p-3 ring-1 ring-red-100">
                   <Flag size={16} className="mt-0.5 shrink-0 text-red-600" />
