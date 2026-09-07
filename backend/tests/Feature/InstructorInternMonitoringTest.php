@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\AcademicTerm;
+use App\Models\Coordinator;
 use App\Models\DailyJournal;
 use App\Models\Institute;
 use App\Models\Intern;
@@ -74,6 +75,7 @@ test('instructor approve and reject notify the intern', function () {
     $institute = instructorRecordInstitute();
     $program = instructorRecordProgram($institute);
     $instructor = User::factory()->create(['role' => 'ojt_instructor']);
+    Coordinator::create(['user_id' => $instructor->id, 'institute_id' => $institute->id, 'program_id' => $program->id]);
     $intern = instructorRecordIntern($institute, $program);
 
     instructorRecordJournal($intern, '2026-08-15');
@@ -103,6 +105,7 @@ test('instructor intern detail includes required and earned ojt hours', function
     OjtHour::create(['institute_id' => $institute->id, 'hours' => 300]);
     $program = instructorRecordProgram($institute);
     $instructor = User::factory()->create(['role' => 'ojt_instructor']);
+    Coordinator::create(['user_id' => $instructor->id, 'institute_id' => $institute->id, 'program_id' => $program->id]);
     $intern = instructorRecordIntern($institute, $program);
 
     $checked = instructorRecordDtr($intern, '2026-08-15');
@@ -120,6 +123,7 @@ test('instructor can view a deployed interns records for a month', function () {
     $institute = instructorRecordInstitute();
     $program = instructorRecordProgram($institute);
     $instructor = User::factory()->create(['role' => 'ojt_instructor']);
+    Coordinator::create(['user_id' => $instructor->id, 'institute_id' => $institute->id, 'program_id' => $program->id]);
     $intern = instructorRecordIntern($institute, $program);
 
     instructorRecordDtr($intern, '2026-08-15');
@@ -138,6 +142,7 @@ test('instructor can approve a journal and a photo dtr record', function () {
     $institute = instructorRecordInstitute();
     $program = instructorRecordProgram($institute);
     $instructor = User::factory()->create(['role' => 'ojt_instructor']);
+    Coordinator::create(['user_id' => $instructor->id, 'institute_id' => $institute->id, 'program_id' => $program->id]);
     $intern = instructorRecordIntern($institute, $program);
 
     instructorRecordDtr($intern, '2026-08-15');
@@ -167,6 +172,7 @@ test('instructor can reject a record with remarks', function () {
     $institute = instructorRecordInstitute();
     $program = instructorRecordProgram($institute);
     $instructor = User::factory()->create(['role' => 'ojt_instructor']);
+    Coordinator::create(['user_id' => $instructor->id, 'institute_id' => $institute->id, 'program_id' => $program->id]);
     $intern = instructorRecordIntern($institute, $program);
 
     instructorRecordJournal($intern, '2026-08-15');
@@ -188,6 +194,7 @@ test('instructor can reject a record that was already flagged by the hte', funct
     $institute = instructorRecordInstitute();
     $program = instructorRecordProgram($institute);
     $instructor = User::factory()->create(['role' => 'ojt_instructor']);
+    Coordinator::create(['user_id' => $instructor->id, 'institute_id' => $institute->id, 'program_id' => $program->id]);
     $intern = instructorRecordIntern($institute, $program);
 
     $journal = instructorRecordJournal($intern, '2026-08-15');
@@ -210,6 +217,7 @@ test('instructor can view records of an intern who completed their hours', funct
     $institute = instructorRecordInstitute();
     $program = instructorRecordProgram($institute);
     $instructor = User::factory()->create(['role' => 'ojt_instructor']);
+    Coordinator::create(['user_id' => $instructor->id, 'institute_id' => $institute->id, 'program_id' => $program->id]);
     $intern = instructorRecordIntern($institute, $program);
     Intern::where('user_id', $intern->id)->update(['ojt_status' => 'hours_completed']);
 
@@ -222,6 +230,7 @@ test('instructor can view records of a completed intern', function () {
     $institute = instructorRecordInstitute();
     $program = instructorRecordProgram($institute);
     $instructor = User::factory()->create(['role' => 'ojt_instructor']);
+    Coordinator::create(['user_id' => $instructor->id, 'institute_id' => $institute->id, 'program_id' => $program->id]);
     $intern = instructorRecordIntern($institute, $program);
     Intern::where('user_id', $intern->id)->update(['ojt_status' => 'completed']);
 
@@ -234,6 +243,7 @@ test('instructor cannot view records of a non-deployed intern', function () {
     $institute = instructorRecordInstitute();
     $program = instructorRecordProgram($institute);
     $instructor = User::factory()->create(['role' => 'ojt_instructor']);
+    Coordinator::create(['user_id' => $instructor->id, 'institute_id' => $institute->id, 'program_id' => $program->id]);
     $intern = instructorRecordIntern($institute, $program);
     Intern::where('user_id', $intern->id)->update(['ojt_status' => 'pending']);
 
