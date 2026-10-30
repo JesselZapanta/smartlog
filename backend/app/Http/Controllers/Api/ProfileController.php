@@ -35,12 +35,13 @@ class ProfileController extends Controller
     public function show(Request $request): JsonResponse
     {
         $user = $request->user();
+        $intern = $user->activeEnrollment();
 
         return response()->json([
             'data' => [
                 'user' => new UserResource($user),
                 'location' => $user->location ? new LocationResource($user->location) : null,
-                'intern' => $user->intern ? new InternResource($user->intern) : null,
+                'intern' => $intern ? new InternResource($intern) : null,
                 'hte' => $user->hte ? new HteResource($user->hte) : null,
                 'coordinator' => $user->coordinator ? new CoordinatorResource($user->coordinator) : null,
                 'institutes' => Institute::where('is_active', true)
@@ -112,7 +113,7 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
-        $intern = $user->intern;
+        $intern = $user->activeEnrollment();
 
         if (! $intern) {
             abort(404, 'This account has no intern record yet.');

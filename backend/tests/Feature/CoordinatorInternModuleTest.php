@@ -124,7 +124,7 @@ test('coordinator can view an approved intern detail of their institute', functi
         ->assertJsonStructure([
             'data' => [
                 'id', 'uuid', 'full_name', 'email', 'institute', 'program', 'academic_year',
-                'practicum_instructor', 'cor', 'date_of_birth', 'place_of_birth',
+                'practicum_instructor', 'date_of_birth', 'place_of_birth',
                 'fathers_name', 'fathers_occupation', 'fathers_contact', 'mothers_name',
                 'mothers_occupation', 'mothers_contact', 'parents_guardian_address', 'location',
                 'status', 'rejection_reason', 'reviewed_by', 'reviewed_at', 'created_at',

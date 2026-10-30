@@ -27,7 +27,7 @@ class DailyJournalController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        $intern = $user->intern;
+        $intern = $user->activeEnrollment();
 
         if (! $intern || $intern->status !== 'approved') {
             return response()->json([
@@ -83,7 +83,7 @@ class DailyJournalController extends Controller
 
         $this->authorizeIntern($request, 'writing your daily journal.');
 
-        $hasDtr = PhotoDtr::where('intern_id', $user->intern->id)
+        $hasDtr = PhotoDtr::where('intern_id', $user->activeEnrollment()->id)
             ->whereDate('dtr_date', $request->input('date'))
             ->exists();
 
@@ -93,7 +93,7 @@ class DailyJournalController extends Controller
             ]);
         }
 
-        $exists = DailyJournal::where('intern_id', $user->intern->id)
+        $exists = DailyJournal::where('intern_id', $user->activeEnrollment()->id)
             ->whereDate('date', $request->input('date'))
             ->exists();
 
@@ -104,7 +104,7 @@ class DailyJournalController extends Controller
         }
 
         $journal = DailyJournal::create([
-            'intern_id' => $user->intern->id,
+            'intern_id' => $user->activeEnrollment()->id,
             'date' => $request->input('date'),
             'title' => $request->input('title'),
             'journal' => $request->input('journal'),
@@ -113,7 +113,7 @@ class DailyJournalController extends Controller
 
         $this->storePhotos($journal, $request->file('photos', []));
 
-        $hteUser = $user->intern->assignedHte?->user;
+        $hteUser = $user->activeEnrollment()->assignedHte?->user;
 
         if ($hteUser) {
             UserNotification::notify(
@@ -213,7 +213,7 @@ class DailyJournalController extends Controller
      */
     private function authorizeJournal(Request $request, DailyJournal $journal): void
     {
-        $intern = $request->user()->intern;
+        $intern = $request->user()->activeEnrollment();
 
         if (! $intern || $journal->intern_id !== $intern->id) {
             abort(403, 'You can only manage your own journal entries.');
@@ -225,7 +225,7 @@ class DailyJournalController extends Controller
      */
     private function authorizeIntern(Request $request, string $action): void
     {
-        $intern = $request->user()->intern;
+        $intern = $request->user()->activeEnrollment();
 
         if (! $intern) {
             abort(403, 'Your account is not linked to an intern profile.');

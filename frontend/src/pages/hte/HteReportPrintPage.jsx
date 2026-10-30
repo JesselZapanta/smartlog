@@ -12,6 +12,7 @@ const REPORT_TITLES = {
   interns: "Assigned Interns Report",
   monitoring: "Intern Monitoring Report",
   evaluations: "Evaluate Interns Report",
+  issues: "Issues & Concerns Report",
 };
 
 function StatusBadge({ value }) {
@@ -199,8 +200,9 @@ export default function HteReportPrintPage() {
                       { key: "name", label: "Student", bold: true },
                       { key: "program", label: "Program" },
                       { key: "status", label: "Status" },
+                      { key: "ojt", label: "OJT Status" },
                     ]}
-                    rows={(data.interns.recent || []).map((r) => ({ name: r.name, program: r.program, status: r.status }))}
+                    rows={(data.interns.rows || []).map((r) => ({ name: r.name, program: r.program, status: r.status, ojt: r.ojt_status }))}
                   />
                 </div>
               </div>
@@ -215,21 +217,21 @@ export default function HteReportPrintPage() {
                   {miniStatsBox("Evaluations", data.evaluations.total)}
                 </div>
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {Object.entries(data.dtr.by_status).map(([s, c]) => (
+                  {Object.entries(data.dtr.by_status || {}).map(([s, c]) => (
                     <span key={s} className="inline-flex items-center gap-1 rounded border border-gray-200 px-2 py-1 text-[9px]">
                       <StatusBadge value={s} /> <span className="font-mono font-bold">{c}</span>
                     </span>
                   ))}
-                  {Object.keys(data.dtr.by_status).length === 0 && <span className="text-[10px] text-gray-400">No DTR data</span>}
+                  {Object.keys(data.dtr.by_status || {}).length === 0 && <span className="text-[10px] text-gray-400">No DTR data</span>}
                 </div>
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   <div>
-                    <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Recent DTR</p>
-                    <DataTable columns={[{ key: "student", label: "Student", bold: true }, { key: "date", label: "Date" }, { key: "status", label: "Status" }]} rows={(data.dtr.recent || []).map((r) => ({ student: r.student, date: formatDate(r.date), status: r.status }))} />
+                    <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">DTR Records</p>
+                    <DataTable columns={[{ key: "student", label: "Student", bold: true }, { key: "date", label: "Date" }, { key: "am_in", label: "AM In" }, { key: "am_out", label: "AM Out" }, { key: "pm_in", label: "PM In" }, { key: "pm_out", label: "PM Out" }, { key: "status", label: "Status" }]} rows={(data.dtr.rows || []).map((r) => ({ student: r.student, date: r.date, am_in: r.am_in || "-", am_out: r.am_out || "-", pm_in: r.pm_in || "-", pm_out: r.pm_out || "-", status: r.status }))} />
                   </div>
                   <div>
                     <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Recent Journals</p>
-                    <DataTable columns={[{ key: "student", label: "Student", bold: true }, { key: "title", label: "Title" }]} rows={(data.journals.recent || []).map((r) => ({ student: r.student, title: r.title }))} />
+                    <DataTable columns={[{ key: "student", label: "Student", bold: true }, { key: "date", label: "Date" }, { key: "title", label: "Title" }, { key: "status", label: "Status" }]} rows={(data.journals.rows || []).map((r) => ({ student: r.student, date: formatDate(r.date), title: r.title, status: r.status }))} />
                   </div>
                 </div>
               </div>
@@ -242,6 +244,68 @@ export default function HteReportPrintPage() {
                   {miniStatsBox("Total Evaluations", data.evaluations.total)}
                   {miniStatsBox("Journals", data.journals.total)}
                   {miniStatsBox("Deployed Interns", data.interns.total, "text-green-700")}
+                </div>
+                <div className="mt-2">
+                  <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Ratings per Intern</p>
+                  <DataTable
+                    columns={[
+                      { key: "student", label: "Student", bold: true },
+                      { key: "rated", label: "Rated", align: "right" },
+                      { key: "average", label: "Average", align: "right" },
+                      { key: "criteria", label: "Criteria", align: "right" },
+                    ]}
+                    rows={(data.evaluations.rows || []).map((r) => ({
+                      student: r.student,
+                      rated: r.rated,
+                      average: r.average ?? "—",
+                      criteria: r.criteria,
+                    }))}
+                  />
+                </div>
+              </div>
+            )}
+
+            {shouldShow(report, "issues") && (
+              <div>
+                <SectionTitle>Issues & Concerns</SectionTitle>
+                <div className="grid grid-cols-3 gap-2">
+                  {miniStatsBox("Total Concerns", data.issues.total, "text-red-700")}
+                  {miniStatsBox("Pending", data.issues.by_status.pending || 0, "text-amber-700")}
+                  {miniStatsBox("Resolved", data.issues.by_status.resolve || 0, "text-green-700")}
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-3">
+                  <DataTable
+                    columns={[{ key: "direction", label: "Concern Direction", bold: true }, { key: "count", label: "Count", align: "right" }]}
+                    rows={[
+                      { direction: "Raised by Intern", count: data.issues.by_type.intern || 0 },
+                      { direction: "Raised by HTE", count: data.issues.by_type.hte || 0 },
+                    ]}
+                  />
+                  <DataTable
+                    columns={[{ key: "status", label: "Concern Status", bold: true }, { key: "count", label: "Count", align: "right" }]}
+                    rows={Object.entries(data.issues.by_status).map(([s, c]) => ({ status: s, count: c }))}
+                  />
+                </div>
+                <div className="mt-2">
+                  <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">All Concerns</p>
+                  <DataTable
+                    columns={[
+                      { key: "student", label: "Student", bold: true },
+                      { key: "direction", label: "Raised By" },
+                      { key: "issues", label: "Issue" },
+                      { key: "solutions", label: "Solution" },
+                      { key: "recommendations", label: "Recommendation" },
+                      { key: "status", label: "Status" },
+                    ]}
+                    rows={(data.issues.rows || []).map((r) => ({
+                      student: r.student,
+                      direction: r.direction,
+                      issues: r.issues || "—",
+                      solutions: r.solutions || "—",
+                      recommendations: r.recommendations || "—",
+                      status: r.status,
+                    }))}
+                  />
                 </div>
               </div>
             )}

@@ -95,11 +95,19 @@ const REPORTS = [
   },
   {
     key: "issues",
-    label: "Issues & Evaluations",
-    desc: "Concerns raised and ratings",
+    label: "Issues & Concerns",
+    desc: "All concerns, intern and HTE",
     icon: AlertTriangle,
     tone: "red",
     statKey: "issues.total",
+  },
+  {
+    key: "evaluations",
+    label: "Evaluations",
+    desc: "Intern and HTE ratings",
+    icon: Star,
+    tone: "amber",
+    statKey: "evaluations.total",
   },
 ];
 
@@ -449,9 +457,9 @@ function PlacementView({ data, onPrint, isPrinting }) {
         </div>
       </SectionCard>
 
-      <SectionCard title="Top HTEs by Assigned Interns" subtitle="Partner establishments ranked by intern placements">
-        {data.htes.top_htes.length === 0 ? (
-          <p className="py-8 text-center text-sm text-gray-400">No HTE assignments yet</p>
+      <SectionCard title="HTEs — Assignment Load" subtitle="Every HTE in your institute with the interns assigned to it">
+        {!(data.htes.detail || []).length ? (
+          <p className="py-6 text-center text-sm text-gray-400">No HTEs configured</p>
         ) : (
           <div className="overflow-hidden rounded-xl border border-gray-200">
             <div className="overflow-x-auto">
@@ -461,37 +469,7 @@ function PlacementView({ data, onPrint, isPrinting }) {
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Host Training Establishment</TableHead>
                     <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Status</TableHead>
                     <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-gray-500">Assigned</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.htes.top_htes.map((row) => (
-                    <TableRow key={row.name}>
-                      <TableCell className="font-medium text-gray-800">{row.name}</TableCell>
-                      <TableCell>
-                        <StatusBadge value={row.status} />
-                      </TableCell>
-                      <TableCell className="text-right font-heading font-bold text-gray-900">{row.total}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        )}
-      </SectionCard>
-
-      <SectionCard title="All HTEs — Assignment Load" subtitle="Every HTE in your institute with current intern load">
-        {!(data.htes.detail || []).length ? (
-          <p className="py-6 text-center text-sm text-gray-400">No HTEs configured</p>
-        ) : (
-          <div className="overflow-hidden rounded-xl border border-gray-200">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-gray-50/50">
-                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">HTE</TableHead>
-                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Status</TableHead>
-                    <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-gray-500">Assigned Interns</TableHead>
+                    <TableHead className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Interns Assigned</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -502,6 +480,9 @@ function PlacementView({ data, onPrint, isPrinting }) {
                         <StatusBadge value={h.status} />
                       </TableCell>
                       <TableCell className="text-right font-heading font-bold text-gray-900">{h.assigned}</TableCell>
+                      <TableCell className="min-w-[220px] text-xs text-gray-600">
+                        {(h.interns || []).length ? h.interns.join(", ") : "—"}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -660,22 +641,58 @@ function DtrView({ data, onPrint, isPrinting }) {
   );
 }
 
-function IssuesView({ data, onPrint, isPrinting }) {
+const CONCERN_DIRECTIONS = [
+  {
+    key: "intern",
+    label: "Raised by Intern",
+    sub: "Intern has an issue with the HTE",
+    tone: "bg-purple-50 text-purple-700 ring-purple-200",
+  },
+  {
+    key: "hte",
+    label: "Raised by HTE",
+    sub: "HTE has an issue with the intern",
+    tone: "bg-blue-50 text-blue-700 ring-blue-200",
+  },
+];
+
+function ConcernsView({ data, onPrint, isPrinting }) {
+  const total = data.issues.total || 0;
+  const pending = data.issues.by_status.pending || 0;
+  const resolved = data.issues.by_status.resolve || 0;
+  const resolutionRate = total > 0 ? Math.round((resolved / total) * 100) : null;
+
   return (
     <div className="space-y-4 sm:space-y-5">
-      <ReportPrintBar onPrint={onPrint} reportKey="issues" isPrinting={isPrinting} label="Print Issues Report" />
+      <ReportPrintBar onPrint={onPrint} reportKey="issues_concerns_annex" isPrinting={isPrinting} label="Print Issues & Concerns (Annex C)" />
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard label="Total Issues" value={data.issues.total} icon={<AlertTriangle size={18} />} tone="red" />
-        <StatCard label="Open" value={data.issues.by_status.pending || 0} icon={<AlertTriangle size={18} />} tone="amber" />
-        <StatCard label="Resolved" value={data.issues.by_status.resolve || 0} icon={<UserCheck size={18} />} tone="green" />
-        <StatCard label="Evaluations" value={data.evaluations.intern_ratings + data.evaluations.hte_ratings} icon={<Star size={18} />} tone="amber" />
+        <StatCard label="Total Concerns" value={total} icon={<AlertTriangle size={18} />} tone="red" />
+        <StatCard label="Pending" value={pending} icon={<AlertTriangle size={18} />} tone="amber" />
+        <StatCard label="Resolved" value={resolved} icon={<UserCheck size={18} />} tone="green" />
+        <StatCard label="Resolution Rate" value={resolutionRate === null ? "—" : `${resolutionRate}%`} icon={<UserCheck size={18} />} tone="blue" />
       </section>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <SectionCard title="Issues by Status" subtitle="Current state of reported concerns">
+        <SectionCard title="Concern Direction" subtitle="Intern and HTE concerns combined">
+          <div className="space-y-2.5">
+            {CONCERN_DIRECTIONS.map((direction) => (
+              <div key={direction.key} className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5">
+                <div className="min-w-0">
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${direction.tone}`}>
+                    {direction.label}
+                  </span>
+                  <p className="mt-1 truncate text-xs text-gray-500">{direction.sub}</p>
+                </div>
+                <span className="font-heading text-sm font-bold text-gray-900">{data.issues.by_type[direction.key] || 0}</span>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Concerns by Status" subtitle="Current state of reported concerns">
           <div className="space-y-2.5">
             {Object.entries(data.issues.by_status).length === 0 ? (
-              <p className="py-6 text-center text-sm text-gray-400">No issues in this academic year</p>
+              <p className="py-6 text-center text-sm text-gray-400">No concerns in this academic year</p>
             ) : (
               Object.entries(data.issues.by_status).map(([status, count]) => (
                 <div key={status} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5">
@@ -686,66 +703,80 @@ function IssuesView({ data, onPrint, isPrinting }) {
             )}
           </div>
         </SectionCard>
-
-        <SectionCard title="Issues by Type" subtitle="Category breakdown">
-          <div className="space-y-2.5">
-            {Object.entries(data.issues.by_type).length === 0 ? (
-              <p className="py-6 text-center text-sm text-gray-400">No categorized issues</p>
-            ) : (
-              Object.entries(data.issues.by_type).map(([type, count]) => (
-                <div key={type} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5">
-                  <span className="text-sm font-medium capitalize text-gray-700">{(type || "N/A").replace(/_/g, " ")}</span>
-                  <span className="font-heading text-sm font-bold text-gray-900">{count}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </SectionCard>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <SectionCard title="Recent Issues" subtitle="Latest 5 concerns">
-          {!(data.issues.recent || []).length ? (
-            <p className="py-6 text-center text-sm text-gray-400">No recent issues</p>
-          ) : (
-            <div className="space-y-2">
-              {data.issues.recent.map((r, i) => (
+      <SectionCard title="Recent Concerns" subtitle="Latest 5 concerns from interns and HTEs">
+        {!(data.issues.recent || []).length ? (
+          <p className="py-6 text-center text-sm text-gray-400">No recent concerns</p>
+        ) : (
+          <div className="space-y-2">
+            {data.issues.recent.map((r, i) => {
+              const direction = CONCERN_DIRECTIONS.find((d) => d.key === r.type) ?? CONCERN_DIRECTIONS[0];
+              return (
                 <div key={i} className="rounded-xl border border-gray-100 px-3 py-2.5">
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate text-sm font-medium text-gray-800">{r.student}</span>
                     <StatusBadge value={r.status} />
                   </div>
-                  <p className="mt-1 line-clamp-1 text-xs text-gray-500">
-                    <span className="font-semibold capitalize">{r.type?.replace(/_/g, " ")}:</span> {r.excerpt}
-                  </p>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                    <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${direction.tone}`}>
+                      {direction.label}
+                    </span>
+                    <span className="truncate text-xs text-gray-400">{r.hte}</span>
+                  </div>
+                  <p className="mt-1 line-clamp-1 text-xs text-gray-500">{r.excerpt}</p>
                 </div>
-              ))}
+              );
+            })}
+          </div>
+        )}
+      </SectionCard>
+    </div>
+  );
+}
+
+function EvaluationsView({ data, onPrint, isPrinting }) {
+  const internRatings = data.evaluations.intern_ratings || 0;
+  const hteRatings = data.evaluations.hte_ratings || 0;
+
+  return (
+    <div className="space-y-4 sm:space-y-5">
+      <ReportPrintBar onPrint={onPrint} reportKey="evaluations" isPrinting={isPrinting} label="Print Evaluations Report" />
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <StatCard label="Total Ratings" value={data.evaluations.total ?? internRatings + hteRatings} icon={<Star size={18} />} tone="amber" />
+        <StatCard label="Intern → HTE" value={internRatings} icon={<Star size={18} />} tone="emerald" />
+        <StatCard label="HTE → Intern" value={hteRatings} icon={<Star size={18} />} tone="blue" />
+      </section>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <SectionCard title="Ratings by Rater" subtitle="Who submitted the evaluation">
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5">
+              <span className="text-sm font-medium text-gray-700">Intern rated HTE</span>
+              <span className="font-heading text-sm font-bold text-gray-900">{internRatings}</span>
             </div>
-          )}
+            <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5">
+              <span className="text-sm font-medium text-gray-700">HTE rated Intern</span>
+              <span className="font-heading text-sm font-bold text-gray-900">{hteRatings}</span>
+            </div>
+          </div>
         </SectionCard>
-        <SectionCard title="Recent Evaluations" subtitle="Latest intern ratings">
+
+        <SectionCard title="Recent Evaluations" subtitle="Latest 5 intern ratings">
           {!(data.evaluations.recent || []).length ? (
             <p className="py-6 text-center text-sm text-gray-400">No evaluations yet</p>
           ) : (
             <div className="space-y-2">
               {data.evaluations.recent.map((r, i) => (
                 <div key={i} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5">
-                  <span className="text-sm font-medium text-gray-800">{r.student}</span>
-                  <span className="text-xs text-gray-500">{r.created_at}</span>
+                  <span className="truncate text-sm font-medium text-gray-800">{r.student}</span>
+                  <span className="shrink-0 text-xs text-gray-500">{r.created_at}</span>
                 </div>
               ))}
             </div>
           )}
         </SectionCard>
       </div>
-
-      <SectionCard title="Evaluations Summary" subtitle="Performance reviews submitted in your institute">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {miniStat("Intern → HTE Ratings", data.evaluations.intern_ratings)}
-          {miniStat("HTE → Intern Ratings", data.evaluations.hte_ratings)}
-          {miniStat("Journals", data.journals.total)}
-        </div>
-      </SectionCard>
     </div>
   );
 }
@@ -893,7 +924,8 @@ const viewMap = {
   student_placement: StudentPlacementView,
   requirements: RequirementsView,
   dtr: DtrView,
-  issues: IssuesView,
+  issues: ConcernsView,
+  evaluations: EvaluationsView,
 };
 
 export default function CoordinatorReportPage() {
@@ -947,6 +979,10 @@ export default function CoordinatorReportPage() {
       if (reportKey === "student_placement") {
         printUrl = `/coordinator/reports/placement/print?${params.toString()}`;
         readyType = "smartlog-placement-print-ready";
+      } else if (reportKey === "issues_concerns_annex") {
+        // Dedicated Annex C print page — not the generic report= switcher.
+        printUrl = `/coordinator/reports/issues-concerns/print?${params.toString()}`;
+        readyType = "smartlog-report-print-ready";
       } else {
         params.set("report", reportKey);
         printUrl = `/coordinator/reports/print?${params.toString()}`;

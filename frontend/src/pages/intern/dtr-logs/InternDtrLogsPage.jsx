@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Clock3, Loader2, Printer, X } from "lucide-react";
 import InternLayout from "@/layouts/InternLayout.jsx";
 import OjtHoursCard from "@/components/OjtHoursCard.jsx";
+import NotDeployedCard from "@/components/NotDeployedCard.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
 import { Badge } from "@/components/ui/badge";
@@ -92,6 +93,9 @@ export default function InternDtrLogsPage() {
   const [records, setRecords] = useState([]);
   const [hoursSummary, setHoursSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Deployment state comes from the same endpoint that serves the logs, so gating the
+  // page costs no extra request.
+  const [deployed, setDeployed] = useState(true);
   const [from, setFrom] = useState(() => {
     const date = new Date();
     return toYMD(new Date(date.getFullYear(), date.getMonth(), 1));
@@ -119,6 +123,7 @@ export default function InternDtrLogsPage() {
       if (to) params.set("to", to);
       const res = await api.get(`/intern/photo-dtr?${params.toString()}`);
       setRecords(res.data.data || []);
+      setDeployed(res.data.deployed !== false);
     } catch (err) {
       toast.error("Failed to load DTR logs", { description: firstErrorMessage(err) });
     } finally {
@@ -185,61 +190,68 @@ export default function InternDtrLogsPage() {
         <p className="mt-1 text-sm text-gray-500">Your daily time record logs with photo punches.</p>
       </div>
 
-      {hoursSummary && (
-        <div className="mt-6">
-          <OjtHoursCard
-            requiredHours={hoursSummary.required_hours}
-            earnedMinutes={hoursSummary.earned_minutes}
-            institute={hoursSummary.institute}
-          />
-        </div>
-      )}
-
-      <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm sm:p-4 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between lg:gap-3">
-        <div className="flex items-center gap-2">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">Attendance</h2>
-          {records.length > 0 && (
-            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-500">
-              {records.length} record{records.length === 1 ? "" : "s"}
-            </span>
-          )}
-        </div>
-        <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:gap-2">
-          <button
-            type="button"
-            onClick={handlePrint}
-            disabled={printing}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-green-200 px-4 text-sm font-semibold text-green-700 transition-colors hover:bg-green-50 disabled:opacity-60 lg:w-auto"
-          >
-            {printing ? <Loader2 size={15} className="animate-spin" /> : <Printer size={15} />}
-            {printing ? "Preparing..." : "Print report"}
-          </button>
-          <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:w-auto lg:gap-2">
-            <div className="flex min-w-0 items-center gap-2">
-              <label htmlFor="dtr-from" className="w-8 shrink-0 text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                From
-              </label>
-              <div className="min-w-0 flex-1">
-                <Input id="dtr-from" type="date" className="h-11 rounded-xl" value={from} onChange={(e) => setFrom(e.target.value)} max={to || undefined} />
-              </div>
-            </div>
-            <div className="flex min-w-0 items-center gap-2">
-              <label htmlFor="dtr-to" className="w-8 shrink-0 text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                To
-              </label>
-              <div className="min-w-0 flex-1">
-                <Input id="dtr-to" type="date" className="h-11 rounded-xl" value={to} onChange={(e) => setTo(e.target.value)} min={from || undefined} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
+      {/* Everything below is meaningless before deployment — there are no logs to filter,
+          print or total — so the guard state replaces the whole body rather than
+          sitting under a filter the intern cannot use. */}
       {loading ? (
         <div className="flex h-64 items-center justify-center">
           <Loader2 size={28} className="animate-spin text-green-600" />
         </div>
-      ) : records.length === 0 ? (
+      ) : !deployed ? (
+        <NotDeployedCard description="You can start viewing your DTR logs once the coordinator deploys you to your host training establishment." className="mt-6" />
+      ) : (
+        <>
+          {hoursSummary && (
+            <div className="mt-6">
+              <OjtHoursCard
+                requiredHours={hoursSummary.required_hours}
+                earnedMinutes={hoursSummary.earned_minutes}
+                institute={hoursSummary.institute}
+              />
+            </div>
+          )}
+
+          <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm sm:p-4 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between lg:gap-3">
+            <div className="flex items-center gap-2">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">Attendance</h2>
+              {records.length > 0 && (
+                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-500">
+                  {records.length} record{records.length === 1 ? "" : "s"}
+                </span>
+              )}
+            </div>
+            <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:gap-2">
+              <button
+                type="button"
+                onClick={handlePrint}
+                disabled={printing}
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-green-200 px-4 text-sm font-semibold text-green-700 transition-colors hover:bg-green-50 disabled:opacity-60 lg:w-auto"
+              >
+                {printing ? <Loader2 size={15} className="animate-spin" /> : <Printer size={15} />}
+                {printing ? "Preparing..." : "Print report"}
+              </button>
+              <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:flex lg:w-auto lg:gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <label htmlFor="dtr-from" className="w-8 shrink-0 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                    From
+                  </label>
+                  <div className="min-w-0 flex-1">
+                    <Input id="dtr-from" type="date" className="h-11 rounded-xl" value={from} onChange={(e) => setFrom(e.target.value)} max={to || undefined} />
+                  </div>
+                </div>
+                <div className="flex min-w-0 items-center gap-2">
+                  <label htmlFor="dtr-to" className="w-8 shrink-0 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                    To
+                  </label>
+                  <div className="min-w-0 flex-1">
+                    <Input id="dtr-to" type="date" className="h-11 rounded-xl" value={to} onChange={(e) => setTo(e.target.value)} min={from || undefined} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {records.length === 0 ? (
         <div className="mt-3 flex flex-col items-center gap-2 rounded-2xl border border-dashed border-gray-200 py-10 text-center">
           <Clock3 size={20} className="text-gray-300" />
           <p className="text-sm font-semibold text-gray-500">No records in this range</p>
@@ -320,6 +332,8 @@ export default function InternDtrLogsPage() {
             </Table>
           </div>
         </div>
+          )}
+        </>
       )}
 
       {viewPhoto && (

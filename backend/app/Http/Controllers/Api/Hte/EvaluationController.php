@@ -6,10 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Intern\InternDetailResource;
 use App\Http\Resources\Intern\InternListResource;
 use App\Models\EvaluationCriterion;
+use App\Models\Hte;
 use App\Models\Intern;
 use App\Models\InternEvaluation;
+use App\Models\InternHteAssignment;
+use App\Models\TransferRequest;
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Support\PlacementEvaluationScore;
+use App\Support\TransferFlow;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -91,45 +96,62 @@ class EvaluationController extends Controller
             ->groupBy('institute_id')
             ->pluck('total', 'institute_id');
 
-        $answered = InternEvaluation::query()
-            ->where('hte_id', $hte->id)
+        $placements = InternHteAssignment::query()
             ->whereIn('intern_id', $interns->pluck('id'))
-            ->selectRaw('intern_id, count(*) as answered')
-            ->groupBy('intern_id')
-            ->pluck('answered', 'intern_id');
+            ->where('hte_id', $hte->id)
+            ->whereNull('unassigned_at')
+            ->pluck('id', 'intern_id');
+
+        $answered = InternEvaluation::query()
+            ->whereIn('placement_id', $placements->values())
+            ->selectRaw('placement_id, count(*) as answered')
+            ->groupBy('placement_id')
+            ->pluck('answered', 'placement_id');
+
+        $openTransfers = TransferRequest::query()
+            ->whereIn('from_placement_id', $placements->values())
+            ->where('status', '!=', TransferRequest::STATUS_REASSIGNED)
+            ->get(['uuid', 'status', 'from_placement_id'])
+            ->keyBy('from_placement_id');
 
         $weightedRows = InternEvaluation::query()
-            ->where('hte_id', $hte->id)
-            ->whereIn('intern_evaluations.intern_id', $interns->pluck('id'))
+            ->whereIn('intern_evaluations.placement_id', $placements->values())
             ->join('evaluation_criteria', 'intern_evaluations.criterion_id', '=', 'evaluation_criteria.id')
             ->where('evaluation_criteria.type', 'intern')
-            ->selectRaw('intern_evaluations.intern_id, evaluation_criteria.category, SUM(CASE WHEN intern_evaluations.is_na THEN 0 ELSE intern_evaluations.rating END) as sum_rating, COUNT(*) as answered')
-            ->groupBy('intern_evaluations.intern_id', 'evaluation_criteria.category')
+            ->selectRaw('intern_evaluations.placement_id, evaluation_criteria.category, SUM(CASE WHEN intern_evaluations.is_na THEN 0 ELSE intern_evaluations.rating END) as sum_rating, SUM(CASE WHEN intern_evaluations.is_na THEN 0 ELSE 1 END) as rated_count')
+            ->groupBy('intern_evaluations.placement_id', 'evaluation_criteria.category')
             ->get()
-            ->groupBy('intern_id');
+            ->groupBy('placement_id');
 
         $data = InternListResource::collection($interns)->resolve($request);
 
         foreach ($data as $index => $item) {
             $intern = $interns[$index];
             $total = (int) ($totals[$intern->institute_id] ?? 0);
-            $answeredCount = (int) ($answered[$intern->id] ?? 0);
+            $placementId = $placements[$intern->id] ?? null;
+            $answeredCount = $placementId !== null ? (int) ($answered[$placementId] ?? 0) : 0;
 
-            $perCategory = $weightedRows->get($intern->id, collect());
+            $perCategory = $placementId !== null ? $weightedRows->get($placementId, collect()) : collect();
             $avgs = [];
-            foreach (['personal_characteristics', 'work_characteristics', 'job_knowledge'] as $cat) {
-                $row = $perCategory->firstWhere('category', $cat);
-                $avgs[$cat] = $row ? (float) $row->sum_rating / (int) $row->answered : null;
+            foreach (PlacementEvaluationScore::WEIGHTS as $category => $weight) {
+                $row = $perCategory->firstWhere('category', $category);
+                $avgs[$category] = $row
+                    ? PlacementEvaluationScore::average((float) $row->sum_rating, (int) $row->rated_count)
+                    : null;
             }
-            $hasData = $avgs['personal_characteristics'] !== null || $avgs['work_characteristics'] !== null || $avgs['job_knowledge'] !== null;
-            $weighted = $hasData ? round(($avgs['personal_characteristics'] ?? 0) * 0.3 + ($avgs['work_characteristics'] ?? 0) * 0.3 + ($avgs['job_knowledge'] ?? 0) * 0.4, 2) : null;
 
             $data[$index]['evaluation'] = [
                 'total' => $total,
                 'answered' => $answeredCount,
                 'status' => $this->evaluationStatus($total, $answeredCount),
-                'weighted_average' => $weighted,
+                'weighted_average' => PlacementEvaluationScore::weighted($avgs),
             ];
+
+            $transfer = $placementId !== null ? $openTransfers->get($placementId) : null;
+            $data[$index]['transfer'] = $transfer ? [
+                'uuid' => $transfer->uuid,
+                'status' => $transfer->status,
+            ] : null;
         }
 
         return response()->json([
@@ -177,9 +199,14 @@ class EvaluationController extends Controller
             ->orderBy('id')
             ->get();
 
+        $placement = $this->activePlacementFor($intern, $hte);
+
         $responses = InternEvaluation::query()
-            ->where('intern_id', $intern->id)
-            ->where('hte_id', $hte->id)
+            ->when(
+                $placement !== null,
+                fn ($query) => $query->where('placement_id', $placement->id),
+                fn ($query) => $query->where('intern_id', $intern->id)->where('hte_id', $hte->id)->whereNull('placement_id'),
+            )
             ->get()
             ->keyBy('criterion_id');
 
@@ -223,7 +250,17 @@ class EvaluationController extends Controller
             ->pluck('id')
             ->all();
 
-        if (InternEvaluation::where('intern_id', $intern->id)->where('hte_id', $hte->id)->exists()) {
+        $placement = $this->activePlacementFor($intern, $hte);
+
+        $alreadySubmitted = InternEvaluation::query()
+            ->when(
+                $placement !== null,
+                fn ($query) => $query->where('placement_id', $placement->id),
+                fn ($query) => $query->where('intern_id', $intern->id)->where('hte_id', $hte->id),
+            )
+            ->exists();
+
+        if ($alreadySubmitted) {
             throw ValidationException::withMessages([
                 'evaluation' => ['This evaluation has already been submitted and cannot be updated.'],
             ]);
@@ -249,13 +286,16 @@ class EvaluationController extends Controller
 
             InternEvaluation::updateOrCreate(
                 [
+                    'placement_id' => $placement?->id,
+                    'criterion_id' => $criterionId,
                     'intern_id' => $intern->id,
                     'hte_id' => $hte->id,
-                    'criterion_id' => $criterionId,
                 ],
                 ['rating' => $rating, 'is_na' => $isNa]
             );
         }
+
+        TransferFlow::syncForPlacement($placement);
 
         UserNotification::notifyCoordinators(
             $intern->institute_id,
@@ -294,6 +334,18 @@ class EvaluationController extends Controller
     }
 
     /**
+     * The open placement linking the intern to this HTE.
+     */
+    private function activePlacementFor(Intern $intern, Hte $hte): ?InternHteAssignment
+    {
+        return $intern->hteAssignments()
+            ->where('hte_id', $hte->id)
+            ->whereNull('unassigned_at')
+            ->latest('id')
+            ->first();
+    }
+
+    /**
      * Ensure the intern is assigned to the authenticated HTE.
      */
     private function authorizeIntern(Request $request, User $user): Intern
@@ -304,7 +356,7 @@ class EvaluationController extends Controller
             abort(403, 'Your account is not linked to an HTE profile.');
         }
 
-        $intern = $user->intern;
+        $intern = $user->enrollmentFor($request->integer('academic_year_id') ?: null);
 
         if (! $intern) {
             abort(404, 'This user has no intern record.');

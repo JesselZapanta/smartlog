@@ -219,9 +219,11 @@ export default function AdminReportPrintPage() {
                       { key: "name", label: "Student", bold: true },
                       { key: "institute", label: "Institute" },
                       { key: "program", label: "Program" },
+                      { key: "hte", label: "Host Training Establishment" },
                       { key: "status", label: "Status" },
+                      { key: "ojt", label: "OJT Status" },
                     ]}
-                    rows={(data.interns.recent || []).map((r) => ({ name: r.name, institute: r.institute, program: r.program, status: r.status }))}
+                    rows={(data.interns.rows || []).map((r) => ({ name: r.name, institute: r.institute, program: r.program, hte: r.hte, status: r.status, ojt: r.ojt_status }))}
                   />
                 </div>
               </div>
@@ -258,10 +260,12 @@ export default function AdminReportPrintPage() {
                   <DataTable
                     columns={[
                       { key: "name", label: "HTE", bold: true },
+                      { key: "institute", label: "Institute" },
                       { key: "status", label: "Status" },
                       { key: "assigned", label: "Assigned", align: "right" },
+                      { key: "interns", label: "Interns Assigned" },
                     ]}
-                    rows={(data.htes.detail || []).map((h) => ({ name: h.name, status: h.status, assigned: h.assigned }))}
+                    rows={(data.htes.detail || []).map((h) => ({ name: h.name, institute: h.institute || "—", status: h.status, assigned: h.assigned, interns: (h.interns || []).join(", ") || "—" }))}
                   />
                 </div>
               </div>
@@ -274,7 +278,7 @@ export default function AdminReportPrintPage() {
                   {miniStatsBox("Institutes", data.institutes.total)}
                   {miniStatsBox("Programs", data.programs.total)}
                   {miniStatsBox("Academic Years", data.academic_terms.total)}
-                  {miniStatsBox("OJT Configs", (data.ojt_hours || []).length)}
+                  {miniStatsBox("OJT Enrollments", (data.ojt_hours || []).length)}
                 </div>
                 <div className="mt-2">
                   <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Academic Years</p>
@@ -301,11 +305,16 @@ export default function AdminReportPrintPage() {
                 <div className="mt-2">
                   <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">OJT Hours</p>
                   <DataTable
-                    columns={[
-                      { key: "institute", label: "Institute", bold: true },
-                      { key: "hours", label: "Hours", align: "right" },
+columns={[
+                      { key: "student", label: "Intern", bold: true },
+                      { key: "term", label: "Term" },
+                      { key: "hours", label: "Declared Hours", align: "right" },
                     ]}
-                    rows={(data.ojt_hours || []).map((r) => ({ institute: r.institute?.name || "—", hours: r.hours }))}
+                    rows={(data.ojt_hours || []).map((r) => ({
+                      student: r.student || "—",
+                      term: r.academic_year || "—",
+                      hours: r.required_hours != null ? `${r.required_hours} hrs` : "Not declared",
+                    }))}
                   />
                 </div>
               </div>
@@ -339,6 +348,27 @@ export default function AdminReportPrintPage() {
                     rows={(data.requirements.by_requirement || []).map((r) => ({ name: r.name, type: r.type, pending: r.pending, approved: r.approved, total: r.total }))}
                   />
                 </div>
+                <div className="mt-2">
+                  <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Submissions</p>
+                  <DataTable
+                    columns={[
+                      { key: "student", label: "Student", bold: true },
+                      { key: "requirement", label: "Requirement" },
+                      { key: "type", label: "Type" },
+                      { key: "status", label: "Status" },
+                      { key: "submitted_at", label: "Submitted" },
+                      { key: "reviewed_at", label: "Reviewed" },
+                    ]}
+                    rows={(data.requirements.rows || []).map((r) => ({
+                      student: r.student,
+                      requirement: r.requirement,
+                      type: r.type,
+                      status: r.status,
+                      submitted_at: r.submitted_at || "—",
+                      reviewed_at: r.reviewed_at || "—",
+                    }))}
+                  />
+                </div>
               </div>
             )}
 
@@ -351,31 +381,47 @@ export default function AdminReportPrintPage() {
                   {miniStatsBox("Evaluations", data.evaluations.total)}
                 </div>
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {Object.entries(data.dtr.by_status).map(([s, c]) => (
+                  {Object.entries(data.dtr.by_status || {}).map(([s, c]) => (
                     <span key={s} className="inline-flex items-center gap-1 rounded border border-gray-200 px-2 py-1 text-[9px]">
                       <StatusBadge value={s} /> <span className="font-mono font-bold">{c}</span>
                     </span>
                   ))}
-                  {Object.keys(data.dtr.by_status).length === 0 && <span className="text-[10px] text-gray-400">No DTR data</span>}
+                  {Object.keys(data.dtr.by_status || {}).length === 0 && <span className="text-[10px] text-gray-400">No DTR data</span>}
                 </div>
                 <div className="mt-2">
                   <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">OJT Hours per Institute</p>
                   <DataTable
-                    columns={[
-                      { key: "institute", label: "Institute", bold: true },
+columns={[
+                      { key: "student", label: "Intern", bold: true },
+                      { key: "term", label: "Term" },
                       { key: "hours", label: "Required Hours", align: "right" },
                     ]}
-                    rows={(data.ojt_hours || []).map((r) => ({ institute: r.institute?.name || "—", hours: r.hours }))}
+                    rows={(data.ojt_hours || []).map((r) => ({
+                      student: r.student || "—",
+                      term: r.academic_year || "—",
+                      hours: r.required_hours != null ? `${r.required_hours} hrs` : "Not declared",
+                    }))}
                   />
                 </div>
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   <div>
-                    <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Recent DTR</p>
-                    <DataTable columns={[{ key: "student", label: "Student", bold: true }, { key: "date", label: "Date" }, { key: "status", label: "Status" }]} rows={(data.dtr.recent || []).map((r) => ({ student: r.student, date: r.date, status: r.status }))} />
+                    <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">DTR Records</p>
+                    <DataTable
+                      columns={[
+                        { key: "student", label: "Student", bold: true },
+                        { key: "date", label: "Date" },
+                        { key: "am_in", label: "AM In" },
+                        { key: "am_out", label: "AM Out" },
+                        { key: "pm_in", label: "PM In" },
+{ key: "pm_out", label: "PM Out" },
+                        { key: "status", label: "Status" },
+                      ]}
+                      rows={(data.dtr.rows || []).map((r) => ({ student: r.student, date: r.date, am_in: r.am_in || "-", am_out: r.am_out || "-", pm_in: r.pm_in || "-", pm_out: r.pm_out || "-", status: r.status }))}
+                    />
                   </div>
                   <div>
-                    <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Recent Journals</p>
-                    <DataTable columns={[{ key: "student", label: "Student", bold: true }, { key: "title", label: "Title" }]} rows={(data.journals.recent || []).map((r) => ({ student: r.student, title: r.title }))} />
+                    <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Journal Records</p>
+                    <DataTable columns={[{ key: "student", label: "Student", bold: true }, { key: "date", label: "Date" }, { key: "title", label: "Title" }, { key: "status", label: "Status" }]} rows={(data.journals.rows || []).map((r) => ({ student: r.student, date: r.date, title: r.title, status: r.status }))} />
                   </div>
                 </div>
               </div>
@@ -395,6 +441,23 @@ export default function AdminReportPrintPage() {
                     rows={Object.entries(data.users.by_role).map(([role, count]) => ({ role: role.replace(/_/g, " "), count }))}
                   />
                 </div>
+                <div className="mt-2">
+                  <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">User Accounts</p>
+                  <DataTable
+                    columns={[
+                      { key: "name", label: "Name", bold: true },
+                      { key: "email", label: "Email" },
+                      { key: "role", label: "Role" },
+                      { key: "verified", label: "Verified" },
+                    ]}
+                    rows={(data.users.rows || []).map((r) => ({
+                      name: r.name,
+                      email: r.email,
+                      role: String(r.role || "").replace(/_/g, " "),
+                      verified: r.verified ? "Yes" : "No",
+                    }))}
+                  />
+                </div>
               </div>
             )}
 
@@ -403,8 +466,8 @@ export default function AdminReportPrintPage() {
                 <SectionTitle>Issues & Evaluations Report</SectionTitle>
                 <div className="grid grid-cols-4 gap-2">
                   {miniStatsBox("Issues", data.issues.total, "text-red-700")}
-                  {miniStatsBox("Open", data.issues.by_status.open || 0, "text-amber-700")}
-                  {miniStatsBox("Resolved", data.issues.by_status.resolved || 0, "text-green-700")}
+                  {miniStatsBox("Open", data.issues.by_status.pending || 0, "text-amber-700")}
+                  {miniStatsBox("Resolved", data.issues.by_status.resolve || 0, "text-green-700")}
                   {miniStatsBox("Evaluations", data.evaluations.total)}
                 </div>
                 <div className="mt-2 grid grid-cols-2 gap-3">
@@ -420,11 +483,48 @@ export default function AdminReportPrintPage() {
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   <div>
                     <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Recent Issues</p>
-                    <DataTable columns={[{ key: "student", label: "Student", bold: true }, { key: "status", label: "Status" }]} rows={(data.issues.recent || []).map((r) => ({ student: r.student, status: r.status }))} />
+                    <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">All Concerns</p>
+                  <DataTable
+                    columns={[
+                      { key: "student", label: "Student", bold: true },
+                      { key: "hte", label: "HTE" },
+                      { key: "direction", label: "Raised By" },
+                      { key: "issues", label: "Issue" },
+                      { key: "solutions", label: "Solution" },
+                      { key: "recommendations", label: "Recommendation" },
+                      { key: "status", label: "Status" },
+                    ]}
+                    rows={(data.issues.rows || []).map((r) => ({
+                      student: r.student,
+                      hte: r.hte,
+                      direction: r.direction,
+                      issues: r.issues || "—",
+                      solutions: r.solutions || "—",
+                      recommendations: r.recommendations || "—",
+                      status: r.status,
+                    }))}
+                  />
                   </div>
                   <div>
                     <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">Recent Evaluations</p>
-                    <DataTable columns={[{ key: "student", label: "Student", bold: true }, { key: "date", label: "Date" }]} rows={(data.evaluations.recent || []).map((r) => ({ student: r.student, date: r.created_at }))} />
+                    <DataTable
+                    columns={[
+                      { key: "student", label: "Student", bold: true },
+                      { key: "hte", label: "Host Training Establishment" },
+                      { key: "intern_rated", label: "Intern Ratings", align: "right" },
+                      { key: "intern_average", label: "Intern Avg", align: "right" },
+                      { key: "hte_rated", label: "HTE Ratings", align: "right" },
+                      { key: "hte_average", label: "HTE Avg", align: "right" },
+                    ]}
+                    rows={(data.evaluations.rows || []).map((r) => ({
+                      student: r.student,
+                      hte: r.hte,
+                      intern_rated: r.intern_rated,
+                      intern_average: r.intern_average ?? "—",
+                      hte_rated: r.hte_rated,
+                      hte_average: r.hte_average ?? "—",
+                    }))}
+                  />
                   </div>
                 </div>
               </div>

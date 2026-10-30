@@ -94,7 +94,8 @@ export default function OjtHoursCard({
         </>
       ) : (
         <p className="mt-4 rounded-xl bg-amber-50 px-3.5 py-2.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-100">
-          No OJT hour requirement has been set for this institute yet.
+          No OJT hours have been declared for this term. The intern declares them when they
+          apply to enrol for OJT.
         </p>
       )}
     </div>

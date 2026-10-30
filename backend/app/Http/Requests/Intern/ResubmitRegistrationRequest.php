@@ -30,7 +30,6 @@ class ResubmitRegistrationRequest extends FormRequest
             'mothers_contact' => ['required', 'string', 'max:255', new PhMobile],
             'parents_guardian_address' => ['required', 'string', 'max:255'],
             'practicum_instructor' => ['required', 'string', 'max:255'],
-            'cor' => ['nullable', 'file', 'mimes:pdf', 'max:10240'],
             'region' => ['required', 'string', 'max:255'],
             'province' => ['required', 'string', 'max:255'],
             'city_municipality' => ['required', 'string', 'max:255'],

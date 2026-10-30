@@ -3,7 +3,6 @@
 namespace App\Http\Resources\Intern;
 
 use App\Http\Resources\LocationResource;
-use App\Support\StorageUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -30,6 +29,11 @@ class InternDetailResource extends JsonResource
             'academic_year' => $this->academicYear?->description,
             'practicum_instructor' => $this->practicum_instructor,
             'ojt_status' => $this->ojt_status,
+            // Terminal OJT grade for this term. Written only by the OJT
+            // instructor (see InternGradeController), but visible on every role's
+            // intern detail — without it the instructor's grade card has nothing
+            // to read back after it saves.
+            'grade' => $this->grade,
             'start_date' => $this->start_date?->toDateString(),
             'end_date' => $this->end_date?->toDateString(),
             'hte' => $this->assignedHte ? [
@@ -40,7 +44,6 @@ class InternDetailResource extends JsonResource
                 'end_at' => $this->assignedHte->end_at,
                 'status' => $this->assignedHte->status,
             ] : null,
-            'cor' => StorageUrl::url($this->cor_path),
             'date_of_birth' => $this->date_of_birth,
             'place_of_birth' => $this->place_of_birth,
             'fathers_name' => $this->fathers_name,

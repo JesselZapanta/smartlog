@@ -122,7 +122,17 @@ class InternController extends Controller
 
         $required = $intern->requiredHours();
 
-        if ($required === null || $intern->earnedMinutes() < $required * 60) {
+        // No enrollment application for this term means no declared requirement, which
+        // is a different problem from not having worked the hours yet. Saying "you have
+        // not met the required hours" here would send the HTE chasing a shortfall that
+        // does not exist.
+        if ($required === null) {
+            throw ValidationException::withMessages([
+                'hours' => ['This intern has no OJT enrollment for this term, so there are no required hours to complete.'],
+            ]);
+        }
+
+        if ($intern->earnedMinutes() < $required * 60) {
             throw ValidationException::withMessages([
                 'hours' => ['The intern has not yet met the required OJT hours.'],
             ]);
@@ -163,7 +173,7 @@ class InternController extends Controller
             abort(403, 'Your account is not linked to an HTE profile.');
         }
 
-        $intern = $user->intern;
+        $intern = $user->enrollmentFor($request->integer('academic_year_id') ?: null);
 
         if (! $intern) {
             abort(404, 'This user has no intern record.');

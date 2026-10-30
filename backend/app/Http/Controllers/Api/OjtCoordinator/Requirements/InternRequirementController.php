@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api\OjtCoordinator\Requirements;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Intern\RequirementSubmissionResource;
 use App\Models\Intern;
+use App\Models\InternHteAssignment;
 use App\Models\Requirement;
 use App\Models\RequirementSubmission;
+use App\Models\TransferRequest;
 use App\Models\User;
 use App\Models\UserNotification;
 use Illuminate\Database\Eloquent\Builder;
@@ -83,25 +85,82 @@ class InternRequirementController extends Controller
 
         $interns = $query->orderBy($sort, $order)->paginate($perPage)->withQueryString();
 
-        $submissionCounts = RequirementSubmission::whereIn(
-            'user_id',
-            collect($interns->items())->pluck('user_id')
-        )
-            ->whereIn('requirement_id', $preRequirementIds->merge($postRequirementIds))
-            ->get(['user_id', 'requirement_id'])
-            ->groupBy('user_id')
-            ->map(function ($rows) use ($preRequirementIds, $postRequirementIds): array {
-                return [
-                    'pre' => $rows->filter(fn ($row): bool => $preRequirementIds->contains($row->requirement_id))->count(),
-                    'post' => $rows->filter(fn ($row): bool => $postRequirementIds->contains($row->requirement_id))->count(),
-                ];
-            });
+        // Counted per placement when one is open: a transferred intern's progress is
+        // their progress at the current host, not a sum with the previous one. The
+        // enrollment-scoped count remains for interns who have no host yet.
+        $pageInternIds = collect($interns->items())->pluck('id');
 
-        $rows = collect($interns->items())->map(function (Intern $intern) use ($submissionCounts, $totalPreRequirements, $totalPostRequirements): array {
+        $placements = InternHteAssignment::query()
+            ->whereIn('intern_id', $pageInternIds)
+            ->whereNull('unassigned_at')
+            ->get()
+            ->keyBy('intern_id');
+
+        $customizedPlacementIds = $placements
+            ->filter(fn (InternHteAssignment $placement): bool => $placement->requirements_customized_at !== null)
+            ->pluck('id');
+
+        $customizedRequirements = $customizedPlacementIds->isEmpty()
+            ? collect()
+            : Requirement::query()
+                ->join('placement_requirements', 'placement_requirements.requirement_id', '=', 'requirements.id')
+                ->whereIn('placement_requirements.intern_hte_assignment_id', $customizedPlacementIds)
+                ->where('requirements.is_active', true)
+                ->get(['requirements.*', 'placement_requirements.intern_hte_assignment_id as placement_id'])
+                ->groupBy('placement_id');
+
+        $submissionCounts = RequirementSubmission::whereIn('placement_id', $placements->pluck('id'))
+            ->get(['placement_id', 'requirement_id'])
+            ->groupBy('placement_id');
+
+        // Counted per enrollment row, not per user: a re-enrolled intern appears once per
+        // term, and keying on user_id merged every term's progress into one figure.
+        $enrollmentSubmissionCounts = RequirementSubmission::whereIn('intern_id', $pageInternIds)
+            ->whereIn('requirement_id', $preRequirementIds->merge($postRequirementIds))
+            ->get(['intern_id', 'requirement_id'])
+            ->groupBy('intern_id');
+
+        $rows = collect($interns->items())->map(function (Intern $intern) use (
+            $placements,
+            $customizedRequirements,
+            $submissionCounts,
+            $enrollmentSubmissionCounts,
+            $requirementsByType,
+            $preRequirementIds,
+            $postRequirementIds,
+            $totalPreRequirements,
+            $totalPostRequirements
+        ): array {
             $canSeePostDeployment = in_array($intern->ojt_status, ['hours_completed', 'completed'], true);
-            $counts = $submissionCounts[$intern->user_id] ?? ['pre' => 0, 'post' => 0];
-            $submitted = $counts['pre'] + ($canSeePostDeployment ? $counts['post'] : 0);
-            $total = $totalPreRequirements + ($canSeePostDeployment ? $totalPostRequirements : 0);
+
+            $placement = $placements->get($intern->id);
+
+            if ($placement) {
+                $requirements = $placement->requirements_customized_at !== null
+                    ? ($customizedRequirements->get($placement->id) ?? collect())
+                    : $requirementsByType->flatten();
+
+                $preIds = $requirements->where('type', 'pre_deployment')->pluck('id');
+                $postIds = $requirements->where('type', 'post_deployment')->pluck('id');
+
+                $counts = $submissionCounts->get($placement->id, collect());
+                $submitted = $counts->whereIn('requirement_id', $preIds)->count();
+                $total = $preIds->count();
+
+                if ($canSeePostDeployment) {
+                    $submitted += $counts->whereIn('requirement_id', $postIds)->count();
+                    $total += $postIds->count();
+                }
+            } else {
+                $counts = $enrollmentSubmissionCounts->get($intern->id, collect());
+                $submitted = $counts->filter(fn ($row): bool => $preRequirementIds->contains($row->requirement_id))->count();
+                $total = $totalPreRequirements;
+
+                if ($canSeePostDeployment) {
+                    $submitted += $counts->filter(fn ($row): bool => $postRequirementIds->contains($row->requirement_id))->count();
+                    $total += $totalPostRequirements;
+                }
+            }
 
             return [
                 'id' => $intern->id,
@@ -131,7 +190,9 @@ class InternRequirementController extends Controller
     }
 
     /**
-     * All active requirements of the intern's institute with their submissions.
+     * All active requirements of the intern's institute with their submissions,
+     * plus one entry per placement so a transferred intern's previous hosts
+     * stay reviewable next to the current one.
      */
     public function show(Request $request, User $user): JsonResponse
     {
@@ -140,18 +201,83 @@ class InternRequirementController extends Controller
 
         $canSeePostDeployment = in_array($intern->ojt_status, ['hours_completed', 'completed'], true);
 
-        $requirements = Requirement::where('institute_id', $instituteId)
-            ->where('is_active', true)
-            ->where(function (Builder $query) use ($canSeePostDeployment): void {
-                $query->where('type', 'pre_deployment')
-                    ->when($canSeePostDeployment, fn (Builder $query) => $query->orWhere('type', 'post_deployment'));
-            })
-            ->orderBy('type')
-            ->orderBy('name')
-            ->get();
+        // Newest first so the open placement leads. The open placement carries the
+        // requirement set being reviewed; a released intern falls back to their
+        // latest placement so the coordinator can still see what was submitted
+        // before the release.
+        $placements = $intern->hteAssignments()->with('hte')->orderByDesc('id')->get();
+
+        // Reused so each placement can resolve its requirement set without a fresh query.
+        $placements->each(fn (InternHteAssignment $assignment) => $assignment->setRelation('intern', $intern));
+
+        $placement = $placements->first(fn (InternHteAssignment $assignment): bool => $assignment->isActive())
+            ?? $placements->first();
+
+        $current = $this->requirementPayload($intern, $placement, $instituteId, $canSeePostDeployment);
+
+        return response()->json([
+            'data' => [
+                'intern' => [
+                    'uuid' => $intern->user->uuid,
+                    'full_name' => $intern->user->full_name,
+                    'email' => $intern->user->email,
+                    'profile_picture' => $intern->user->profile_picture,
+                    'program' => $intern->program?->name,
+                    'ojt_status' => $intern->ojt_status,
+                    'start_date' => $intern->start_date?->toDateString(),
+                    'end_date' => $intern->end_date?->toDateString(),
+                    'earned_minutes' => $intern->earnedMinutes(),
+                    'hte' => $intern->assignedHte?->name,
+                ],
+                'submitted' => $current['submitted'],
+                'total' => $current['total'],
+                'requirements' => $current['requirements'],
+                'placements' => $placements
+                    ->map(fn (InternHteAssignment $assignment): array => [
+                        'id' => $assignment->id,
+                        'hte' => $assignment->hte?->name,
+                        'is_current' => $assignment->isActive(),
+                        'assigned_at' => $assignment->assigned_at?->toDateString(),
+                        'unassigned_at' => $assignment->unassigned_at?->toDateString(),
+                        'requirements' => $this->requirementPayload($intern, $assignment, $instituteId, $canSeePostDeployment)['requirements'],
+                    ])
+                    ->values()
+                    ->all(),
+            ],
+        ]);
+    }
+
+    /**
+     * Requirement rows for one placement — or for the enrollment when the intern
+     * has no placement yet — with the placement's own submissions.
+     *
+     * Scoped to the placement being reviewed: a submission belongs to the host it
+     * was made at, so a previous host's file must not surface as if it satisfied
+     * the current one.
+     *
+     * @return array{requirements: array<int, array<string, mixed>>, submitted: int, total: int}
+     */
+    private function requirementPayload(
+        Intern $intern,
+        ?InternHteAssignment $placement,
+        int $instituteId,
+        bool $canSeePostDeployment
+    ): array {
+        $requirements = $placement
+            ? $placement->requirementList()
+            : Requirement::where('institute_id', $instituteId)->where('is_active', true)->get();
+
+        $requirements = $requirements
+            ->filter(fn (Requirement $requirement): bool => $requirement->type === 'pre_deployment' || $canSeePostDeployment)
+            ->sortBy([
+                ['type', 'asc'],
+                ['name', 'asc'],
+            ])
+            ->values();
 
         $submissions = RequirementSubmission::with('reviewer')
-            ->where('user_id', $intern->user_id)
+            ->where('intern_id', $intern->id)
+            ->when($placement !== null, fn ($query) => $query->where('placement_id', $placement->id))
             ->whereIn('requirement_id', $requirements->pluck('id'))
             ->get()
             ->keyBy('requirement_id');
@@ -174,25 +300,11 @@ class InternRequirementController extends Controller
 
         $total = $rows->filter(fn (array $row): bool => $row['type'] === 'pre_deployment')->count();
 
-        return response()->json([
-            'data' => [
-                'intern' => [
-                    'uuid' => $intern->user->uuid,
-                    'full_name' => $intern->user->full_name,
-                    'email' => $intern->user->email,
-                    'profile_picture' => $intern->user->profile_picture,
-                    'program' => $intern->program?->name,
-                    'ojt_status' => $intern->ojt_status,
-                    'start_date' => $intern->start_date?->toDateString(),
-                    'end_date' => $intern->end_date?->toDateString(),
-                    'earned_minutes' => $intern->earnedMinutes(),
-                    'hte' => $intern->assignedHte?->name,
-                ],
-                'submitted' => $submitted,
-                'total' => $total,
-                'requirements' => $rows->values()->all(),
-            ],
-        ]);
+        return [
+            'requirements' => $rows->values()->all(),
+            'submitted' => $submitted,
+            'total' => $total,
+        ];
     }
 
     /**
@@ -214,10 +326,14 @@ class InternRequirementController extends Controller
             ]);
         }
 
-        $requirements = Requirement::where('institute_id', $instituteId)
-            ->where('is_active', true)
-            ->where('type', 'pre_deployment')
-            ->get();
+        $placement = $intern->activePlacement();
+
+        $requirements = $placement
+            ? $placement->requirementList('pre_deployment')
+            : Requirement::where('institute_id', $instituteId)
+                ->where('is_active', true)
+                ->where('type', 'pre_deployment')
+                ->get();
 
         if ($requirements->isEmpty()) {
             throw ValidationException::withMessages([
@@ -225,7 +341,14 @@ class InternRequirementController extends Controller
             ]);
         }
 
-        $approvedCount = RequirementSubmission::where('user_id', $user->id)
+        // Counted against the placement (or the enrollment when the intern has no host
+        // yet): the previous host's approvals do not deploy the intern at the new one.
+        $approvedCount = RequirementSubmission::query()
+            ->when(
+                $placement !== null,
+                fn ($query) => $query->where('placement_id', $placement->id),
+                fn ($query) => $query->where('intern_id', $intern->id),
+            )
             ->whereIn('requirement_id', $requirements->pluck('id'))
             ->where('status', 'approved')
             ->count();
@@ -242,6 +365,12 @@ class InternRequirementController extends Controller
             'ojt_status' => 'ongoing',
             'start_date' => $startDate,
         ])->save();
+
+        // The placement records when the intern actually started at this host, which is
+        // what a redeployment after a transfer stamps against the new host.
+        if ($placement) {
+            $placement->forceFill(['deployed_at' => $startDate])->save();
+        }
 
         $hteName = $intern->assignedHte?->name;
 
@@ -276,9 +405,24 @@ class InternRequirementController extends Controller
             ]);
         }
 
-        $requirements = Requirement::where('institute_id', $instituteId)
-            ->where('is_active', true)
-            ->get();
+        // An intern mid-transfer is between hosts; completing them now would
+        // leave the transfer dangling, so the flow must finish first.
+        $openTransfer = TransferRequest::query()
+            ->where('intern_id', $intern->id)
+            ->where('status', '!=', TransferRequest::STATUS_REASSIGNED)
+            ->exists();
+
+        if ($openTransfer) {
+            throw ValidationException::withMessages([
+                'transfer' => ['This intern has a transfer in progress. Finish the transfer before marking them as completed.'],
+            ]);
+        }
+
+        $placement = $intern->activePlacement();
+
+        $requirements = $placement
+            ? $placement->requirementList()
+            : Requirement::where('institute_id', $instituteId)->where('is_active', true)->get();
 
         if ($requirements->isEmpty()) {
             throw ValidationException::withMessages([
@@ -286,7 +430,14 @@ class InternRequirementController extends Controller
             ]);
         }
 
-        $approvedCount = RequirementSubmission::where('user_id', $user->id)
+        // Likewise scoped to the placement in play, so a previous host's approvals
+        // cannot satisfy the gate at the new one.
+        $approvedCount = RequirementSubmission::query()
+            ->when(
+                $placement !== null,
+                fn ($query) => $query->where('placement_id', $placement->id),
+                fn ($query) => $query->where('intern_id', $intern->id),
+            )
             ->whereIn('requirement_id', $requirements->pluck('id'))
             ->where('status', 'approved')
             ->count();
@@ -320,9 +471,9 @@ class InternRequirementController extends Controller
      */
     public function approve(Request $request, User $user, Requirement $requirement): JsonResponse
     {
-        $this->authorizeIntern($request, $user);
+        $intern = $this->authorizeIntern($request, $user);
 
-        $submission = $this->findSubmission($user, $requirement);
+        $submission = $this->findSubmission($intern, $requirement);
 
         $submission->forceFill([
             'status' => 'approved',
@@ -349,13 +500,13 @@ class InternRequirementController extends Controller
      */
     public function reject(Request $request, User $user, Requirement $requirement): JsonResponse
     {
-        $this->authorizeIntern($request, $user);
+        $intern = $this->authorizeIntern($request, $user);
 
         $data = $request->validate([
             'reason' => ['required', 'string', 'max:1000'],
         ]);
 
-        $submission = $this->findSubmission($user, $requirement);
+        $submission = $this->findSubmission($intern, $requirement);
 
         $submission->forceFill([
             'status' => 'rejected',
@@ -382,10 +533,15 @@ class InternRequirementController extends Controller
      */
     public function approveAll(Request $request, User $user): JsonResponse
     {
-        $this->authorizeIntern($request, $user);
+        $intern = $this->authorizeIntern($request, $user);
+
+        // The open placement only: approving "all" must never reach back into a
+        // previous host's still-pending submissions.
+        $placement = $intern->activePlacement();
 
         $submissions = RequirementSubmission::with('requirement')
-            ->where('user_id', $user->id)
+            ->where('intern_id', $intern->id)
+            ->when($placement !== null, fn ($query) => $query->where('placement_id', $placement->id))
             ->where('status', 'pending')
             ->get();
 
@@ -424,14 +580,18 @@ class InternRequirementController extends Controller
      */
     public function rejectAll(Request $request, User $user): JsonResponse
     {
-        $this->authorizeIntern($request, $user);
+        $intern = $this->authorizeIntern($request, $user);
 
         $data = $request->validate([
             'reason' => ['required', 'string', 'max:1000'],
         ]);
 
+        // The open placement only, for the same reason as approveAll.
+        $placement = $intern->activePlacement();
+
         $submissions = RequirementSubmission::with('requirement')
-            ->where('user_id', $user->id)
+            ->where('intern_id', $intern->id)
+            ->when($placement !== null, fn ($query) => $query->where('placement_id', $placement->id))
             ->where('status', 'pending')
             ->get();
 
@@ -466,11 +626,18 @@ class InternRequirementController extends Controller
     }
 
     /**
-     * Find the intern's submission for the requirement, or fail if missing.
+     * Find the submission for this term's enrollment, or fail if missing.
+     *
+     * Takes the `Intern` rather than the `User`: the submission belongs to one
+     * enrollment, so a re-enrolled intern's earlier term must not be reviewable from
+     * the current one.
      */
-    private function findSubmission(User $user, Requirement $requirement): RequirementSubmission
+    private function findSubmission(Intern $intern, Requirement $requirement): RequirementSubmission
     {
-        $submission = RequirementSubmission::where('user_id', $user->id)
+        $placement = $intern->activePlacement();
+
+        $submission = RequirementSubmission::where('intern_id', $intern->id)
+            ->when($placement !== null, fn ($query) => $query->where('placement_id', $placement->id))
             ->where('requirement_id', $requirement->id)
             ->first();
 
@@ -502,7 +669,7 @@ class InternRequirementController extends Controller
             abort(403, 'Your account is not assigned to an institute yet.');
         }
 
-        $intern = $user->intern;
+        $intern = $user->enrollmentFor($request->integer('academic_year_id') ?: null);
 
         if (! $intern) {
             abort(404, 'This user has no intern record.');

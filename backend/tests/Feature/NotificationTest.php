@@ -6,6 +6,8 @@ use App\Models\Coordinator;
 use App\Models\Institute;
 use App\Models\Intern;
 use App\Models\Location;
+use App\Models\OjtEnrollment;
+use App\Models\OjtEnrollmentDocument;
 use App\Models\Program;
 use App\Models\User;
 use App\Models\UserNotification;
@@ -15,6 +17,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -150,7 +153,6 @@ test('registering does not notify coordinators until the intern verifies their e
         'mothers_contact' => '09170000001',
         'parents_guardian_address' => 'Brgy. Mantic, Tangub City',
         'practicum_instructor' => 'Prof. Santos',
-        'cor' => UploadedFile::fake()->create('cor.pdf', 1024, 'application/pdf'),
         'region' => '10',
         'province' => 'Misamis Occidental',
         'city_municipality' => 'Tangub City',
@@ -201,7 +203,6 @@ test('verifying an already verified email does not notify coordinators again', f
         'mothers_contact' => '09170000001',
         'parents_guardian_address' => 'Brgy. Mantic, Tangub City',
         'practicum_instructor' => 'Prof. Santos',
-        'cor' => UploadedFile::fake()->create('cor.pdf', 1024, 'application/pdf'),
         'region' => '10',
         'province' => 'Misamis Occidental',
         'city_municipality' => 'Tangub City',
@@ -246,7 +247,6 @@ test('registering does not notify coordinators of other institutes', function ()
         'mothers_contact' => '09170000003',
         'parents_guardian_address' => 'Brgy. Mantic, Tangub City',
         'practicum_instructor' => 'Prof. Reyes',
-        'cor' => UploadedFile::fake()->create('cor.pdf', 1024, 'application/pdf'),
         'region' => '10',
         'province' => 'Misamis Occidental',
         'city_municipality' => 'Tangub City',
@@ -393,6 +393,133 @@ test('resubmitting does not notify coordinators of other institutes', function (
         ->assertOk();
 
     expect(UserNotification::where('user_id', $otherCoordinator->id)->count())->toBe(0);
+});
+
+test('submitting an ojt enrolment application notifies the institute coordinators', function () {
+    Storage::fake('public');
+
+    $institute = notificationInstitute();
+    $program = notificationProgram($institute);
+    $coordinator = notificationCoordinator($institute);
+    $intern = notificationIntern($institute, $program);
+    $term = AcademicTerm::create(['code' => '262', 'description' => 'Second Semester AY 2026-2027']);
+
+    $this->actingAs($intern, 'api')
+        ->post('/api/intern/enrollments', [
+            'academic_year_id' => $term->id,
+            'ojt_hours' => 500,
+            'cor' => UploadedFile::fake()->create('cor.pdf', 120, 'application/pdf'),
+            'curriculum' => UploadedFile::fake()->create('curriculum.pdf', 120, 'application/pdf'),
+        ])
+        ->assertCreated();
+
+    $notification = UserNotification::where('user_id', $coordinator->id)->first();
+
+    expect($notification)->not->toBeNull();
+    expect($notification->type)->toBe('ojt_enrollment_submitted');
+    expect($notification->message)->toContain('Second Semester AY 2026-2027');
+    expect($notification->data)->toMatchArray([
+        'uuid' => $intern->uuid,
+        'academic_year_id' => $term->id,
+    ]);
+    expect($notification->data['ojt_enrollment_id'])->not->toBeNull();
+});
+
+test('submitting an ojt enrolment does not notify coordinators of other institutes', function () {
+    Storage::fake('public');
+
+    $institute = notificationInstitute();
+    $otherInstitute = Institute::create(['name' => 'Institute of Education']);
+    $program = notificationProgram($institute);
+    $otherCoordinator = notificationCoordinator($otherInstitute);
+    $intern = notificationIntern($institute, $program);
+    $term = AcademicTerm::create(['code' => '262', 'description' => 'Second Semester AY 2026-2027']);
+
+    $this->actingAs($intern, 'api')
+        ->post('/api/intern/enrollments', [
+            'academic_year_id' => $term->id,
+            'ojt_hours' => 500,
+            'cor' => UploadedFile::fake()->create('cor.pdf', 120, 'application/pdf'),
+            'curriculum' => UploadedFile::fake()->create('curriculum.pdf', 120, 'application/pdf'),
+        ])
+        ->assertCreated();
+
+    expect(UserNotification::where('user_id', $otherCoordinator->id)->count())->toBe(0);
+});
+
+test('resubmitting a rejected ojt enrolment notifies the coordinators', function () {
+    Storage::fake('public');
+
+    $institute = notificationInstitute();
+    $program = notificationProgram($institute);
+    $coordinator = notificationCoordinator($institute);
+    $intern = notificationIntern($institute, $program);
+    $term = AcademicTerm::create(['code' => '262', 'description' => 'Second Semester AY 2026-2027']);
+
+    $enrollment = OjtEnrollment::create([
+        'user_id' => $intern->id,
+        'academic_year_id' => $term->id,
+        'institute_id' => $institute->id,
+        'program_id' => $program->id,
+        'ojt_hours' => 500,
+        'status' => 'rejected',
+        'rejection_reason' => 'Wrong curriculum',
+        'reviewed_by' => $coordinator->id,
+        'reviewed_at' => now(),
+    ]);
+
+    foreach (['cor', 'curriculum'] as $type) {
+        OjtEnrollmentDocument::create([
+            'ojt_enrollment_id' => $enrollment->id,
+            'label' => $type,
+            'type' => $type,
+            'file_path' => "documents/{$type}.pdf",
+        ]);
+    }
+
+    $this->actingAs($intern, 'api')
+        ->postJson('/api/intern/enrollments', ['academic_year_id' => $term->id])
+        ->assertOk();
+
+    $notification = UserNotification::where('user_id', $coordinator->id)->first();
+
+    expect($notification)->not->toBeNull();
+    expect($notification->type)->toBe('ojt_enrollment_resubmitted');
+    expect($notification->data)->toMatchArray([
+        'ojt_enrollment_id' => $enrollment->id,
+        'uuid' => $intern->uuid,
+    ]);
+});
+
+test('a coordinator updating ojt hours notifies the intern', function () {
+    $institute = notificationInstitute();
+    $program = notificationProgram($institute);
+    $coordinator = notificationCoordinator($institute);
+    $intern = notificationIntern($institute, $program);
+    $term = AcademicTerm::create(['code' => '262', 'description' => 'Second Semester AY 2026-2027']);
+
+    $enrollment = OjtEnrollment::create([
+        'user_id' => $intern->id,
+        'academic_year_id' => $term->id,
+        'institute_id' => $institute->id,
+        'program_id' => $program->id,
+        'ojt_hours' => 300,
+        'status' => 'pending',
+    ]);
+
+    $this->actingAs($coordinator, 'api')
+        ->patchJson("/api/coordinator/enrollments/{$enrollment->id}/ojt-hours", ['ojt_hours' => 486])
+        ->assertOk();
+
+    $notification = UserNotification::where('user_id', $intern->id)->first();
+
+    expect($notification)->not->toBeNull();
+    expect($notification->type)->toBe('ojt_enrollment_hours_updated');
+    expect($notification->message)->toContain('486');
+    expect($notification->data)->toMatchArray([
+        'ojt_enrollment_id' => $enrollment->id,
+        'academic_year_id' => $term->id,
+    ]);
 });
 
 test('creating a notification broadcasts a pushed event to the owner private channel', function () {

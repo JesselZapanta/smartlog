@@ -450,6 +450,34 @@ test('undeployed intern cannot create a journal', function () {
     expect(DailyJournal::count())->toBe(0);
 });
 
+test('an undeployed intern is told they are not deployed when listing journals', function () {
+    $institute = journalInstitute();
+    $program = journalProgram($institute);
+    $intern = journalIntern($institute, $program);
+
+    // The journal calendar and form both render their "Not deployed yet" state from
+    // this flag rather than from an error.
+    $this->actingAs($intern, 'api')
+        ->getJson('/api/intern/journals')
+        ->assertOk()
+        ->assertJsonPath('deployed', false)
+        ->assertJsonPath('ojt_status', 'pending')
+        ->assertJsonCount(0, 'data');
+});
+
+test('a deployed intern is reported as deployed when listing journals', function () {
+    $institute = journalInstitute();
+    $program = journalProgram($institute);
+    $intern = journalIntern($institute, $program);
+    Intern::where('user_id', $intern->id)->update(['ojt_status' => 'ongoing']);
+
+    $this->actingAs($intern, 'api')
+        ->getJson('/api/intern/journals')
+        ->assertOk()
+        ->assertJsonPath('deployed', true)
+        ->assertJsonPath('ojt_status', 'ongoing');
+});
+
 test('intern who completed their hours cannot create a journal', function () {
     Storage::fake('public');
     $institute = journalInstitute();

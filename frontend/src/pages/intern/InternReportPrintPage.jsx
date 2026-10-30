@@ -241,12 +241,12 @@ export default function InternReportPrintPage() {
                       { key: "pm_out", label: "PM Out", align: "right" },
                       { key: "status", label: "Status", align: "right" },
                     ]}
-                    rows={(data.dtr.recent || []).map((r) => ({
-                      date: formatDate(r.date),
-                      am_in: formatTime(r.am_in),
-                      am_out: formatTime(r.am_out),
-                      pm_in: formatTime(r.pm_in),
-                      pm_out: formatTime(r.pm_out),
+                    rows={(data.dtr.rows || []).map((r) => ({
+                      date: r.date,
+                      am_in: r.status === "checked" ? r.am_in || "-" : "",
+                      am_out: r.status === "checked" ? r.am_out || "-" : "",
+                      pm_in: r.status === "checked" ? r.pm_in || "-" : "",
+                      pm_out: r.status === "checked" ? r.pm_out || "-" : "",
                       status: r.status,
                     }))}
                   />
@@ -262,10 +262,10 @@ export default function InternReportPrintPage() {
                   {miniStatsBox("OJT Progress", `${data.ojt_hours?.progress ?? 0}%`, "text-green-700")}
                 </div>
                 <div className="mt-3 space-y-3">
-                  {(data.journals.recent || []).length === 0 ? (
+                  {(data.journals.rows || []).length === 0 ? (
                     <p className="py-6 text-center text-[10px] text-gray-400">No journals yet</p>
                   ) : (
-                    (data.journals.recent || []).map((r, i) => (
+                    (data.journals.rows || []).map((r, i) => (
                       <div key={i} className="break-inside-avoid overflow-hidden rounded border border-gray-200">
                         <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-2 py-1.5">
                           <div className="min-w-0">
@@ -320,6 +320,27 @@ export default function InternReportPrintPage() {
                       const status = r.approved > 0 ? "approved" : r.rejected > 0 ? "rejected" : r.pending > 0 ? "pending" : "not_submitted";
                       return { name: r.name, type: r.type, status };
                     })}
+                  />
+                </div>
+                <div className="mt-2">
+                  <p className="mb-1 text-[9px] font-bold uppercase text-gray-500">My Submissions</p>
+                  <DataTable
+                    columns={[
+                      { key: "requirement", label: "Requirement", bold: true },
+                      { key: "type", label: "Type" },
+                      { key: "status", label: "Status" },
+                      { key: "submitted_at", label: "Submitted" },
+                      { key: "reviewed_at", label: "Reviewed" },
+                      { key: "rejection_reason", label: "Reason" },
+                    ]}
+                    rows={(data.requirements.rows || []).map((r) => ({
+                      requirement: r.requirement,
+                      type: r.type,
+                      status: r.status,
+                      submitted_at: r.submitted_at || "—",
+                      reviewed_at: r.reviewed_at || "—",
+                      rejection_reason: r.rejection_reason || "—",
+                    }))}
                   />
                 </div>
               </div>

@@ -98,7 +98,7 @@ class InternController extends Controller
     public function show(Request $request, User $user): JsonResponse
     {
         $instituteId = $request->user()->coordinator?->institute_id;
-        $intern = $user->intern;
+        $intern = $user->enrollmentFor($request->integer('academic_year_id') ?: null);
 
         if (! $intern || ! in_array($intern->ojt_status, ['ongoing', 'hours_completed', 'completed'], true)) {
             abort(404, 'This intern is not deployed.');
@@ -126,7 +126,7 @@ class InternController extends Controller
     public function photoDtr(User $user, Request $request): JsonResponse
     {
         $instituteId = $request->user()->coordinator?->institute_id;
-        $intern = $user->intern;
+        $intern = $user->enrollmentFor($request->integer('academic_year_id') ?: null);
 
         if (! $intern || ! in_array($intern->ojt_status, ['ongoing', 'hours_completed', 'completed'], true)) {
             abort(404, 'This intern is not deployed.');
@@ -165,7 +165,7 @@ class InternController extends Controller
     public function ojtHours(Request $request, User $user): JsonResponse
     {
         $instituteId = $request->user()->coordinator?->institute_id;
-        $intern = $user->intern;
+        $intern = $user->enrollmentFor($request->integer('academic_year_id') ?: null);
 
         abort_unless($intern, 404, 'This user has no intern record.');
 

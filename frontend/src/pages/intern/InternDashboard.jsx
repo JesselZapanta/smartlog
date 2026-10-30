@@ -1,22 +1,25 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  ArrowLeftRight,
+  ArrowRight,
   Camera,
   NotebookPen,
   FolderUp,
   ClipboardCheck,
   Clock3,
   XCircle,
-  ArrowRight,
   Building2,
   BookOpen,
   CalendarDays,
   UserRound,
   FileText,
   Loader2,
-  CheckCircle2,
   AlertTriangle,
   TrendingUp,
+  PartyPopper,
+  RefreshCw,
+  ThumbsDown,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -37,6 +40,66 @@ import { useClock } from "@/hooks/useClock";
 import { firstErrorMessage } from "@/lib/errors";
 import { formatDate } from "@/lib/dates";
 
+/**
+ * Terminal-result banner for the intern dashboard.
+ *
+ * `result` is the dashboard's `final_result`: null until a term is graded, otherwise
+ * { outcome: 'passed' | 'failed', academic_year, grade, is_latest }. A pass is
+ * congratulatory; a failure is an honest heads-up with a route back into the re-enrol
+ * flow, and only ever shown while it is the newest graded term.
+ */
+function FinalResultBanner({ result }) {
+  if (!result) return null;
+
+  if (result.outcome === "passed") {
+    return (
+      <section className="relative overflow-hidden rounded-2xl border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-4 shadow-sm sm:p-5">
+        <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-green-100/50" />
+        <div className="relative z-10 flex items-start gap-3 sm:items-center">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-green-600 text-white shadow-sm">
+            <PartyPopper size={20} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="font-heading text-base font-bold text-green-900 sm:text-lg">
+              Congratulations{result.is_latest ? "" : " on your OJT"}
+            </h2>
+            <p className="mt-0.5 text-sm leading-relaxed text-green-800">
+              You have <span className="font-semibold">passed</span> your OJT
+              {result.academic_year ? ` for ${result.academic_year}` : ""}. Your OJT
+              requirements are complete.
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm sm:p-5">
+      <div className="flex items-start gap-3 sm:items-center">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-sm">
+          <ThumbsDown size={20} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-heading text-base font-bold text-amber-900 sm:text-lg">
+            Not passed this term
+          </h2>
+          <p className="mt-0.5 text-sm leading-relaxed text-amber-800">
+            Your OJT was recorded as <span className="font-semibold">failed</span>
+            {result.academic_year ? ` for ${result.academic_year}` : ""}. You may apply to enrol
+            again in a later term.
+          </p>
+        </div>
+      </div>
+      <Button asChild className="mt-4 h-11 w-full rounded-xl bg-amber-600 font-semibold text-white hover:bg-amber-700 sm:w-auto">
+        <Link to="/intern/enrollment">
+          Apply to re-enrol <ArrowRight size={16} />
+        </Link>
+      </Button>
+    </section>
+  );
+}
+
 function getInitials(name) {
   return (name || "?")
     .split(" ")
@@ -54,6 +117,215 @@ const moduleCards = [
   { icon: ClipboardCheck, title: "Evaluate HTE", description: "Rate your host", tone: "bg-blue-50 text-blue-700", to: "/intern/evaluations" },
 ];
 
+/**
+ * Notice for a term whose enrollment application is still under review.
+ *
+ * A pending application has no enrollment row yet, so this is the only thing the
+ * dashboard can show for it. Without it the page would open on the pending term and
+ * render nothing at all.
+ */
+function PendingApplicationBanner({ application }) {
+  if (!application) return null;
+
+  return (
+    <section className="rounded-2xl border border-sky-200 bg-sky-50 p-4 shadow-sm sm:p-5">
+      <div className="flex items-start gap-3 sm:items-center">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-sky-600 ring-1 ring-sky-200">
+          <Clock3 size={20} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-heading text-base font-bold text-sky-900 sm:text-lg">
+            OJT enrollment under review
+          </h2>
+          <p className="mt-0.5 text-sm leading-relaxed text-sky-800">
+            Your application to enrol for OJT
+            {application.academic_year ? ` in ${application.academic_year}` : ""} is waiting for your
+            coordinator. Your hours, journals and requirements will appear here once it is
+            approved.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Prompt for an intern who has registered but never applied for OJT enrollment.
+ *
+ * OJT hours are declared on the enrollment application, so until one exists there is no
+ * requirement to work toward and nothing for the HTE to complete. This is the action
+ * item that closes that gap.
+ */
+function NotEnrolledBanner({ requiredHours, hasApplication }) {
+  if (requiredHours != null || hasApplication) return null;
+
+  return (
+    <section className="rounded-2xl border border-sky-200 bg-sky-50 p-4 shadow-sm sm:p-5">
+      <div className="flex items-start gap-3 sm:items-center">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-sky-600 ring-1 ring-sky-200">
+          <RefreshCw size={20} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-heading text-base font-bold text-sky-900 sm:text-lg">
+            Apply to enrol for OJT
+          </h2>
+          <p className="mt-0.5 text-sm leading-relaxed text-sky-800">
+            You have not applied for an OJT enrollment yet. Hours are declared when you
+            apply, and your progress is measured against that figure — so enrol first to
+            see your target.
+          </p>
+        </div>
+      </div>
+      <Button asChild className="mt-4 h-11 w-full rounded-xl bg-sky-600 font-semibold text-white hover:bg-sky-700 sm:w-auto">
+        <Link to="/intern/enrollment">
+          Apply to enrol <ArrowRight size={16} />
+        </Link>
+      </Button>
+    </section>
+  );
+}
+
+/**
+ * Notice for a term that closed without the intern completing their OJT.
+ *
+ * `term` is the dashboard's `incomplete_term`: null unless the academic year of the
+ * term being viewed is over, the OJT was never marked completed, and no grade was
+ * ever recorded. This is deliberately softer than the failure banner above — nothing
+ * was graded against the intern, the term simply ended first — so it uses an outlined
+ * icon rather than the solid block the failure uses.
+ */
+function IncompleteTermBanner({ term }) {
+  if (!term) return null;
+
+  return (
+    <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm sm:p-5">
+      <div className="flex items-start gap-3 sm:items-center">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-amber-600 ring-1 ring-amber-200">
+          <AlertTriangle size={20} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-heading text-base font-bold text-amber-900 sm:text-lg">
+            OJT not completed
+          </h2>
+          <p className="mt-0.5 text-sm leading-relaxed text-amber-800">
+            Your OJT{term.academic_year ? ` for ${term.academic_year}` : ""} ended without being
+            completed, and no grade was recorded. Your hours and requirements are kept on
+            record — speak to your OJT coordinator about continuing.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Transfer lifecycle banner driven by GET /intern/transfer-request.
+ *
+ * `transfer` is null when no transfer touches the term (or the intern has already
+ * been re-deployed after one). While a request is open the banner tracks it through
+ * requested → accepted (with a CTA into the early-unlocked HTE evaluation) →
+ * evaluated; after reassignment it points at the new host until deployment.
+ */
+function TransferBanner({ transfer }) {
+  if (!transfer) return null;
+
+  if (transfer.status === "reassigned") {
+    return (
+      <section className="rounded-2xl border border-green-200 bg-green-50 p-4 shadow-sm sm:p-5">
+        <div className="flex items-start gap-3 sm:items-center">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-green-600 ring-1 ring-green-200">
+            <ArrowLeftRight size={20} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="font-heading text-base font-bold text-green-900 sm:text-lg">
+              Reassigned to {transfer.to_hte?.name || "your new host"}
+            </h2>
+            <p className="mt-0.5 text-sm leading-relaxed text-green-800">
+              Your transfer is complete. Submit the new host&apos;s requirements and wait for your coordinator
+              to re-deploy you before logging DTR or journal entries.
+            </p>
+          </div>
+        </div>
+        <Button asChild className="mt-4 h-11 w-full rounded-xl bg-green-600 font-semibold text-white hover:bg-green-700 sm:w-auto">
+          <Link to="/intern/requirements">
+            Go to requirements <ArrowRight size={16} />
+          </Link>
+        </Button>
+      </section>
+    );
+  }
+
+  if (transfer.status === "evaluated") {
+    return (
+      <section className="rounded-2xl border border-violet-200 bg-violet-50 p-4 shadow-sm sm:p-5">
+        <div className="flex items-start gap-3 sm:items-center">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-violet-600 ring-1 ring-violet-200">
+            <ArrowLeftRight size={20} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="font-heading text-base font-bold text-violet-900 sm:text-lg">
+              Transfer ready for reassignment
+            </h2>
+            <p className="mt-0.5 text-sm leading-relaxed text-violet-800">
+              All evaluations for the closing placement are complete. Your coordinator will assign you to a new
+              host establishment soon.
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (transfer.status === "accepted") {
+    const shouldEvaluate = transfer.evaluation?.can_evaluate && !transfer.evaluation?.complete;
+    return (
+      <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm sm:p-5">
+        <div className="flex items-start gap-3 sm:items-center">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-amber-600 ring-1 ring-amber-200">
+            <ArrowLeftRight size={20} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="font-heading text-base font-bold text-amber-900 sm:text-lg">
+              Transfer in progress
+            </h2>
+            <p className="mt-0.5 text-sm leading-relaxed text-amber-800">
+              {shouldEvaluate
+                ? `Your host accepted the transfer. Rate ${transfer.from_hte?.name || "your HTE"} for the placement that is closing so the reassignment can proceed.`
+                : "You have rated your outgoing host. Waiting for the host's evaluation to finish the transfer."}
+            </p>
+          </div>
+        </div>
+        {shouldEvaluate && (
+          <Button asChild className="mt-4 h-11 w-full rounded-xl bg-amber-600 font-semibold text-white hover:bg-amber-700 sm:w-auto">
+            <Link to="/intern/evaluations">
+              Rate {transfer.from_hte?.name || "your HTE"} <ArrowRight size={16} />
+            </Link>
+          </Button>
+        )}
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-2xl border border-sky-200 bg-sky-50 p-4 shadow-sm sm:p-5">
+      <div className="flex items-start gap-3 sm:items-center">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-sky-600 ring-1 ring-sky-200">
+          <ArrowLeftRight size={20} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-heading text-base font-bold text-sky-900 sm:text-lg">
+            Transfer requested
+          </h2>
+          <p className="mt-0.5 text-sm leading-relaxed text-sky-800">
+            A transfer away from {transfer.from_hte?.name || "your host"} is waiting for the host&apos;s
+            acceptance. You will be asked to rate your HTE once it is accepted.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function InternDashboard() {
   const { user } = useAuth();
   const now = useClock();
@@ -63,40 +335,59 @@ export default function InternDashboard() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [academicYears, setAcademicYears] = useState([]);
-  const [termsLoading, setTermsLoading] = useState(true);
-  const [filters, setFilters] = useState({ academicYearId: "" });
+  const [academicYearId, setAcademicYearId] = useState("");
+  const [transfer, setTransfer] = useState(null);
 
-  useEffect(() => {
-    api
-      .get("/academic-terms/options")
-      .then((res) => {
-        const list = res.data.data || [];
-        setAcademicYears(list);
-        const active = list.find((term) => term.status === "active");
-        if (active) setFilters((prev) => ({ ...prev, academicYearId: String(active.id) }));
-      })
-      .catch(() => {})
-      .finally(() => setTermsLoading(false));
-  }, []);
-
+  // No term is selected on first load: with no academic_year_id the API resolves the
+  // intern's active enrollment, which is the correct default for every user. The
+  // dropdown is then built from the terms that response reports.
   const load = useCallback(() => {
-    if (termsLoading) return;
     setLoading(true);
     setError("");
     const params = new URLSearchParams();
-    if (filters.academicYearId) params.set("academic_year_id", filters.academicYearId);
+    if (academicYearId) params.set("academic_year_id", academicYearId);
     const qs = params.toString();
     api
       .get(`/dashboard${qs ? `?${qs}` : ""}`)
       .then((res) => setData(res.data.data))
       .catch((err) => setError(firstErrorMessage(err)))
       .finally(() => setLoading(false));
-  }, [filters, termsLoading]);
+  }, [academicYearId]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  // The transfer banner tracks the current term's flow; it is harmless when the
+  // intern holds no transfer (the endpoint answers null).
+  useEffect(() => {
+    api
+      .get("/intern/transfer-request")
+      .then((res) => setTransfer(res.data.data))
+      .catch(() => setTransfer(null));
+  }, []);
+
+  // Every term on record; held ones are flagged. Selecting a term with no records
+  // returns an empty payload rather than an error.
+  const enrolledTerms = data?.enrolled_terms ?? [];
+  const heldTermCount = enrolledTerms.filter((term) => term.is_enrolled).length;
+  // `viewing_academic_year_id` is the term the API actually served. It comes first
+  // because it can be a term the intern holds no enrollment row for yet — a pending
+  // application on the active academic year — which the fallbacks below would skip.
+  const selectedTermId = String(
+    academicYearId ||
+      data?.viewing_academic_year_id ||
+      data?.intern?.academic_year_id ||
+      enrolledTerms[0]?.id ||
+      ""
+  );
+  const selectedTerm = enrolledTerms.find((term) => String(term.id) === selectedTermId);
+  // An explicit selection defaults to "not held" when the term is not in the list,
+  // so a failed lookup shows the explanatory empty state rather than a broken page.
+  const viewingHeldTerm = academicYearId ? (selectedTerm?.is_enrolled ?? false) : true;
+  // A term with a pending application is not "no records" — the intern is mid-review for
+  // it, and the pending banner says exactly that. Showing both read as a contradiction.
+  const showNoRecordsState = academicYearId && !viewingHeldTerm && !data?.pending_application;
 
   return (
     <InternLayout>
@@ -128,22 +419,32 @@ export default function InternDashboard() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <Select
-          value={filters.academicYearId}
-          onValueChange={(value) => setFilters((prev) => ({ ...prev, academicYearId: value }))}
-          disabled={termsLoading}
+          value={selectedTermId}
+          onValueChange={setAcademicYearId}
+          disabled={loading || !enrolledTerms.length}
         >
-          <SelectTrigger className="h-11 w-full rounded-xl bg-white sm:w-[240px]">
-            <SelectValue placeholder={termsLoading ? "Loading years..." : "Academic Year"} />
+          <SelectTrigger className="h-11 w-full rounded-xl bg-white sm:w-[280px]">
+            <SelectValue placeholder="Academic Year" />
           </SelectTrigger>
           <SelectContent>
-            {academicYears.map((term) => (
+            {enrolledTerms.map((term) => (
               <SelectItem key={term.id} value={String(term.id)}>
                 {term.description || term.code}
-                {term.status === "active" ? " · Active" : ""}
+                {term.is_enrolled ? "" : " · No records"}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
+        {heldTermCount > 1 && (
+          <Button
+            variant="ghost"
+            className="h-11 rounded-xl text-gray-500 hover:bg-gray-700"
+            onClick={() => setAcademicYearId("")}
+            disabled={loading || !academicYearId}
+          >
+            <RefreshCw size={15} /> Current term
+          </Button>
+        )}
       </div>
 
       {loading ? (
@@ -154,6 +455,28 @@ export default function InternDashboard() {
         <p className="py-10 text-center text-sm text-red-600">{error}</p>
       ) : (
         <>
+          {showNoRecordsState && (
+            <section className="flex flex-col items-center gap-2 rounded-2xl border border-gray-100 bg-white px-4 py-10 text-center shadow-sm ring-1 ring-gray-100">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-gray-400">
+                <CalendarDays size={20} />
+              </div>
+              <p className="text-sm font-semibold text-gray-700">No records for this term</p>
+              <p className="max-w-sm text-xs text-gray-400">
+                You were not enrolled for {selectedTerm?.description || "this academic year"}, so there are no
+                hours, journals or requirements to show.
+              </p>
+              <Button
+                variant="outline"
+                className="mt-1 h-10 rounded-xl text-green-700"
+                onClick={() => setAcademicYearId("")}
+              >
+                Back to current term
+              </Button>
+            </section>
+          )}
+
+          <PendingApplicationBanner application={data.pending_application} />
+
           {data.intern?.status === "pending" && (
             <section className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:items-center sm:p-5">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
@@ -195,11 +518,59 @@ export default function InternDashboard() {
 
           {data.intern?.status === "approved" && (
             <>
+              {data.rejected_application && (
+                <section className="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm sm:p-5">
+                  <div className="flex items-start gap-3 sm:items-center">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-red-100 text-red-600">
+                      <XCircle size={18} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="font-heading text-base font-bold text-red-900">
+                        OJT enrollment rejected
+                      </h2>
+                      <p className="mt-0.5 text-sm text-red-700">
+                        Your OJT enrollment
+                        {data.rejected_application.academic_year
+                          ? ` for ${data.rejected_application.academic_year}`
+                          : ""}{" "}
+                        was not approved. Review the reason, then re-enroll and submit.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 rounded-2xl bg-white px-4 py-3 ring-1 ring-red-100">
+                    <p className="text-xs font-bold uppercase tracking-wide text-red-500">Reason</p>
+                    <p className="mt-1 text-sm text-gray-800">
+                      {data.rejected_application.rejection_reason || "No reason provided."}
+                    </p>
+                  </div>
+                  <Button asChild className="mt-4 h-11 w-full rounded-xl bg-red-600 font-semibold text-white hover:bg-red-700 sm:w-auto">
+                    <Link to="/intern/enrollment">
+                      Re-enroll and submit <ArrowRight size={16} />
+                    </Link>
+                  </Button>
+                </section>
+              )}
+
+              <FinalResultBanner result={data.final_result} />
+
+              <IncompleteTermBanner term={data.incomplete_term} />
+
+              <NotEnrolledBanner
+                requiredHours={data.ojt_hours?.required}
+                hasApplication={Boolean(data.pending_application || data.application)}
+              />
+
+              <TransferBanner transfer={transfer} />
+
               <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                 <StatCard
                   label="OJT Hours"
                   value={data.ojt_hours?.earned ?? 0}
-                  helper={`of ${data.ojt_hours?.required ?? 0} required`}
+                  helper={
+                    data.ojt_hours?.required != null
+                      ? `of ${data.ojt_hours.required} required`
+                      : "not declared yet"
+                  }
                   icon={<TrendingUp size={20} />}
                   tone="green"
                 />

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import StatusChip from "@/components/StatusChip.jsx";
+import TransferStatusChip from "@/components/TransferStatusChip.jsx";
 import {
   Table,
   TableBody,
@@ -350,6 +351,7 @@ export default function HteEvaluateInternListPage() {
                         {Number(intern.evaluation.weighted_average).toFixed(2)} / 5.00
                       </span>
                     )}
+                    {intern.transfer && <TransferStatusChip status={intern.transfer.status} />}
                   </div>
                   <div className="mt-3 flex gap-2 border-t border-gray-50 pt-3">
                     <Button asChild className="h-10 flex-1 rounded-xl bg-green-600 text-white hover:bg-green-700">
@@ -412,7 +414,10 @@ export default function HteEvaluateInternListPage() {
                         <StatusChip status={intern.ojt_status || intern.status} />
                       </TableCell>
                       <TableCell>
-                        <EvaluationBadge evaluation={intern.evaluation} />
+                        <div className="flex flex-wrap items-center gap-2">
+                          <EvaluationBadge evaluation={intern.evaluation} />
+                          {intern.transfer && <TransferStatusChip status={intern.transfer.status} />}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {intern.evaluation?.weighted_average != null ? (

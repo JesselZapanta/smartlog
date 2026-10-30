@@ -9,10 +9,13 @@ use App\Models\EvaluationCriterion;
 use App\Models\Hte;
 use App\Models\HteEvaluation;
 use App\Models\Intern;
+use App\Models\InternHteAssignment;
 use App\Models\User;
+use App\Support\PlacementEvaluationScore;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class HteEvaluationController extends Controller
 {
@@ -66,17 +69,22 @@ class HteEvaluationController extends Controller
 
         $hteIds = $htes->pluck('id');
 
-        $internCounts = Intern::whereIn('assigned_hte', $hteIds)
-            ->where('institute_id', $instituteId)
-            ->where('status', 'approved')
-            ->whereIn('ojt_status', ['hours_completed', 'completed'])
-            ->selectRaw('assigned_hte, count(*) as total')
-            ->groupBy('assigned_hte')
-            ->pluck('total', 'assigned_hte');
+        $internCounts = InternHteAssignment::query()
+            ->join('interns', 'interns.id', '=', 'intern_hte_assignments.intern_id')
+            ->whereIn('intern_hte_assignments.hte_id', $hteIds)
+            ->where('interns.institute_id', $instituteId)
+            ->where('interns.status', 'approved')
+            ->whereIn('interns.ojt_status', ['hours_completed', 'completed'])
+            ->selectRaw('intern_hte_assignments.hte_id as hte_id, count(DISTINCT intern_hte_assignments.intern_id) as total')
+            ->groupBy('intern_hte_assignments.hte_id')
+            ->pluck('total', 'hte_id');
 
         $evaluatedCounts = HteEvaluation::whereIn('hte_id', $hteIds)
             ->whereIn('intern_id', function ($q) use ($instituteId): void {
-                $q->select('id')->from('interns')->where('institute_id', $instituteId);
+                $q->select('id')->from('interns')
+                    ->where('institute_id', $instituteId)
+                    ->where('status', 'approved')
+                    ->whereIn('ojt_status', ['hours_completed', 'completed']);
             })
             ->selectRaw('hte_id, count(DISTINCT intern_id) as evaluated')
             ->groupBy('hte_id')
@@ -131,7 +139,7 @@ class HteEvaluationController extends Controller
 
         $query = Intern::with(['user', 'institute', 'program', 'academicYear', 'assignedHte'])
             ->where('institute_id', $instituteId)
-            ->where('assigned_hte', $hte->id)
+            ->whereHas('hteAssignments', fn (Builder $builder) => $builder->where('hte_id', $hte->id))
             ->where('status', 'approved')
             ->whereIn('ojt_status', ['hours_completed', 'completed'])
             ->withCount([
@@ -179,54 +187,69 @@ class HteEvaluationController extends Controller
             ->where('status', 'active')
             ->count();
 
+        $placements = InternHteAssignment::query()
+            ->whereIn('intern_id', $interns->pluck('id'))
+            ->where('hte_id', $hte->id)
+            ->orderBy('id')
+            ->get()
+            ->groupBy('intern_id')
+            ->map(function (Collection $group): int {
+                $open = $group->first(fn (InternHteAssignment $placement) => $placement->unassigned_at === null);
+
+                return ($open ?? $group->last())->id;
+            });
+
         $answered = [];
         $weightedMap = [];
-        if ($totalCriteria > 0 && $interns->isNotEmpty()) {
+        if ($interns->isNotEmpty()) {
             $answered = HteEvaluation::query()
-                ->where('hte_id', $hte->id)
-                ->whereIn('intern_id', $interns->pluck('id'))
-                ->selectRaw('intern_id, count(*) as answered')
-                ->groupBy('intern_id')
-                ->pluck('answered', 'intern_id')
+                ->whereIn('placement_id', $placements->values())
+                ->selectRaw('placement_id, count(*) as answered')
+                ->groupBy('placement_id')
+                ->pluck('answered', 'placement_id')
                 ->all();
 
             $rows = HteEvaluation::query()
-                ->where('hte_evaluations.hte_id', $hte->id)
-                ->whereIn('hte_evaluations.intern_id', $interns->pluck('id'))
+                ->whereIn('hte_evaluations.placement_id', $placements->values())
                 ->join('evaluation_criteria', 'hte_evaluations.criterion_id', '=', 'evaluation_criteria.id')
                 ->where('evaluation_criteria.type', 'hte')
                 ->where('evaluation_criteria.institute_id', $instituteId)
-                ->selectRaw('hte_evaluations.intern_id, evaluation_criteria.category, SUM(CASE WHEN hte_evaluations.is_na THEN 0 ELSE hte_evaluations.rating END) as sum_rating, COUNT(*) as answered')
-                ->groupBy('hte_evaluations.intern_id', 'evaluation_criteria.category')
-                ->get();
+                ->selectRaw('hte_evaluations.placement_id, evaluation_criteria.category, SUM(CASE WHEN hte_evaluations.is_na THEN 0 ELSE hte_evaluations.rating END) as sum_rating, SUM(CASE WHEN hte_evaluations.is_na THEN 0 ELSE 1 END) as rated_count')
+                ->groupBy('hte_evaluations.placement_id', 'evaluation_criteria.category')
+                ->get()
+                ->groupBy('placement_id');
 
-            $grouped = $rows->groupBy('intern_id');
             foreach ($interns as $intern) {
-                $perCategory = $grouped->get($intern->id, collect());
+                $placementId = $placements[$intern->id] ?? null;
+                $perCategory = $placementId !== null ? $rows->get($placementId, collect()) : collect();
                 $avgs = [];
-                foreach (['personal_characteristics', 'work_characteristics', 'job_knowledge'] as $cat) {
-                    $row = $perCategory->firstWhere('category', $cat);
-                    $avgs[$cat] = $row ? (float) $row->sum_rating / (int) $row->answered : null;
+                foreach (PlacementEvaluationScore::WEIGHTS as $category => $weight) {
+                    $row = $perCategory->firstWhere('category', $category);
+                    $avgs[$category] = $row
+                        ? PlacementEvaluationScore::average((float) $row->sum_rating, (int) $row->rated_count)
+                        : null;
                 }
-                $hasData = $avgs['personal_characteristics'] !== null || $avgs['work_characteristics'] !== null || $avgs['job_knowledge'] !== null;
-                $weighted = $hasData ? round(($avgs['personal_characteristics'] ?? 0) * 0.3 + ($avgs['work_characteristics'] ?? 0) * 0.3 + ($avgs['job_knowledge'] ?? 0) * 0.4, 2) : null;
-                $weightedMap[$intern->id] = $weighted;
+                $weightedMap[$intern->id] = PlacementEvaluationScore::weighted($avgs);
             }
         }
 
-        $data = InternListResource::collection($interns)->resolve($request);
+        $data = $interns->getCollection()
+            ->map(function (Intern $intern) use ($request, $placements, $answered, $weightedMap, $totalCriteria): array {
+                $placementId = $placements[$intern->id] ?? null;
+                $answeredCount = $placementId !== null ? (int) ($answered[$placementId] ?? 0) : 0;
 
-        foreach ($data as $index => $item) {
-            $intern = $interns[$index];
-            $answeredCount = (int) ($answered[$intern->id] ?? 0);
+                $row = (new InternListResource($intern))->resolve($request);
+                $row['evaluation'] = [
+                    'total' => $totalCriteria,
+                    'answered' => $answeredCount,
+                    'status' => $this->evaluationStatus($totalCriteria, $answeredCount),
+                    'weighted_average' => $weightedMap[$intern->id] ?? null,
+                ];
 
-            $data[$index]['evaluation'] = [
-                'total' => $totalCriteria,
-                'answered' => $answeredCount,
-                'status' => $this->evaluationStatus($totalCriteria, $answeredCount),
-                'weighted_average' => $weightedMap[$intern->id] ?? null,
-            ];
-        }
+                return $row;
+            })
+            ->values()
+            ->all();
 
         $summary = $this->buildHteSummary($hte->id, $instituteId, $academicYearId);
         $summary['hte'] = [
@@ -264,28 +287,71 @@ class HteEvaluationController extends Controller
             abort(403, 'This HTE does not belong to your institute.');
         }
 
-        if ($internModel->assigned_hte !== $hteModel->id) {
-            abort(404, 'This intern is not assigned to the selected HTE.');
+        $placement = $this->placementFor($internModel, $hteModel->id);
+
+        if (! $placement) {
+            abort(404, 'This intern was not deployed to the selected HTE.');
         }
 
-        return $this->showForIntern($request, $intern);
+        $responses = HteEvaluation::query()
+            ->where('placement_id', $placement->id)
+            ->get()
+            ->keyBy('criterion_id');
+
+        return $this->evaluationPayload($internModel, $hteModel, $responses);
+    }
+
+    private function placementFor(Intern $intern, int $hteId): ?InternHteAssignment
+    {
+        $placements = $intern->hteAssignments()
+            ->where('hte_id', $hteId)
+            ->orderBy('id')
+            ->get();
+
+        return $placements->first(fn (InternHteAssignment $placement) => $placement->unassigned_at === null)
+            ?? $placements->last();
     }
 
     private function showForIntern(Request $request, User $user): JsonResponse
     {
         $intern = $this->authorizeIntern($request, $user);
-        $assignedHte = $intern->assignedHte;
+        $hte = $intern->assignedHte;
 
+        $responses = collect();
+        if ($hte) {
+            $placement = $intern->hteAssignments()
+                ->where('hte_id', $hte->id)
+                ->whereNull('unassigned_at')
+                ->latest('id')
+                ->first();
+
+            $responses = HteEvaluation::query()
+                ->when(
+                    $placement !== null,
+                    fn ($query) => $query->where('placement_id', $placement->id),
+                    fn ($query) => $query->where('intern_id', $intern->id)->where('hte_id', $hte->id)->whereNull('placement_id'),
+                )
+                ->get()
+                ->keyBy('criterion_id');
+        }
+
+        return $this->evaluationPayload($intern, $hte, $responses);
+    }
+
+    /**
+     * @param  Collection<int, HteEvaluation>  $responses
+     */
+    private function evaluationPayload(Intern $intern, ?Hte $hte, Collection $responses): JsonResponse
+    {
         $intern->loadMissing([
             'user.location',
             'program',
             'institute',
             'academicYear',
             'reviewer',
-            'assignedHte.institute',
-            'assignedHte.program',
-            'assignedHte.user',
         ]);
+
+        $hte?->loadMissing(['institute', 'program', 'user']);
 
         $instituteId = $intern->institute_id;
 
@@ -301,25 +367,16 @@ class HteEvaluationController extends Controller
             ->orderBy('id')
             ->get();
 
-        $responses = collect();
-        if ($assignedHte) {
-            $responses = HteEvaluation::query()
-                ->where('intern_id', $intern->id)
-                ->where('hte_id', $assignedHte->id)
-                ->get()
-                ->keyBy('criterion_id');
-        }
-
         return response()->json([
             'data' => [
                 'intern' => new InternDetailResource($intern),
-                'hte' => $assignedHte ? [
-                    'id' => $assignedHte->id,
-                    'name' => $assignedHte->name,
-                    'institute' => $assignedHte->institute?->name,
-                    'program' => $assignedHte->program?->name,
-                    'email' => $assignedHte->user?->email,
-                    'status' => $assignedHte->status,
+                'hte' => $hte ? [
+                    'id' => $hte->id,
+                    'name' => $hte->name,
+                    'institute' => $hte->institute?->name,
+                    'program' => $hte->program?->name,
+                    'email' => $hte->user?->email,
+                    'status' => $hte->status,
                 ] : null,
                 'criteria' => $criteria->map(fn (EvaluationCriterion $criterion) => [
                     'id' => $criterion->id,
@@ -366,7 +423,7 @@ class HteEvaluationController extends Controller
 
         $internQuery = Intern::query()
             ->where('institute_id', $instituteId)
-            ->where('assigned_hte', $hteId)
+            ->whereHas('hteAssignments', fn (Builder $builder) => $builder->where('hte_id', $hteId))
             ->where('status', 'approved')
             ->whereIn('ojt_status', ['hours_completed', 'completed']);
 
@@ -376,7 +433,12 @@ class HteEvaluationController extends Controller
 
         $internIds = $internQuery->pluck('id');
 
-        if ($internIds->isEmpty()) {
+        $placementIds = InternHteAssignment::query()
+            ->whereIn('intern_id', $internIds)
+            ->where('hte_id', $hteId)
+            ->pluck('id');
+
+        if ($internIds->isEmpty() || $placementIds->isEmpty()) {
             return [
                 'per_category' => [
                     'personal_characteristics' => ['avg' => null, 'count' => 0, 'total' => (int) ($totalByCategory['personal_characteristics'] ?? 0), 'na_count' => 0, 'answered' => 0],
@@ -390,8 +452,7 @@ class HteEvaluationController extends Controller
         }
 
         $rows = HteEvaluation::query()
-            ->where('hte_id', $hteId)
-            ->whereIn('intern_id', $internIds)
+            ->whereIn('hte_evaluations.placement_id', $placementIds)
             ->join('evaluation_criteria', 'hte_evaluations.criterion_id', '=', 'evaluation_criteria.id')
             ->selectRaw('evaluation_criteria.category, COUNT(*) as answered, SUM(CASE WHEN hte_evaluations.is_na THEN 1 ELSE 0 END) as na_count, SUM(CASE WHEN hte_evaluations.is_na THEN 0 ELSE hte_evaluations.rating END) as sum_rating')
             ->groupBy('evaluation_criteria.category')
@@ -401,7 +462,7 @@ class HteEvaluationController extends Controller
         $perCategory = [];
         $weightedSum = 0;
         $hasData = false;
-        $evaluatedCount = HteEvaluation::where('hte_id', $hteId)->whereIn('intern_id', $internIds)->distinct('intern_id')->count('intern_id');
+        $evaluatedCount = HteEvaluation::whereIn('placement_id', $placementIds)->distinct('intern_id')->count('intern_id');
 
         foreach (['personal_characteristics', 'work_characteristics', 'job_knowledge'] as $cat) {
             $total = (int) ($totalByCategory[$cat] ?? 0);
@@ -409,19 +470,15 @@ class HteEvaluationController extends Controller
             $answered = $row ? (int) $row->answered : 0;
             $naCount = $row ? (int) $row->na_count : 0;
             $sum = $row ? (float) $row->sum_rating : 0;
-            // total expected ratings for this category = total criteria * number of evaluated interns? No, we want avg across all ratings, so denominator is answered (including N/A as 0)
-            // For per-category avg, we want sum / answered (where answered includes N/A as 0, so denominator is answered)
-            $avg = $answered > 0 ? $sum / $answered : null;
+            $rated = $answered - $naCount;
+            $avg = $rated > 0 ? $sum / $rated : null;
             if ($avg !== null) {
                 $hasData = true;
-            }
-            $weight = $cat === 'job_knowledge' ? 0.4 : 0.3;
-            if ($avg !== null) {
-                $weightedSum += $avg * $weight;
+                $weightedSum += $avg * PlacementEvaluationScore::WEIGHTS[$cat];
             }
             $perCategory[$cat] = [
                 'avg' => $avg,
-                'count' => $answered - $naCount,
+                'count' => $rated,
                 'total' => $total,
                 'na_count' => $naCount,
                 'answered' => $answered,
@@ -444,7 +501,7 @@ class HteEvaluationController extends Controller
             abort(403, 'Your account is not assigned to an institute yet.');
         }
 
-        $intern = $user->intern;
+        $intern = $user->enrollmentFor($request->integer('academic_year_id') ?: null);
 
         if (! $intern) {
             abort(404, 'This user has no intern record.');

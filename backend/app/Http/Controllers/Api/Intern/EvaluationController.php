@@ -5,7 +5,11 @@ namespace App\Http\Controllers\Api\Intern;
 use App\Http\Controllers\Controller;
 use App\Models\EvaluationCriterion;
 use App\Models\HteEvaluation;
+use App\Models\Intern;
+use App\Models\InternHteAssignment;
+use App\Models\TransferRequest;
 use App\Models\UserNotification;
+use App\Support\TransferFlow;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -17,21 +21,13 @@ class EvaluationController extends Controller
      * active HTE criteria for the intern's institute ordered by category,
      * and any existing responses from this intern.
      *
-     * Only available when the intern's ojt_status is hours_completed or completed.
+     * Only available when the intern's ojt_status is hours_completed or
+     * completed, or when an accepted transfer is closing the current
+     * placement — the intern must rate the outgoing HTE before reassignment.
      */
     public function show(Request $request): JsonResponse
     {
-        $intern = $request->user()->intern;
-
-        if (! $intern) {
-            abort(404, 'No intern record found for this account.');
-        }
-
-        if (! in_array($intern->ojt_status, ['hours_completed', 'completed'], true)) {
-            throw ValidationException::withMessages([
-                'ojt_status' => ['This evaluation is only available after your OJT hours are marked as completed.'],
-            ]);
-        }
+        [$intern, $placement] = $this->authorizeEvaluation($request);
 
         $hte = $intern->assignedHte;
 
@@ -59,10 +55,23 @@ class EvaluationController extends Controller
             ->get();
 
         $responses = HteEvaluation::query()
-            ->where('intern_id', $intern->id)
-            ->where('hte_id', $hte->id)
+            ->when(
+                $placement !== null,
+                fn ($query) => $query->where('placement_id', $placement->id),
+                fn ($query) => $query->where('intern_id', $intern->id)->where('hte_id', $hte->id)->whereNull('placement_id'),
+            )
             ->get()
             ->keyBy('criterion_id');
+
+        // An in-flight transfer closing this placement explains why the form is
+        // open before the hours gate: the intern must rate the outgoing HTE.
+        $transfer = $placement !== null
+            ? TransferRequest::query()
+                ->where('from_placement_id', $placement->id)
+                ->where('status', '!=', TransferRequest::STATUS_REASSIGNED)
+                ->latest('id')
+                ->first(['uuid', 'status'])
+            : null;
 
         return response()->json([
             'data' => [
@@ -78,6 +87,10 @@ class EvaluationController extends Controller
                     'id' => $intern->id,
                     'ojt_status' => $intern->ojt_status,
                 ],
+                'transfer' => $transfer ? [
+                    'uuid' => $transfer->uuid,
+                    'status' => $transfer->status,
+                ] : null,
                 'criteria' => $criteria->map(fn (EvaluationCriterion $criterion) => [
                     'id' => $criterion->id,
                     'category' => $criterion->category,
@@ -98,17 +111,7 @@ class EvaluationController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $intern = $request->user()->intern;
-
-        if (! $intern) {
-            abort(404, 'No intern record found for this account.');
-        }
-
-        if (! in_array($intern->ojt_status, ['hours_completed', 'completed'], true)) {
-            throw ValidationException::withMessages([
-                'ojt_status' => ['This evaluation is only available after your OJT hours are marked as completed.'],
-            ]);
-        }
+        [$intern, $placement] = $this->authorizeEvaluation($request);
 
         $hte = $intern->assignedHte;
 
@@ -132,7 +135,15 @@ class EvaluationController extends Controller
             ->pluck('id')
             ->all();
 
-        if (HteEvaluation::where('intern_id', $intern->id)->where('hte_id', $hte->id)->exists()) {
+        $alreadySubmitted = HteEvaluation::query()
+            ->when(
+                $placement !== null,
+                fn ($query) => $query->where('placement_id', $placement->id),
+                fn ($query) => $query->where('intern_id', $intern->id)->where('hte_id', $hte->id),
+            )
+            ->exists();
+
+        if ($alreadySubmitted) {
             throw ValidationException::withMessages([
                 'evaluation' => ['This evaluation has already been submitted and cannot be updated.'],
             ]);
@@ -158,13 +169,16 @@ class EvaluationController extends Controller
 
             HteEvaluation::updateOrCreate(
                 [
+                    'placement_id' => $placement?->id,
+                    'criterion_id' => $criterionId,
                     'intern_id' => $intern->id,
                     'hte_id' => $hte->id,
-                    'criterion_id' => $criterionId,
                 ],
                 ['rating' => $rating, 'is_na' => $isNa]
             );
         }
+
+        TransferFlow::syncForPlacement($placement);
 
         UserNotification::notifyCoordinators(
             $intern->institute_id,
@@ -177,5 +191,45 @@ class EvaluationController extends Controller
         return response()->json([
             'data' => ['message' => 'HTE evaluation submitted successfully.'],
         ], 201);
+    }
+
+    /**
+     * Resolve the intern and gate the HTE evaluation.
+     *
+     * @return array{0: Intern, 1: ?InternHteAssignment}
+     */
+    private function authorizeEvaluation(Request $request): array
+    {
+        $intern = $request->user()->activeEnrollment();
+
+        if (! $intern) {
+            abort(404, 'No intern record found for this account.');
+        }
+
+        $placement = $intern->activePlacement();
+
+        if (! in_array($intern->ojt_status, ['hours_completed', 'completed'], true) && ! $this->hasAcceptedTransfer($placement)) {
+            throw ValidationException::withMessages([
+                'ojt_status' => ['This evaluation is only available after your OJT hours are marked as completed, or once a transfer has been accepted for your current placement.'],
+            ]);
+        }
+
+        return [$intern, $placement];
+    }
+
+    /**
+     * Whether an accepted transfer is closing the given placement, which lets
+     * the intern rate the outgoing HTE before the reassignment happens.
+     */
+    private function hasAcceptedTransfer(?InternHteAssignment $placement): bool
+    {
+        if ($placement === null) {
+            return false;
+        }
+
+        return TransferRequest::query()
+            ->where('from_placement_id', $placement->id)
+            ->where('status', TransferRequest::STATUS_ACCEPTED)
+            ->exists();
     }
 }

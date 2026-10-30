@@ -95,7 +95,6 @@ class InstituteController extends Controller
             || $institute->coordinators()->exists()
             || $institute->requirements()->exists()
             || $institute->evaluationCriteria()->exists()
-            || $institute->ojtHour()->exists()
         ) {
             return response()->json([
                 'message' => 'Cannot delete institute with existing records.',

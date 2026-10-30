@@ -8,9 +8,7 @@ use App\Models\Location;
 use App\Models\Program;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -79,7 +77,6 @@ test('registration creates an intern record with pending status', function () {
         'mothers_contact' => '09170000001',
         'parents_guardian_address' => 'Brgy. Mantic, Tangub City',
         'practicum_instructor' => 'Prof. Santos',
-        'cor' => UploadedFile::fake()->create('cor.pdf', 1024, 'application/pdf'),
         'region' => '10',
         'province' => 'Misamis Occidental',
         'city_municipality' => 'Tangub City',
@@ -244,58 +241,6 @@ test('a rejected intern can resubmit their registration', function () {
     expect($intern->intern->place_of_birth)->toBe('Ozamiz City');
     expect($intern->intern->practicum_instructor)->toBe('Prof. Reyes');
     expect($intern->location->city_municipality)->toBe('Tangub City');
-});
-
-test('a rejected intern can resubmit with a replacement COR pdf', function () {
-    Storage::fake('public');
-
-    $institute = approvalInstitute();
-    $program = approvalProgram($institute);
-    $intern = pendingIntern($institute, $program, [
-        'status' => 'rejected',
-        'rejection_reason' => 'Invalid COR',
-        'reviewed_by' => coordinatorUser($institute)->id,
-        'reviewed_at' => now(),
-    ]);
-    $oldPath = UploadedFile::fake()->create('old-cor.pdf', 512, 'application/pdf')->store('cor', 'public');
-    $intern->intern()->update(['cor_path' => $oldPath]);
-    Location::create([
-        'user_id' => $intern->id,
-        'region' => '10',
-        'province' => 'Misamis Occidental',
-        'city_municipality' => 'Tangub City',
-        'barangay' => 'Mantic',
-        'status' => 'active',
-    ]);
-
-    $this->actingAs($intern, 'api')
-        ->post('/api/my-registration/resubmit', [
-            'institute_id' => $institute->id,
-            'program_id' => $program->id,
-            'date_of_birth' => '2000-05-05',
-            'place_of_birth' => 'Ozamiz City',
-            'fathers_name' => 'Pedro Dela Cruz',
-            'fathers_occupation' => 'Farmer',
-            'fathers_contact' => '09170000000',
-            'mothers_name' => 'Juana Dela Cruz',
-            'mothers_occupation' => 'Teacher',
-            'mothers_contact' => '09170000001',
-            'parents_guardian_address' => 'Brgy. Mantic, Tangub City',
-            'practicum_instructor' => 'Prof. Reyes',
-            'cor' => UploadedFile::fake()->create('new-cor.pdf', 512, 'application/pdf'),
-            'region' => '10',
-            'province' => 'Misamis Occidental',
-            'city_municipality' => 'Tangub City',
-            'barangay' => 'Mantic',
-        ], ['Accept' => 'application/json'])
-        ->assertOk()
-        ->assertJsonPath('data.intern.status', 'pending');
-
-    $intern->refresh();
-
-    expect($intern->intern->cor_path)->not->toBe($oldPath);
-    Storage::disk('public')->assertExists($intern->intern->cor_path);
-    Storage::disk('public')->assertMissing($oldPath);
 });
 
 test('only a rejected registration can be resubmitted', function () {

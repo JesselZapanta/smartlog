@@ -78,6 +78,81 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasOne(Intern::class);
     }
 
+    /**
+     * Every OJT enrollment this user holds, oldest term first.
+     *
+     * Added alongside — not instead of — `intern()`. `intern()` stays a HasOne
+     * on purpose: it is read in 113 places and flipping it to a HasMany would
+     * silently resolve to an arbitrary term. Migrating those call sites to an
+     * explicit term is a separate, deliberate change.
+     */
+    public function internEnrollments(): HasMany
+    {
+        return $this->hasMany(Intern::class)->orderBy('academic_year_id');
+    }
+
+    /**
+     * The enrollment for the newest term, used where a single "current" record
+     * is needed but the user may now hold several.
+     */
+    public function activeEnrollment(): ?Intern
+    {
+        // A fresh relation, not internEnrollments(): that one already carries an
+        // ASC order, and appending a DESC would be ignored, returning the oldest term.
+        return $this->hasMany(Intern::class)->orderByDesc('academic_year_id')->first();
+    }
+
+    /**
+     * The enrollment for a specific term, or the active one when no term is given.
+     *
+     * Used by screens that can look at one intern across several terms, so a
+     * caller can pin the term instead of always landing on the newest.
+     */
+    public function enrollmentFor(?int $academicYearId = null): ?Intern
+    {
+        if (! $academicYearId) {
+            return $this->activeEnrollment();
+        }
+
+        return $this->hasMany(Intern::class)->where('academic_year_id', $academicYearId)->first();
+    }
+
+    /**
+     * The original registration row — the earliest term this user enrolled for.
+     *
+     * Registration status belongs to the first enrollment; later enrollments are
+     * created already approved and must not overwrite it.
+     */
+    public function originalEnrollment(): ?Intern
+    {
+        // reorder() rather than orderBy(): the relation already carries an
+        // orderBy('academic_year_id'), and appending a second one is ignored.
+        return $this->internEnrollments()->reorder('academic_year_id', 'asc')->first();
+    }
+
+    /**
+     * The term whose OJT grade was recorded as Passed, if any.
+     *
+     * Passing is terminal for this programme: once a term is graded Passed the
+     * intern has completed their OJT and may not enrol again. A Failed (or still
+     * ungraded) term leaves them free to enrol in a later term.
+     */
+    public function passedEnrollment(): ?Intern
+    {
+        // reorder() is required here. The relation orders by academic_year_id ASC,
+        // so appending orderByDesc produced "ASC, DESC" and ASC won — this would
+        // silently return the oldest passed term instead of the newest.
+        return $this->internEnrollments()
+            ->where('grade', 'Passed')
+            ->reorder('academic_year_id', 'desc')
+            ->first();
+    }
+
+    public function hasPassedOjt(): bool
+    {
+        return $this->passedEnrollment() !== null;
+    }
+
     public function hte(): HasOne
     {
         return $this->hasOne(Hte::class);

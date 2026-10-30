@@ -246,7 +246,7 @@ const moreActive = moreNavItems.some((item) => location.pathname === item.to || 
 
         <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white/95 px-3 py-2 shadow-[0_-6px_24px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 0.5rem)" }}>
           <div className="mx-auto flex max-w-md items-center justify-around gap-1">
-            {primaryBottomNav.map(({ to, label, icon: Icon, end }) => (
+            {primaryBottomNav.map(({ to, label, mobileLabel, icon: Icon, end }) => (
               <NavLink
                 key={to}
                 to={to}
@@ -260,7 +260,7 @@ const moreActive = moreNavItems.some((item) => location.pathname === item.to || 
                 }
               >
                 <Icon size={20} className="shrink-0" />
-                <span className="line-clamp-2 break-words text-center text-[11px] font-semibold leading-tight">{label}</span>
+                <span className="line-clamp-2 break-words text-center text-[11px] font-semibold leading-tight">{mobileLabel ?? label}</span>
               </NavLink>
             ))}
             {hasMore && (

@@ -1,4 +1,4 @@
-import { Bell, Building2, CheckCircle2, RefreshCw, Rocket, XCircle, FileText, Flag } from "lucide-react";
+import { Bell, Building2, CheckCircle2, RefreshCw, Rocket, XCircle, FileText, Flag, ArrowLeftRight, ClipboardCheck } from "lucide-react";
 
 export function routeFor(notification) {
   switch (notification.type) {
@@ -31,6 +31,25 @@ export function routeFor(notification) {
       return `/admin/htes/${notification.data?.hte_uuid || ""}`;
     case "admin_requirement_created":
       return "/admin/requirements";
+    case "ojt_enrollment_submitted":
+    case "ojt_enrollment_resubmitted":
+      return notification.data?.ojt_enrollment_id
+        ? `/coordinator/enrollments/${notification.data.ojt_enrollment_id}`
+        : "/coordinator/enrollments";
+    case "ojt_enrollment_approved":
+    case "ojt_enrollment_rejected":
+    case "ojt_enrollment_hours_updated":
+      return "/intern/enrollment";
+    case "transfer_requested":
+      return notification.data?.portal === "coordinator" ? "/coordinator/transfer-requests" : "/hte/transfer-requests";
+    case "transfer_accepted":
+      return notification.data?.portal === "intern" ? "/intern/evaluations" : "/instructor/transfer-requests";
+    case "transfer_evaluated":
+      return notification.data?.portal === "coordinator" ? "/coordinator/transfer-requests" : "/instructor/transfer-requests";
+    case "transfer_reassigned":
+      if (notification.data?.portal === "intern") return "/intern";
+      if (notification.data?.portal === "hte") return "/hte/interns";
+      return "/instructor/transfer-requests";
     default:
       return null;
   }
@@ -64,6 +83,22 @@ export function notificationIcon(type) {
       return FileText;
     case "journal_flagged":
       return Flag;
+    case "ojt_enrollment_approved":
+    case "ojt_enrollment_submitted":
+      return CheckCircle2;
+    case "ojt_enrollment_rejected":
+      return XCircle;
+    case "ojt_enrollment_resubmitted":
+    case "ojt_enrollment_hours_updated":
+      return RefreshCw;
+    case "transfer_requested":
+      return ArrowLeftRight;
+    case "transfer_accepted":
+      return CheckCircle2;
+    case "transfer_evaluated":
+      return ClipboardCheck;
+    case "transfer_reassigned":
+      return ArrowLeftRight;
     default:
       return Bell;
   }
@@ -101,6 +136,24 @@ export function notificationStyles(type) {
     case "journal_flagged":
     case "journal_rejected":
       return "bg-red-50 text-red-600";
+    case "ojt_enrollment_approved":
+      return "bg-green-50 text-green-700";
+    case "ojt_enrollment_submitted":
+      return "bg-sky-50 text-sky-600";
+    case "ojt_enrollment_resubmitted":
+      return "bg-amber-50 text-amber-600";
+    case "ojt_enrollment_rejected":
+      return "bg-red-50 text-red-600";
+    case "ojt_enrollment_hours_updated":
+      return "bg-violet-50 text-violet-600";
+    case "transfer_requested":
+      return "bg-amber-50 text-amber-600";
+    case "transfer_accepted":
+      return "bg-sky-50 text-sky-600";
+    case "transfer_evaluated":
+      return "bg-violet-50 text-violet-600";
+    case "transfer_reassigned":
+      return "bg-green-50 text-green-700";
     default:
       return "bg-gray-50 text-gray-500";
   }

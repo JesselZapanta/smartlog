@@ -14,6 +14,7 @@ import {
   ExternalLink,
   FileText,
   GraduationCap,
+  History,
   Info,
   Loader2,
   Lock,
@@ -30,6 +31,7 @@ import { typeLabel, typeTone } from "@/pages/admin/requirements/constants.js";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import StatusChip from "@/components/StatusChip";
+import { DialogBanner, DialogInfo, DialogOutcome } from "@/components/DialogInfo.jsx";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -48,6 +50,11 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+function formatShortDate(value) {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
 function formatMinutes(totalMinutes) {
   const minutes = totalMinutes || 0;
   return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
@@ -62,20 +69,6 @@ function DetailRow({ icon: Icon, label, value }) {
       <div className="min-w-0">
         <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{label}</p>
         <p className="truncate text-sm font-semibold text-gray-800">{value || "—"}</p>
-      </div>
-    </div>
-  );
-}
-
-function DialogInfo({ icon: Icon, label, value }) {
-  return (
-    <div className="flex min-w-0 items-start gap-2.5 rounded-lg border border-gray-100 bg-gray-50/60 p-2.5">
-      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-green-50 text-green-600 ring-1 ring-green-100">
-        <Icon size={12} />
-      </span>
-      <div className="min-w-0">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{label}</p>
-        <p className="break-words text-xs font-semibold text-gray-800">{value || "—"}</p>
       </div>
     </div>
   );
@@ -137,7 +130,7 @@ function StatusTags({ title, approved, pending, rejected }) {
   );
 }
 
-function RequirementCard({ requirement, actingId, onApprove, onReject }) {
+function RequirementCard({ requirement, actingId, onApprove, onReject, readOnly = false }) {
   const submission = requirement.submission;
   const approved = submission?.status === "approved";
 
@@ -201,7 +194,7 @@ function RequirementCard({ requirement, actingId, onApprove, onReject }) {
           <p className="px-1 py-2 text-xs font-medium text-gray-400">Not yet submitted</p>
         )}
 
-        {submission?.status === "pending" && (
+        {submission?.status === "pending" && !readOnly && (
           <div className="mt-2.5 grid grid-cols-2 gap-2">
             <Button
               variant="outline"
@@ -236,6 +229,7 @@ export default function CoordinatorInternRequirementsDetailPage() {
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedPlacementId, setSelectedPlacementId] = useState(null);
   const [actingId, setActingId] = useState(null);
   const [bulkActing, setBulkActing] = useState(false);
   const [rejectTarget, setRejectTarget] = useState(null);
@@ -260,16 +254,26 @@ export default function CoordinatorInternRequirementsDetailPage() {
     load();
   }, [load]);
 
+  function applySubmission(submission) {
+    const merge = (requirement) =>
+      requirement.id === submission.requirement_id ? { ...requirement, submission } : requirement;
+
+    setDetail((prev) => ({
+      ...prev,
+      requirements: prev.requirements.map(merge),
+      placements: (prev.placements || []).map((placement) =>
+        placement.is_current
+          ? { ...placement, requirements: placement.requirements.map(merge) }
+          : placement
+      ),
+    }));
+  }
+
   async function handleApprove(requirement) {
     setActingId(requirement.id);
     try {
       const res = await api.post(`/coordinator/intern-requirements/${uuid}/${requirement.id}/approve`);
-      setDetail((prev) => ({
-        ...prev,
-        requirements: prev.requirements.map((r) =>
-          r.id === requirement.id ? { ...r, submission: res.data.data } : r
-        ),
-      }));
+      applySubmission(res.data.data);
       toast.success("Requirement approved", { description: `${requirement.name} was approved.` });
     } catch (err) {
       toast.error("Approval failed", { description: firstErrorMessage(err) });
@@ -285,12 +289,7 @@ export default function CoordinatorInternRequirementsDetailPage() {
       const res = await api.post(`/coordinator/intern-requirements/${uuid}/${rejectTarget.id}/reject`, {
         reason: reason.trim(),
       });
-      setDetail((prev) => ({
-        ...prev,
-        requirements: prev.requirements.map((r) =>
-          r.id === rejectTarget.id ? { ...r, submission: res.data.data } : r
-        ),
-      }));
+      applySubmission(res.data.data);
       toast.success("Requirement rejected", { description: `${rejectTarget.name} was rejected.` });
       setRejectTarget(null);
       setReason("");
@@ -301,7 +300,8 @@ export default function CoordinatorInternRequirementsDetailPage() {
     }
   }
 
-  const pendingCount = detail?.requirements.filter((r) => r.submission?.status === "pending").length || 0;
+  const currentRequirements = detail?.requirements || [];
+  const pendingCount = currentRequirements.filter((r) => r.submission?.status === "pending").length || 0;
 
   async function handleApproveAll() {
     setBulkActing(true);
@@ -334,8 +334,19 @@ export default function CoordinatorInternRequirementsDetailPage() {
     }
   }
 
-  const preRequirements = detail?.requirements.filter((r) => r.type === "pre_deployment") || [];
-  const postRequirements = detail?.requirements.filter((r) => r.type === "post_deployment") || [];
+  // The requirements shown follow the selected placement, so a transferred
+  // intern's previous hosts stay reviewable next to the current one.
+  const placements = detail?.placements || [];
+  const selectedPlacement =
+    placements.find((p) => p.id === selectedPlacementId) ??
+    placements.find((p) => p.is_current) ??
+    placements[0] ??
+    null;
+  const viewingCurrent = !selectedPlacement || selectedPlacement.is_current;
+  const viewRequirements = selectedPlacement ? selectedPlacement.requirements : currentRequirements;
+
+  const preRequirements = viewRequirements.filter((r) => r.type === "pre_deployment");
+  const postRequirements = viewRequirements.filter((r) => r.type === "post_deployment");
   const preSubmitted = preRequirements.filter((r) => r.submission).length;
   const postSubmitted = postRequirements.filter((r) => r.submission).length;
   const preApproved = preRequirements.filter((r) => r.submission?.status === "approved").length;
@@ -345,12 +356,17 @@ export default function CoordinatorInternRequirementsDetailPage() {
   const postPending = postRequirements.filter((r) => r.submission?.status === "pending").length;
   const postRejected = postRequirements.filter((r) => r.submission?.status === "rejected").length;
 
+  // Actions and the completion strip always describe the current placement.
+  const currentPreRequirements = currentRequirements.filter((r) => r.type === "pre_deployment");
+  const currentPostRequirements = currentRequirements.filter((r) => r.type === "post_deployment");
+
   const complete = detail && detail.total > 0 && detail.submitted >= detail.total;
   const allApproved =
-    detail && detail.total > 0 && preRequirements.every((r) => r.submission?.status === "approved");
+    detail && detail.total > 0 && currentPreRequirements.every((r) => r.submission?.status === "approved");
   const deployed = ["ongoing", "hours_completed", "completed"].includes(detail?.intern?.ojt_status);
   const postDeploymentApproved =
-    postRequirements.length === 0 || postRequirements.every((r) => r.submission?.status === "approved");
+    currentPostRequirements.length === 0 ||
+    currentPostRequirements.every((r) => r.submission?.status === "approved");
   const showComplete = Boolean(
     detail &&
       detail.intern?.ojt_status === "hours_completed" &&
@@ -435,7 +451,7 @@ export default function CoordinatorInternRequirementsDetailPage() {
                 value={detail.intern?.start_date ? formatDate(detail.intern.start_date) : null}
               />
             </div>
-            {(pendingCount > 0 || (!deployed && allApproved) || showComplete) && (
+            {viewingCurrent && (pendingCount > 0 || (!deployed && allApproved) || showComplete) && (
               <div className="flex flex-col gap-2 border-t border-green-100/70 bg-green-50/40 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                 <p className="text-xs font-semibold text-green-800">
                   {complete
@@ -492,6 +508,59 @@ export default function CoordinatorInternRequirementsDetailPage() {
             )}
           </div>
 
+          {placements.length > 1 && (
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:gap-3">
+              {placements.map((placement) => {
+                const active = selectedPlacement?.id === placement.id;
+                return (
+                  <button
+                    key={placement.id}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setSelectedPlacementId(placement.id)}
+                    className={cn(
+                      "flex min-h-14 flex-1 items-center gap-3 rounded-2xl border px-3.5 py-2.5 text-left transition-colors",
+                      active
+                        ? "border-green-300 bg-green-50 ring-1 ring-green-200"
+                        : "border-gray-200 bg-white hover:bg-gray-50"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ring-1",
+                        active
+                          ? "bg-green-100 text-green-700 ring-green-200"
+                          : "bg-gray-100 text-gray-500 ring-gray-200"
+                      )}
+                    >
+                      {placement.is_current ? <Building2 size={16} /> : <History size={16} />}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span
+                        className={cn(
+                          "block truncate font-heading text-sm font-bold",
+                          active ? "text-green-950" : "text-gray-800"
+                        )}
+                      >
+                        {placement.hte || "Unknown host"}
+                      </span>
+                      <span
+                        className={cn(
+                          "block truncate text-[11px] font-semibold",
+                          active ? "text-green-700" : "text-gray-400"
+                        )}
+                      >
+                        {placement.is_current
+                          ? "Current placement"
+                          : `Previous host · ${formatShortDate(placement.assigned_at)} – ${formatShortDate(placement.unassigned_at)}`}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           <div
             className={`mt-4 grid grid-cols-1 gap-2 ${
               postRequirements.length > 0 ? "sm:grid-cols-2" : "sm:max-w-md"
@@ -546,6 +615,7 @@ export default function CoordinatorInternRequirementsDetailPage() {
                       key={requirement.id}
                       requirement={requirement}
                       actingId={actingId}
+                      readOnly={!viewingCurrent}
                       onApprove={handleApprove}
                       onReject={(requirement) => {
                         setReason("");
@@ -587,11 +657,12 @@ export default function CoordinatorInternRequirementsDetailPage() {
                 </AccordionTrigger>
                 <AccordionContent className="border-t border-gray-100 px-4 sm:px-5">
                   <div className="grid grid-cols-1 gap-4 pt-4 lg:grid-cols-2">
-                    {postRequirements.map((requirement) => (
-                      <RequirementCard
-                        key={requirement.id}
-                        requirement={requirement}
-actingId={actingId}
+                  {postRequirements.map((requirement) => (
+                    <RequirementCard
+                      key={requirement.id}
+                      requirement={requirement}
+                      actingId={actingId}
+                      readOnly={!viewingCurrent}
                       onApprove={handleApprove}
                       onReject={(requirement) => {
                         setReason("");
@@ -604,7 +675,7 @@ actingId={actingId}
             </AccordionItem>
           </Accordion>
           )}
-          {detail.requirements.length === 0 && (
+          {viewRequirements.length === 0 && (
             <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-gray-100 bg-white py-12 text-center shadow-sm ring-1 ring-gray-100">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-gray-400">
                 <ClipboardList size={20} />
@@ -747,44 +818,28 @@ actingId={actingId}
             />
           </div>
 
-          <div className="flex items-center justify-between gap-3 rounded-lg border border-green-100 bg-green-50/60 px-3 py-2.5">
-            <div className="flex min-w-0 items-center gap-2.5">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-green-100 text-green-700 ring-1 ring-green-100">
-                <Clock3 size={12} />
-              </span>
-              <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-green-700">
-                  Total OJT hours (checked only)
-                </p>
-                <p className="text-[10px] text-green-600/80">Instructor-checked photo DTRs</p>
-              </div>
-            </div>
-            <p className="shrink-0 font-heading text-sm font-bold text-green-800">
-              {formatMinutes(detail?.intern?.earned_minutes)}
-            </p>
-          </div>
+          <DialogBanner
+            label="Total OJT hours (checked only)"
+            hint="Instructor-checked photo DTRs"
+            value={formatMinutes(detail?.intern?.earned_minutes)}
+          />
 
-          <div className="rounded-xl border border-amber-100 bg-amber-50/70 p-3">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-amber-700">What happens after</p>
-            <ul className="mt-2 space-y-1.5">
-              <li className="flex items-start gap-2 text-xs text-gray-600">
-                <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-green-600" />
-                <span>
-                  The intern's status changes to{" "}
-                  <span className="font-semibold text-gray-800">Completed</span> and they receive a
-                  notification.
-                </span>
-              </li>
-              <li className="flex items-start gap-2 text-xs text-gray-600">
-                <Lock size={14} className="mt-0.5 shrink-0 text-green-600" />
-                <span>Their journals and photo DTR are locked as read-only.</span>
-              </li>
-              <li className="flex items-start gap-2 text-xs text-gray-600">
-                <Info size={14} className="mt-0.5 shrink-0 text-green-600" />
-                <span>This action finalizes the intern's OJT record.</span>
-              </li>
-            </ul>
-          </div>
+          <DialogOutcome
+            items={[
+              {
+                icon: CheckCircle2,
+                text: (
+                  <>
+                    The intern's status changes to{" "}
+                    <span className="font-semibold text-gray-800">Completed</span> and they receive a
+                    notification.
+                  </>
+                ),
+              },
+              { icon: Lock, text: "Their journals and photo DTR are locked as read-only." },
+              { icon: Info, text: "This action finalizes the intern's OJT record." },
+            ]}
+          />
 
           <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button

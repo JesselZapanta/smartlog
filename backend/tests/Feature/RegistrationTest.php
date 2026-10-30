@@ -50,7 +50,6 @@ function registrationPayload(bool $withActiveTerm = true): array
         'province' => 'Misamis Occidental',
         'city_municipality' => 'Tangub City',
         'barangay' => 'Mantic',
-        'cor' => UploadedFile::fake()->create('cor.pdf', 1024, 'application/pdf'),
     ];
 }
 
@@ -68,7 +67,6 @@ test('an intern can register with account, intern and location details', functio
     expect($user->email_verified_at)->toBeNull();
     expect($user->intern)->not->toBeNull();
     expect($user->intern->academic_year_id)->toBe($activeTerm->id);
-    expect($user->intern->cor_path)->not->toBeNull();
     expect($user->location)->not->toBeNull();
     expect($user->location->barangay)->toBe('Mantic');
     expect($response->json('data.access_token'))->toBeNull();
@@ -206,26 +204,4 @@ test('registration requires matching passwords', function () {
         ->assertJsonValidationErrors('password');
 
     expect(User::where('email', 'juan@smartlog.test')->exists())->toBeFalse();
-});
-
-test('registration requires a certificate of registration (COR)', function () {
-    $payload = registrationPayload();
-    unset($payload['cor']);
-
-    $this->post('/api/register', $payload, ['Accept' => 'application/json'])
-        ->assertStatus(422)
-        ->assertJsonValidationErrors('cor');
-
-    expect(User::where('email', 'juan@smartlog.test')->exists())->toBeFalse();
-});
-
-test('registration stores the COR pdf on the public disk', function () {
-    Storage::fake('public');
-
-    $this->post('/api/register', registrationPayload(), ['Accept' => 'application/json'])->assertStatus(201);
-
-    $user = User::where('email', 'juan@smartlog.test')->first();
-
-    expect($user->intern->cor_path)->not->toBeNull();
-    Storage::disk('public')->assertExists($user->intern->cor_path);
 });

@@ -2,6 +2,7 @@
 
 use App\Models\AcademicTerm;
 use App\Models\Coordinator;
+use App\Models\Hte;
 use App\Models\Institute;
 use App\Models\Intern;
 use App\Models\PhotoDtr;
@@ -53,6 +54,20 @@ function irIntern(Institute $institute, Program $program, array $attributes = []
     return $user;
 }
 
+function irHte(Institute $institute, Program $program, string $name): User
+{
+    $user = User::factory()->create(['role' => 'hte']);
+    Hte::create([
+        'user_id' => $user->id,
+        'name' => $name,
+        'institute_id' => $institute->id,
+        'program_id' => $program->id,
+        'status' => 'active',
+    ]);
+
+    return $user;
+}
+
 function irRequirement(Institute $institute, array $attributes = []): Requirement
 {
     return Requirement::create([
@@ -64,13 +79,14 @@ function irRequirement(Institute $institute, array $attributes = []): Requiremen
     ]);
 }
 
-function irSubmit(User $intern, Requirement $requirement): void
+function irSubmit(User $intern, Requirement $requirement, array $attributes = []): void
 {
     Storage::fake('public');
     RequirementSubmission::create([
         'user_id' => $intern->id,
         'requirement_id' => $requirement->id,
         'file_path' => UploadedFile::fake()->create('file.pdf', 1024, 'application/pdf')->store('requirement-submissions', 'public'),
+        ...$attributes,
     ]);
 }
 
@@ -220,6 +236,7 @@ test('coordinator can view an interns requirement submissions', function () {
         ->assertJsonPath('data.submitted', 1)
         ->assertJsonPath('data.total', 2)
         ->assertJsonCount(2, 'data.requirements')
+        ->assertJsonCount(0, 'data.placements')
         ->assertJsonStructure([
             'data' => [
                 'intern' => ['uuid', 'full_name', 'email', 'program'],
@@ -265,6 +282,63 @@ test('coordinator detail shows post-deployment requirements once hours are compl
 
     $types = collect($response->json('data.requirements'))->pluck('type')->sort()->values()->all();
     expect($types)->toBe(['post_deployment', 'post_deployment', 'pre_deployment']);
+});
+
+test('detail lists each placement with its own requirements after a transfer', function () {
+    $institute = irInstitute();
+    $program = irProgram($institute);
+    $coordinator = irCoordinator($institute);
+    $first = irHte($institute, $program, 'Vinz Itech');
+    $second = irHte($institute, $program, 'CICTO');
+    $intern = irIntern($institute, $program, ['email' => 'intern@smartlog.test']);
+
+    $record = $intern->intern;
+    $record->forceFill(['assigned_hte' => $first->hte->id])->save();
+
+    $med = irRequirement($institute, ['name' => 'Med Cert']);
+    $moa = irRequirement($institute, ['name' => 'MOA']);
+
+    irSubmit($intern, $med, ['placement_id' => $record->fresh()->activePlacement()->id]);
+    RequirementSubmission::query()->update(['status' => 'approved']);
+
+    // Transfer to the second host: the first placement closes, a fresh one opens.
+    $record->forceFill(['assigned_hte' => $second->hte->id])->save();
+    irSubmit($intern, $moa);
+
+    Intern::where('user_id', $intern->id)->update(['ojt_status' => 'completed']);
+
+    $response = $this->actingAs($coordinator, 'api')
+        ->getJson("/api/coordinator/intern-requirements/{$intern->uuid}")
+        ->assertOk();
+
+    expect($response->json('data.placements'))->toHaveCount(2);
+
+    // Newest first, the open placement leading and flagged current.
+    expect($response->json('data.placements.0.hte'))->toBe('CICTO');
+    expect($response->json('data.placements.0.is_current'))->toBeTrue();
+    expect($response->json('data.placements.0.assigned_at'))->not->toBeNull();
+    expect($response->json('data.placements.0.unassigned_at'))->toBeNull();
+    expect($response->json('data.placements.1.hte'))->toBe('Vinz Itech');
+    expect($response->json('data.placements.1.is_current'))->toBeFalse();
+    expect($response->json('data.placements.1.assigned_at'))->not->toBeNull();
+    expect($response->json('data.placements.1.unassigned_at'))->not->toBeNull();
+
+    // Each placement carries only its own submissions for the same requirement set.
+    $previous = collect($response->json('data.placements.1.requirements'))->keyBy('name');
+    $current = collect($response->json('data.placements.0.requirements'))->keyBy('name');
+
+    expect($previous['Med Cert']['submission']['status'])->toBe('approved');
+    expect($previous['MOA']['submission'])->toBeNull();
+    expect($current['Med Cert']['submission'])->toBeNull();
+    expect($current['MOA']['submission']['status'])->toBe('pending');
+
+    // The top-level payload still mirrors the placement in review.
+    $topLevel = collect($response->json('data.requirements'))->keyBy('name');
+
+    expect($topLevel['Med Cert']['submission'])->toBeNull();
+    expect($topLevel['MOA']['submission']['status'])->toBe('pending');
+    expect($response->json('data.submitted'))->toBe(1);
+    expect($response->json('data.total'))->toBe(2);
 });
 
 test('coordinator cannot view intern requirements from another institute', function () {
@@ -580,4 +654,162 @@ test('coordinator cannot mark an already completed intern as completed', functio
         ->assertJsonValidationErrors('ojt_status');
 
     expect(Intern::where('user_id', $intern->id)->first()->ojt_status)->toBe('completed');
+});
+
+/**
+ * Re-enroll an intern into a new term, mimicking an approved enrollment.
+ */
+function irReenroll(User $intern, Institute $institute, Program $program, AcademicTerm $term): Intern
+{
+    $record = Intern::create([
+        'user_id' => $intern->id,
+        'academic_year_id' => $term->id,
+        'institute_id' => $institute->id,
+        'program_id' => $program->id,
+    ]);
+
+    $record->forceFill(['status' => 'approved', 'ojt_status' => 'pending'])->save();
+
+    return $record;
+}
+
+test('coordinator reviews only the submissions of the term being viewed', function () {
+    Storage::fake('public');
+
+    $institute = irInstitute();
+    $program = irProgram($institute);
+    $coordinator = irCoordinator($institute);
+    $intern = irIntern($institute, $program);
+    $firstTermIntern = $intern->intern;
+    $requirement = irRequirement($institute);
+
+    irSubmit($intern, $requirement);
+    $firstSubmissionId = RequirementSubmission::where('intern_id', $firstTermIntern->id)->value('id');
+
+    $secondTerm = AcademicTerm::create(['code' => '2026-2027', 'description' => 'Second Semester']);
+    $secondTermIntern = irReenroll($intern, $institute, $program, $secondTerm);
+
+    // The new term has no submission yet, so the previous term's must not appear.
+    $this->actingAs($coordinator, 'api')
+        ->getJson("/api/coordinator/intern-requirements/{$intern->uuid}")
+        ->assertOk()
+        ->assertJsonPath('data.requirements.0.submission', null);
+
+    // Once the intern submits for the new term, that is the only submission shown.
+    RequirementSubmission::create([
+        'intern_id' => $secondTermIntern->id,
+        'user_id' => $intern->id,
+        'requirement_id' => $requirement->id,
+        'file_path' => UploadedFile::fake()->create('second.pdf', 1024, 'application/pdf')->store('requirement-submissions', 'public'),
+    ]);
+
+    $this->actingAs($coordinator, 'api')
+        ->getJson("/api/coordinator/intern-requirements/{$intern->uuid}")
+        ->assertOk()
+        ->assertJsonPath('data.requirements.0.submission.id', RequirementSubmission::where('intern_id', $secondTermIntern->id)->value('id'));
+
+    // Both rows still exist.
+    expect(RequirementSubmission::where('id', $firstSubmissionId)->exists())->toBeTrue()
+        ->and(RequirementSubmission::count())->toBe(2);
+});
+
+test('coordinator cannot approve a previous term submission from the current term', function () {
+    Storage::fake('public');
+
+    $institute = irInstitute();
+    $program = irProgram($institute);
+    $coordinator = irCoordinator($institute);
+    $intern = irIntern($institute, $program);
+    $requirement = irRequirement($institute);
+
+    irSubmit($intern, $requirement);
+
+    $secondTerm = AcademicTerm::create(['code' => '2026-2027', 'description' => 'Second Semester']);
+    irReenroll($intern, $institute, $program, $secondTerm);
+
+    $this->actingAs($coordinator, 'api')
+        ->postJson("/api/coordinator/intern-requirements/{$intern->uuid}/{$requirement->id}/approve")
+        ->assertStatus(422);
+
+    expect(RequirementSubmission::first()->status)->toBe('pending');
+});
+
+test('approve all only clears the pending submissions of the current term', function () {
+    Storage::fake('public');
+
+    $institute = irInstitute();
+    $program = irProgram($institute);
+    $coordinator = irCoordinator($institute);
+    $intern = irIntern($institute, $program);
+    $requirement = irRequirement($institute);
+
+    irSubmit($intern, $requirement);
+    $firstSubmissionId = RequirementSubmission::first()->id;
+
+    $secondTerm = AcademicTerm::create(['code' => '2026-2027', 'description' => 'Second Semester']);
+    $secondTermIntern = irReenroll($intern, $institute, $program, $secondTerm);
+
+    $secondSubmission = RequirementSubmission::create([
+        'intern_id' => $secondTermIntern->id,
+        'user_id' => $intern->id,
+        'requirement_id' => $requirement->id,
+        'file_path' => UploadedFile::fake()->create('second.pdf', 1024, 'application/pdf')->store('requirement-submissions', 'public'),
+    ]);
+
+    $this->actingAs($coordinator, 'api')
+        ->postJson("/api/coordinator/intern-requirements/{$intern->uuid}/approve-all")
+        ->assertOk()
+        ->assertJsonPath('data.count', 1);
+
+    expect($secondSubmission->refresh()->status)->toBe('approved')
+        ->and(RequirementSubmission::where('id', $firstSubmissionId)->value('status'))->toBe('pending');
+});
+
+test('a previous terms approvals do not deploy the intern in a new term', function () {
+    Storage::fake('public');
+
+    $institute = irInstitute();
+    $program = irProgram($institute);
+    $coordinator = irCoordinator($institute);
+    $intern = irIntern($institute, $program);
+    $requirement = irRequirement($institute);
+
+    irSubmit($intern, $requirement);
+    RequirementSubmission::first()->forceFill(['status' => 'approved'])->save();
+
+    $secondTerm = AcademicTerm::create(['code' => '2026-2027', 'description' => 'Second Semester']);
+    irReenroll($intern, $institute, $program, $secondTerm);
+
+    // The gate is per term, so a fresh checklist blocks deployment.
+    $this->actingAs($coordinator, 'api')
+        ->postJson("/api/coordinator/intern-requirements/{$intern->uuid}/deploy")
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['requirements']);
+
+    expect($intern->intern->fresh()->academic_year_id)->not->toBe($secondTerm->id);
+});
+
+test('the coordinator intern list counts each term separately', function () {
+    Storage::fake('public');
+
+    $institute = irInstitute();
+    $program = irProgram($institute);
+    $coordinator = irCoordinator($institute);
+    $intern = irIntern($institute, $program);
+    $requirement = irRequirement($institute);
+
+    irSubmit($intern, $requirement);
+
+    $secondTerm = AcademicTerm::create(['code' => '2026-2027', 'description' => 'Second Semester']);
+    irReenroll($intern, $institute, $program, $secondTerm);
+
+    $response = $this->actingAs($coordinator, 'api')
+        ->getJson('/api/coordinator/intern-requirements')
+        ->assertOk();
+
+    // The first term shows 1 of 1 submitted; the new term shows 0 of 1.
+    $rows = collect($response->json('data'))->keyBy('id');
+
+    expect($rows[$intern->intern->id]['submitted'])->toBe(1)
+        ->and($rows[Intern::where('user_id', $intern->id)->where('academic_year_id', $secondTerm->id)->value('id')]['submitted'])->toBe(0);
 });

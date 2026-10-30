@@ -5,7 +5,6 @@ use App\Models\Coordinator;
 use App\Models\DailyJournal;
 use App\Models\Institute;
 use App\Models\Intern;
-use App\Models\OjtHour;
 use App\Models\PhotoDtr;
 use App\Models\Program;
 use App\Models\User;
@@ -102,11 +101,11 @@ test('instructor approve and reject notify the intern', function () {
 
 test('instructor intern detail includes required and earned ojt hours', function () {
     $institute = instructorRecordInstitute();
-    OjtHour::create(['institute_id' => $institute->id, 'hours' => 300]);
     $program = instructorRecordProgram($institute);
     $instructor = User::factory()->create(['role' => 'ojt_instructor']);
     Coordinator::create(['user_id' => $instructor->id, 'institute_id' => $institute->id, 'program_id' => $program->id]);
     $intern = instructorRecordIntern($institute, $program);
+    declareOjtHours($intern->intern, 300);
 
     $checked = instructorRecordDtr($intern, '2026-08-15');
     $checked->forceFill(['status' => 'checked'])->save();

@@ -10,11 +10,9 @@ use App\Http\Resources\LocationResource;
 use App\Models\Intern;
 use App\Models\User;
 use App\Models\UserNotification;
-use App\Support\StorageUrl;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class RegistrationApprovalController extends Controller
@@ -187,13 +185,13 @@ class RegistrationApprovalController extends Controller
 
         return response()->json([
             'data' => [
-                'intern' => $user->intern ? new InternResource($user->intern) : null,
+                'intern' => $user->originalEnrollment() ? new InternResource($user->originalEnrollment()) : null,
                 'location' => $user->location ? new LocationResource($user->location) : null,
-                'institute' => $user->intern?->institute
-                    ? ['id' => $user->intern->institute_id, 'name' => $user->intern->institute->name]
+                'institute' => $user->originalEnrollment()?->institute
+                    ? ['id' => $user->originalEnrollment()->institute_id, 'name' => $user->originalEnrollment()->institute->name]
                     : null,
-                'program' => $user->intern?->program
-                    ? ['id' => $user->intern->program_id, 'name' => $user->intern->program->name]
+                'program' => $user->originalEnrollment()?->program
+                    ? ['id' => $user->originalEnrollment()->program_id, 'name' => $user->originalEnrollment()->program->name]
                     : null,
             ],
         ]);
@@ -207,19 +205,30 @@ class RegistrationApprovalController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        if ($user->role !== 'intern' || ! $user->intern) {
+        if ($user->role !== 'intern') {
             throw ValidationException::withMessages([
                 'registration' => ['Only interns with a registration can resubmit.'],
             ]);
         }
 
-        if ($user->intern->status !== 'rejected') {
+        // Resolved once into a local. originalEnrollment() runs a fresh query each
+        // call and returns a new instance, so calling it repeatedly would discard
+        // the fill() below — the cached $user->intern relation used to hide that.
+        $intern = $user->originalEnrollment();
+
+        if (! $intern) {
+            throw ValidationException::withMessages([
+                'registration' => ['Only interns with a registration can resubmit.'],
+            ]);
+        }
+
+        if ($intern->status !== 'rejected') {
             throw ValidationException::withMessages([
                 'registration' => ['Only a rejected registration can be resubmitted.'],
             ]);
         }
 
-        $user->intern->fill($request->safe()->only([
+        $intern->fill($request->safe()->only([
             'institute_id',
             'program_id',
             'date_of_birth',
@@ -234,23 +243,12 @@ class RegistrationApprovalController extends Controller
             'practicum_instructor',
         ]));
 
-        $user->intern->forceFill([
+        $intern->forceFill([
             'status' => 'pending',
             'rejection_reason' => null,
             'reviewed_by' => null,
             'reviewed_at' => null,
         ])->save();
-
-        if ($request->hasFile('cor')) {
-            $oldPath = $user->intern->cor_path;
-            $newPath = $request->file('cor')->store('cor', 'public');
-
-            if ($oldPath && $oldPath !== $newPath) {
-                Storage::disk('public')->delete($oldPath);
-            }
-
-            $user->intern->forceFill(['cor_path' => $newPath])->save();
-        }
 
         $user->location()->updateOrCreate([], $request->safe()->only([
             'region',
@@ -260,7 +258,7 @@ class RegistrationApprovalController extends Controller
         ]));
 
         UserNotification::notifyCoordinators(
-            $user->intern->institute_id,
+            $intern->institute_id,
             'registration_resubmitted',
             'Registration resubmitted',
             "{$user->full_name} resubmitted their registration for review.",
@@ -270,7 +268,7 @@ class RegistrationApprovalController extends Controller
         return response()->json([
             'data' => [
                 'message' => 'Registration resubmitted. Your OJT coordinator will review it again.',
-                'intern' => new InternResource($user->intern->refresh()),
+                'intern' => new InternResource($user->originalEnrollment()->refresh()),
             ],
         ]);
     }
@@ -292,7 +290,7 @@ class RegistrationApprovalController extends Controller
             abort(403, 'Your account is not assigned to an institute yet.');
         }
 
-        $intern = $user->intern;
+        $intern = $user->originalEnrollment();
 
         if (! $intern) {
             abort(404, 'This user has no intern registration.');
@@ -341,7 +339,6 @@ class RegistrationApprovalController extends Controller
             'institute' => $intern->institute?->name,
             'academic_year' => $intern->academicYear?->description,
             'practicum_instructor' => $intern->practicum_instructor,
-            'cor' => StorageUrl::url($intern->cor_path),
             'date_of_birth' => $intern->date_of_birth,
             'place_of_birth' => $intern->place_of_birth,
             'fathers_name' => $intern->fathers_name,

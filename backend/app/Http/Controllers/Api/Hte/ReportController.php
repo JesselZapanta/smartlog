@@ -9,12 +9,12 @@ use App\Models\Institute;
 use App\Models\Intern;
 use App\Models\InternEvaluation;
 use App\Models\Issue;
-use App\Models\OjtHour;
 use App\Models\PhotoDtr;
 use App\Models\Program;
 use App\Models\Requirement;
 use App\Models\RequirementSubmission;
 use App\Models\User;
+use App\Support\OjtHoursReport;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -22,7 +22,7 @@ class ReportController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $hte = $request->user()->hte;
+        $hte = $request->user()->hte?->loadMissing('program');
 
         if (! $hte) {
             return response()->json([
@@ -31,13 +31,13 @@ class ReportController extends Controller
                     'institute' => null,
                     'academic_year' => null,
                     'users' => ['total' => 0, 'by_role' => []],
-                    'interns' => ['total' => 0, 'pending' => 0, 'approved' => 0, 'rejected' => 0, 'by_institute' => [], 'by_program' => [], 'by_ojt_status' => [], 'recent' => []],
+                    'interns' => ['total' => 0, 'pending' => 0, 'approved' => 0, 'rejected' => 0, 'by_institute' => [], 'by_program' => [], 'by_ojt_status' => [], 'recent' => [], 'rows' => []],
                     'htes' => ['total' => 0, 'by_status' => [], 'detail' => []],
-                    'dtr' => ['total' => 0, 'by_status' => [], 'recent' => []],
-                    'journals' => ['total' => 0, 'recent' => []],
+                    'dtr' => ['total' => 0, 'by_status' => [], 'recent' => [], 'rows' => []],
+                    'journals' => ['total' => 0, 'recent' => [], 'rows' => []],
                     'requirements' => ['total' => 0, 'by_status' => [], 'definitions_total' => 0, 'by_requirement' => []],
-                    'issues' => ['total' => 0, 'by_status' => [], 'by_type' => [], 'recent' => []],
-                    'evaluations' => ['total' => 0, 'recent' => []],
+                    'issues' => ['total' => 0, 'by_status' => [], 'by_type' => [], 'recent' => [], 'rows' => []],
+                    'evaluations' => ['total' => 0, 'recent' => [], 'rows' => []],
                     'programs' => ['total' => 0],
                     'institutes' => ['total' => 0, 'list' => []],
                     'programs_list' => [],
@@ -102,6 +102,57 @@ class ReportController extends Controller
         $dtrQuery = PhotoDtr::whereHas('intern', fn ($q) => $q->where('assigned_hte', $hte->id)->when($targetYearId, fn ($qq) => $qq->where('academic_year_id', $targetYearId)));
         $totalDtr = (clone $dtrQuery)->count();
         $dtrByStatus = (clone $dtrQuery)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
+        $internRows = Intern::where('assigned_hte', $hte->id)
+            ->when($targetYearId, fn ($q) => $q->where('academic_year_id', $targetYearId))
+            ->with(['user', 'program'])
+            ->join('users', 'interns.user_id', '=', 'users.id')
+            ->orderBy('users.lastname')
+            ->select('interns.*')
+            ->get()
+            ->map(fn (Intern $i): array => [
+                'name' => $i->user?->full_name ?? '—',
+                'program' => $i->program?->name ?? '—',
+                'status' => $i->status,
+                'ojt_status' => $i->ojt_status,
+            ])
+            ->values();
+
+        $dtrRows = (clone $dtrQuery)
+            ->with(['intern.user'])
+            ->oldest('dtr_date')
+            ->get()
+            ->map(fn (PhotoDtr $d): array => [
+                'student' => $d->intern?->user?->full_name ?? '—',
+                'date' => $d->dtr_date?->toDateString(),
+                'am_in' => $d->am_in_time,
+                'am_out' => $d->am_out_time,
+                'pm_in' => $d->pm_in_time,
+                'pm_out' => $d->pm_out_time,
+                'status' => $d->status,
+            ])
+            ->values();
+
+        $evaluationRows = InternEvaluation::where('hte_id', $hte->id)
+            ->when($targetYearId, fn ($q) => $q->whereHas('intern', fn ($qq) => $qq->where('academic_year_id', $targetYearId)))
+            ->with(['intern.user'])
+            ->oldest('id')
+            ->get()
+            ->groupBy(fn (InternEvaluation $ev): string => (string) ($ev->intern?->id ?? 'unknown'))
+            ->map(function ($group, $internId): array {
+                $ratings = $group->whereNotNull('rating')->where('is_na', false);
+                $count = $ratings->count();
+                $internId = (int) $internId;
+
+                return [
+                    'student' => $group->first()?->intern?->user?->full_name ?? '—',
+                    'rated' => $count,
+                    'average' => $count > 0 ? round($ratings->avg('rating'), 2) : null,
+                    'criteria' => $group->count(),
+                    'intern_id' => $internId,
+                ];
+            })
+            ->values();
+
         $recentDtr = (clone $dtrQuery)->with(['intern.user'])->latest('dtr_date')->limit(5)->get()->map(fn (PhotoDtr $d): array => [
             'student' => $d->intern?->user ? trim(implode(' ', array_filter([$d->intern->user->firstname, $d->intern->user->lastname]))) : '—',
             'date' => $d->dtr_date,
@@ -143,8 +194,25 @@ class ReportController extends Controller
             'student' => $i->intern?->user ? trim(implode(' ', array_filter([$i->intern->user->firstname, $i->intern->user->lastname]))) : '—',
             'type' => $i->type,
             'status' => $i->status,
-            'excerpt' => mb_strimwidth($i->issues ?? $i->description ?? '', 0, 60, '…'),
+            'excerpt' => mb_strimwidth($i->issues ?? '', 0, 60, '…'),
         ])->values();
+
+        $issueRows = (clone $issueQuery)
+            ->with(['intern.user', 'hte'])
+            ->oldest('id')
+            ->get()
+            ->map(fn (Issue $i): array => [
+                'id' => $i->id,
+                'student' => $i->intern?->user?->full_name ?? '—',
+                'hte' => $i->hte?->name ?? '—',
+                'type' => $i->type,
+                'direction' => $i->type === 'hte' ? 'HTE' : 'Intern',
+                'status' => $i->status,
+                'issues' => $i->issues ?? '',
+                'solutions' => $i->solutions ?? '',
+                'recommendations' => $i->recommendations ?? '',
+                'created_at' => $i->created_at?->toDateString(),
+            ])->values();
 
         $evaluationQuery = InternEvaluation::where('hte_id', $hte->id)->whereHas('intern', fn ($q) => $q->when($targetYearId, fn ($qq) => $qq->where('academic_year_id', $targetYearId)));
         $totalEvaluations = (clone $evaluationQuery)->count();
@@ -163,13 +231,31 @@ class ReportController extends Controller
         $programsList = Program::where('institute_id', $instituteId)->with('institute:id,name')->select('id', 'institute_id', 'name', 'is_active')->get();
         $totalAcademicTerms = AcademicTerm::count();
         $academicTerms = AcademicTerm::select('id', 'code', 'description', 'status', 'start_at', 'end_at')->orderByDesc('id')->get();
-        $ojtHours = OjtHour::where('institute_id', $instituteId)->with('institute:id,name')->get();
+        $ojtHours = OjtHoursReport::rows($instituteId, $targetYearId);
+
+        $journalRows = (clone $journalQuery)
+            ->with(['intern.user'])
+            ->oldest('date')
+            ->get()
+            ->map(fn (DailyJournal $j): array => [
+                'student' => $j->intern?->user?->full_name ?? '—',
+                'date' => $j->date?->toDateString(),
+                'title' => $j->title,
+                'status' => $j->status,
+            ])
+            ->values();
 
         $totalUsers = User::where('role', 'intern')->whereHas('intern', fn ($q) => $q->where('assigned_hte', $hte->id))->count();
 
         return response()->json([
             'data' => [
-                'hte' => ['id' => $hte->id, 'name' => $hte->name],
+                'hte' => [
+                    'id' => $hte->id,
+                    'name' => $hte->name,
+                    'address' => null,
+                    'contact_name' => $request->user()->full_name ?? trim(implode(' ', array_filter([$request->user()->firstname, $request->user()->lastname]))) ?: '—',
+                    'program' => $hte->program?->name ?? '—',
+                ],
                 'institute' => $institute ? ['id' => $institute->id, 'name' => $institute->name] : null,
                 'academic_year' => $targetYearId ? AcademicTerm::find($targetYearId)?->only(['id', 'code', 'description']) : null,
                 'users' => [
@@ -185,6 +271,7 @@ class ReportController extends Controller
                     'by_program' => $internsByProgram,
                     'by_ojt_status' => $internsByOjtStatus->toArray(),
                     'recent' => $recentInterns,
+                    'rows' => $internRows,
                 ],
                 'htes' => [
                     'total' => $totalHtes,
@@ -195,10 +282,12 @@ class ReportController extends Controller
                     'total' => $totalDtr,
                     'by_status' => $dtrByStatus->toArray(),
                     'recent' => $recentDtr,
+                    'rows' => $dtrRows,
                 ],
                 'journals' => [
                     'total' => $totalJournals,
                     'recent' => $recentJournals,
+                    'rows' => $journalRows,
                 ],
                 'requirements' => [
                     'total' => $totalRequirements,
@@ -211,10 +300,12 @@ class ReportController extends Controller
                     'by_status' => $issuesByStatus->toArray(),
                     'by_type' => $issuesByType->toArray(),
                     'recent' => $recentIssues,
+                    'rows' => $issueRows,
                 ],
                 'evaluations' => [
                     'total' => $totalEvaluations,
                     'recent' => $recentEvaluations,
+                    'rows' => $evaluationRows,
                 ],
                 'programs' => [
                     'total' => $totalPrograms,

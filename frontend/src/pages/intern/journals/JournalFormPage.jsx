@@ -38,6 +38,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import NotDeployedCard from "@/components/NotDeployedCard.jsx";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
@@ -570,16 +571,7 @@ export default function JournalFormPage() {
           </p>
         </div>
       ) : ojtStatus === "pending" || ojtStatus === "" ? (
-        <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-amber-100 bg-amber-50/60 p-8 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
-            <FileClock size={20} />
-          </div>
-          <p className="text-sm font-semibold text-amber-800">Not deployed yet</p>
-          <p className="max-w-sm text-xs text-amber-700/80">
-            You can start writing your daily journal once the coordinator deploys you to your host training
-            establishment.
-          </p>
-        </div>
+        <NotDeployedCard description="You can start writing your daily journal once the coordinator deploys you to your host training establishment." />
       ) : !dtr && !entry ? (
         <div className="mt-6 flex flex-col items-center gap-2 rounded-2xl border border-gray-100 bg-white p-10 text-center shadow-sm ring-1 ring-gray-100">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-500">

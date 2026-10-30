@@ -50,9 +50,9 @@ export default function InstructorInternDetailPage() {
             <Link to="/instructor/interns">Back to deployed interns</Link>
           </Button>
         </div>
-      ) : intern ? (
-        <InternDetailView intern={intern} />
-      ) : (
+) : intern ? (
+          <InternDetailView intern={intern} />
+        ) : (
         <div className="flex items-center justify-center py-16">
           <Loader2 size={28} className="animate-spin text-green-600" />
         </div>

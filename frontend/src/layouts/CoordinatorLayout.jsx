@@ -1,4 +1,4 @@
-import { AlertTriangle, BarChart3, LayoutDashboard, ClipboardCheck, Users, Store, FileText, ClipboardList, UserCheck, Star, FileCheck, Building2 } from "lucide-react";
+import { AlertTriangle, ArrowLeftRight, BarChart3, LayoutDashboard, ClipboardCheck, Users, Store, FileText, ClipboardList, UserCheck, Star, FileCheck, Building2, RefreshCw } from "lucide-react";
 import AppShell from "@/layouts/AppShell.jsx";
 
 const navItems = [
@@ -7,7 +7,8 @@ const navItems = [
 ];
 
 const footerNavItems = [
-  { to: "/coordinator/issues", label: "Issues", icon: AlertTriangle },
+  { to: "/coordinator/intern-issues", label: "Intern Issues & Concerns", icon: AlertTriangle },
+  { to: "/coordinator/hte-issues", label: "HTE Issues & Concerns", icon: AlertTriangle },
   { to: "/coordinator/reports", label: "Report", icon: BarChart3 },
 ];
 
@@ -18,7 +19,9 @@ const navGroups = [
     items: [
       { to: "/coordinator/registrations", label: "Registrations", icon: ClipboardCheck },
       { to: "/coordinator/interns", label: "Approved Interns", icon: Users },
+      { to: "/coordinator/enrollments", label: "OJT Enrollments", icon: RefreshCw },
       { to: "/coordinator/hte-assignments", label: "Assigned Interns", icon: UserCheck },
+      { to: "/coordinator/transfer-requests", label: "Transfers", icon: ArrowLeftRight },
     ],
   },
   {
@@ -43,7 +46,8 @@ const navGroups = [
 const bottomNav = [
   { to: "/coordinator", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/coordinator/interns", label: "Approved Interns", icon: Users },
-  { to: "/coordinator/issues", label: "Issues", icon: AlertTriangle },
+  { to: "/coordinator/intern-issues", label: "Intern Issues & Concerns", mobileLabel: "Intern Issues", icon: AlertTriangle },
+  { to: "/coordinator/hte-issues", label: "HTE Issues & Concerns", mobileLabel: "HTE Issues", icon: AlertTriangle },
   { to: "/coordinator/reports", label: "Report", icon: BarChart3 },
 ];
 

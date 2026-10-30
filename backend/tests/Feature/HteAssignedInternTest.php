@@ -4,7 +4,6 @@ use App\Models\AcademicTerm;
 use App\Models\Hte;
 use App\Models\Institute;
 use App\Models\Intern;
-use App\Models\OjtHour;
 use App\Models\PhotoDtr;
 use App\Models\Program;
 use App\Models\User;
@@ -167,10 +166,10 @@ test('hte cannot view an intern assigned to another establishment', function () 
 
 test('hte can mark an assigned intern as hours completed once they meet the requirement', function () {
     $institute = hteInternInstitute();
-    OjtHour::create(['institute_id' => $institute->id, 'hours' => 10]);
     $program = hteInternProgram($institute);
     $hte = hteInternHte($institute, $program);
     $intern = hteInternAssigned($institute, $program, $hte->hte->id);
+    declareOjtHours($intern->intern, 10);
     hteInternCheckedDtr($intern, '2026-08-15');
     hteInternCheckedDtr($intern, '2026-08-16');
 
@@ -190,10 +189,10 @@ test('hte can mark an assigned intern as hours completed once they meet the requ
 
 test('hte cannot mark hours completed before the intern meets the requirement', function () {
     $institute = hteInternInstitute();
-    OjtHour::create(['institute_id' => $institute->id, 'hours' => 10]);
     $program = hteInternProgram($institute);
     $hte = hteInternHte($institute, $program);
     $intern = hteInternAssigned($institute, $program, $hte->hte->id);
+    declareOjtHours($intern->intern, 10);
     hteInternCheckedDtr($intern, '2026-08-15');
 
     $this->actingAs($hte, 'api')
@@ -206,11 +205,11 @@ test('hte cannot mark hours completed before the intern meets the requirement', 
 
 test('hte cannot mark an intern assigned to another establishment', function () {
     $institute = hteInternInstitute();
-    OjtHour::create(['institute_id' => $institute->id, 'hours' => 10]);
     $program = hteInternProgram($institute);
     $hte = hteInternHte($institute, $program);
     $otherHte = hteInternHte($institute, $program);
     $intern = hteInternAssigned($institute, $program, $otherHte->hte->id);
+    declareOjtHours($intern->intern, 10);
     hteInternCheckedDtr($intern, '2026-08-15');
 
     $this->actingAs($hte, 'api')
@@ -220,10 +219,10 @@ test('hte cannot mark an intern assigned to another establishment', function () 
 
 test('hte cannot mark a non-ongoing intern as hours completed', function () {
     $institute = hteInternInstitute();
-    OjtHour::create(['institute_id' => $institute->id, 'hours' => 10]);
     $program = hteInternProgram($institute);
     $hte = hteInternHte($institute, $program);
     $intern = hteInternAssigned($institute, $program, $hte->hte->id, [], ['ojt_status' => 'pending']);
+    declareOjtHours($intern->intern, 10);
 
     $this->actingAs($hte, 'api')
         ->postJson("/api/hte/interns/{$intern->uuid}/complete")

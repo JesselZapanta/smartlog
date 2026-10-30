@@ -26,6 +26,16 @@ class DocumentResource extends JsonResource
             'submitted_at' => $this->created_at,
             'reviewed_at' => $this->reviewed_at,
             'reviewed_by' => $this->reviewer?->full_name,
+            // Which placement (host) this file was submitted under. A transferred
+            // intern holds one placement per host, so the admin can tell a file
+            // from the current host apart from a previous host's record.
+            'placement' => $this->placement ? [
+                'id' => $this->placement->id,
+                'is_current' => $this->placement->isActive(),
+                'hte' => $this->placement->hte?->name,
+                'assigned_at' => $this->placement->assigned_at,
+                'unassigned_at' => $this->placement->unassigned_at,
+            ] : null,
             'intern' => $user ? [
                 'uuid' => $user->uuid,
                 'full_name' => $user->full_name,

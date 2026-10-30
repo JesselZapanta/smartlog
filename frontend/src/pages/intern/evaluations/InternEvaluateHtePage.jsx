@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
+  ArrowLeftRight,
   Briefcase,
   Building2,
   ClipboardCheck,
@@ -250,6 +251,57 @@ export default function InternEvaluateHtePage() {
                     <p className="text-xs font-bold uppercase tracking-wide text-amber-700">Evaluation submitted — read only</p>
                     <p className="mt-0.5 text-sm leading-relaxed text-amber-800">
                       Your evaluation has been submitted and can no longer be edited. The responses below are final.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {data.transfer && (
+                <div
+                  className={`flex items-start gap-2.5 rounded-2xl p-3.5 ring-1 ${
+                    data.transfer.status === "accepted"
+                      ? "bg-amber-50 ring-amber-200"
+                      : data.transfer.status === "evaluated"
+                        ? "bg-violet-50 ring-violet-200"
+                        : "bg-sky-50 ring-sky-200"
+                  }`}
+                >
+                  <ArrowLeftRight
+                    size={18}
+                    className={`mt-0.5 shrink-0 ${
+                      data.transfer.status === "accepted"
+                        ? "text-amber-600"
+                        : data.transfer.status === "evaluated"
+                          ? "text-violet-600"
+                          : "text-sky-600"
+                    }`}
+                  />
+                  <div className="min-w-0">
+                    <p
+                      className={`text-xs font-bold uppercase tracking-wide ${
+                        data.transfer.status === "accepted"
+                          ? "text-amber-700"
+                          : data.transfer.status === "evaluated"
+                            ? "text-violet-700"
+                            : "text-sky-700"
+                      }`}
+                    >
+                      Transfer in progress
+                    </p>
+                    <p
+                      className={`mt-0.5 text-sm leading-relaxed ${
+                        data.transfer.status === "accepted"
+                          ? "text-amber-800"
+                          : data.transfer.status === "evaluated"
+                            ? "text-violet-800"
+                            : "text-sky-800"
+                      }`}
+                    >
+                      {data.transfer.status === "accepted"
+                        ? `Your host accepted the transfer. Rate ${data.hte?.name || "your HTE"} for the placement that is closing — this form unlocks early so both sides can finish before the reassignment.`
+                        : data.transfer.status === "evaluated"
+                          ? "All evaluations are complete. Your coordinator will reassign you to a new host soon."
+                          : "A transfer request for your current placement is waiting for your HTE to accept."}
                     </p>
                   </div>
                 </div>

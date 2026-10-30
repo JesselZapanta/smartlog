@@ -6,16 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Models\AcademicTerm;
 use App\Models\DailyJournal;
 use App\Models\Hte;
+use App\Models\HteEvaluation;
 use App\Models\Institute;
 use App\Models\Intern;
 use App\Models\InternEvaluation;
 use App\Models\Issue;
-use App\Models\OjtHour;
 use App\Models\PhotoDtr;
 use App\Models\Program;
 use App\Models\Requirement;
 use App\Models\RequirementSubmission;
 use App\Models\User;
+use App\Support\OjtHoursReport;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -97,6 +98,23 @@ class ReportController extends Controller
             ])
             ->values();
 
+        $internRows = Intern::where('institute_id', $instituteId)
+            ->when($targetYearId, fn ($q) => $q->where('academic_year_id', $targetYearId))
+            ->with(['user', 'program', 'assignedHte'])
+            ->join('users', 'interns.user_id', '=', 'users.id')
+            ->orderBy('users.lastname')
+            ->orderBy('users.firstname')
+            ->select('interns.*')
+            ->get()
+            ->map(fn (Intern $intern): array => [
+                'name' => $intern->user?->full_name ?? '—',
+                'program' => $intern->program?->name ?? '—',
+                'hte' => $intern->assignedHte?->name ?? '—',
+                'status' => $intern->status,
+                'ojt_status' => $intern->ojt_status,
+            ])
+            ->values();
+
         $dtrQuery = PhotoDtr::whereHas('intern', fn ($q) => $q->where('institute_id', $instituteId)->when($targetYearId, fn ($qq) => $qq->where('academic_year_id', $targetYearId)));
         $totalDtr = (clone $dtrQuery)->count();
         $dtrByStatus = (clone $dtrQuery)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
@@ -151,6 +169,95 @@ class ReportController extends Controller
             'created_at' => $ev->created_at?->toDateString(),
         ])->values();
 
+        $requirementRows = (clone $requirementQuery)
+            ->with(['user', 'requirement'])
+            ->oldest('id')
+            ->get()
+            ->map(fn (RequirementSubmission $s): array => [
+                'student' => $s->user?->full_name ?? '—',
+                'requirement' => $s->requirement?->name ?? '—',
+                'type' => $s->requirement?->type ?? '—',
+                'status' => $s->status,
+                'submitted_at' => $s->created_at?->toDateString(),
+                'reviewed_at' => $s->reviewed_at?->toDateString(),
+            ])
+            ->values();
+
+        $dtrRows = (clone $dtrQuery)
+            ->with(['intern.user'])
+            ->oldest('dtr_date')
+            ->get()
+            ->map(fn (PhotoDtr $d): array => [
+                'student' => $d->intern?->user?->full_name ?? '—',
+                'date' => $d->dtr_date?->toDateString(),
+                'am_in' => $d->am_in_time,
+                'am_out' => $d->am_out_time,
+                'pm_in' => $d->pm_in_time,
+                'pm_out' => $d->pm_out_time,
+                'status' => $d->status,
+            ])
+            ->values();
+
+        $journalRows = (clone $journalQuery)
+            ->with(['intern.user'])
+            ->oldest('date')
+            ->get()
+            ->map(fn (DailyJournal $j): array => [
+                'student' => $j->intern?->user?->full_name ?? '—',
+                'date' => $j->date?->toDateString(),
+                'title' => $j->title,
+                'status' => $j->status,
+            ])
+            ->values();
+
+        $issueRows = (clone $issueQuery)
+            ->with(['intern.user', 'hte'])
+            ->oldest('id')
+            ->get()
+            ->map(fn (Issue $i): array => [
+                'id' => $i->id,
+                'student' => $i->intern?->user?->full_name ?? '—',
+                'hte' => $i->hte?->name ?? '—',
+                'type' => $i->type,
+                'direction' => $i->type === 'hte' ? 'HTE' : 'Intern',
+                'status' => $i->status,
+                'issues' => $i->issues ?? '',
+                'solutions' => $i->solutions ?? '',
+                'recommendations' => $i->recommendations ?? '',
+                'created_at' => $i->created_at?->toDateString(),
+            ])
+            ->values();
+
+        $evaluationRows = Intern::where('institute_id', $instituteId)
+            ->when($targetYearId, fn ($q) => $q->where('academic_year_id', $targetYearId))
+            ->with(['user', 'assignedHte'])
+            ->join('users', 'interns.user_id', '=', 'users.id')
+            ->orderBy('users.lastname')
+            ->select('interns.*')
+            ->get()
+            ->map(function (Intern $intern): array {
+                $internRatings = InternEvaluation::where('intern_id', $intern->id)
+                    ->whereNotNull('rating')
+                    ->where('is_na', false);
+                $hteRatings = HteEvaluation::where('intern_id', $intern->id)
+                    ->where('hte_id', $intern->assigned_hte)
+                    ->whereNotNull('rating')
+                    ->where('is_na', false);
+
+                $internCount = (clone $internRatings)->count();
+                $hteCount = (clone $hteRatings)->count();
+
+                return [
+                    'student' => $intern->user?->full_name ?? '—',
+                    'hte' => $intern->assignedHte?->name ?? '—',
+                    'intern_rated' => $internCount,
+                    'intern_average' => $internCount > 0 ? round((clone $internRatings)->avg('rating'), 2) : null,
+                    'hte_rated' => $hteCount,
+                    'hte_average' => $hteCount > 0 ? round((clone $hteRatings)->avg('rating'), 2) : null,
+                ];
+            })
+            ->values();
+
         $totalUsers = User::whereHas('intern', fn ($q) => $q->where('institute_id', $instituteId))->orWhere('role', 'admin')->count();
         $usersByRole = User::selectRaw('role, count(*) as total')->groupBy('role')->pluck('total', 'role');
 
@@ -172,7 +279,7 @@ class ReportController extends Controller
         $programsList = Program::where('institute_id', $instituteId)->with('institute:id,name')->select('id', 'institute_id', 'name', 'is_active')->get();
         $totalAcademicTerms = AcademicTerm::count();
         $academicTerms = AcademicTerm::select('id', 'code', 'description', 'status', 'start_at', 'end_at')->orderByDesc('id')->get();
-        $ojtHours = OjtHour::where('institute_id', $instituteId)->with('institute:id,name')->get();
+        $ojtHours = OjtHoursReport::rows($instituteId, $targetYearId);
 
         return response()->json([
             'data' => [
@@ -191,6 +298,7 @@ class ReportController extends Controller
                     'by_program' => $internsByProgram->map(fn ($r) => ['program' => $r['program'], 'total' => $r['total']])->values(),
                     'by_ojt_status' => $internsByOjtStatus->toArray(),
                     'recent' => $recentInterns,
+                    'rows' => $internRows,
                 ],
                 'htes' => [
                     'total' => $totalHtes,
@@ -201,26 +309,31 @@ class ReportController extends Controller
                     'total' => $totalDtr,
                     'by_status' => $dtrByStatus->toArray(),
                     'recent' => $recentDtr,
+                    'rows' => $dtrRows,
                 ],
                 'journals' => [
                     'total' => $totalJournals,
                     'recent' => $recentJournals,
+                    'rows' => $journalRows,
                 ],
                 'requirements' => [
                     'total' => $totalRequirements,
                     'by_status' => $requirementsByStatus->toArray(),
                     'definitions_total' => $totalRequirementsDef,
                     'by_requirement' => $requirementsByRequirement,
+                    'rows' => $requirementRows,
                 ],
                 'issues' => [
                     'total' => $totalIssues,
                     'by_status' => $issuesByStatus->toArray(),
                     'by_type' => $issuesByType->toArray(),
                     'recent' => $recentIssues,
+                    'rows' => $issueRows,
                 ],
                 'evaluations' => [
                     'total' => $totalEvaluations,
                     'recent' => $recentEvaluations,
+                    'rows' => $evaluationRows,
                 ],
                 'programs' => [
                     'total' => $totalPrograms,

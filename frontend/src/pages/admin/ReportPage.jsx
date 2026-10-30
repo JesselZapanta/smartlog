@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import OjtHoursReportTable from "@/components/OjtHoursReportTable.jsx";
 import {
   BarChart3,
   Printer,
@@ -304,7 +305,7 @@ function OverviewView({ data, onPrint, isPrinting }) {
       <SectionCard title="Issues & Evaluations" subtitle="Concerns and performance ratings in the selected academic year">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {miniStat("Issues", data.issues.total)}
-          {miniStat("Open", data.issues.by_status.open || 0)}
+          {miniStat("Open", data.issues.by_status.pending || 0)}
           {miniStat("Evaluations", data.evaluations.total)}
           {miniStat("Journals", data.journals.total)}
         </div>
@@ -543,7 +544,7 @@ function AcademicView({ data, onPrint, isPrinting }) {
         <StatCard label="Institutes" value={data.institutes.total} icon={<School size={18} />} tone="amber" />
         <StatCard label="Programs" value={data.programs.total} icon={<Layers size={18} />} tone="green" />
         <StatCard label="Academic Years" value={data.academic_terms.total} icon={<CalendarDays size={18} />} tone="blue" />
-        <StatCard label="OJT Hours Configs" value={(data.ojt_hours || []).length} icon={<Clock size={18} />} tone="emerald" />
+        <StatCard label="OJT Enrollments" value={(data.ojt_hours || []).length} icon={<Clock size={18} />} tone="emerald" />
       </section>
 
       <SectionCard title="Academic Years" subtitle="All configured academic years and terms">
@@ -609,21 +610,8 @@ function AcademicView({ data, onPrint, isPrinting }) {
         </div>
       </SectionCard>
 
-      <SectionCard title="OJT Hours Configuration" subtitle="Required hours per institute">
-        {(data.ojt_hours || []).length === 0 ? (
-          <p className="py-8 text-center text-sm text-gray-400">No OJT hours configured</p>
-        ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {data.ojt_hours.map((row) => (
-              <div key={row.id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">{row.institute?.name || "Institute"}</p>
-                <p className="mt-1 font-heading text-2xl font-bold text-gray-900">
-                  {row.hours} <span className="text-sm font-medium text-gray-500">hrs</span>
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
+      <SectionCard title="OJT Hours by Intern" subtitle="Hours declared on each intern's OJT enrollment">
+        <OjtHoursReportTable rows={data.ojt_hours} />
       </SectionCard>
     </div>
   );
@@ -726,18 +714,8 @@ function DtrView({ data, onPrint, isPrinting }) {
         </div>
       </SectionCard>
 
-      <SectionCard title="OJT Hours Tracking" subtitle="Configured hours vs. rendered hours context">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {(data.ojt_hours || []).slice(0, 6).map((row) => (
-            <div key={row.id} className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
-              <span className="text-sm font-medium text-gray-700">{row.institute?.name || "Institute"}</span>
-              <span className="font-heading text-sm font-bold text-green-700">{row.hours} hrs required</span>
-            </div>
-          ))}
-          {(data.ojt_hours || []).length === 0 && (
-            <p className="col-span-2 py-4 text-center text-sm text-gray-400">No OJT hours configuration found</p>
-          )}
-        </div>
+      <SectionCard title="OJT Hours Tracking" subtitle="Declared hours vs. rendered hours">
+        <OjtHoursReportTable rows={data.ojt_hours} compact />
       </SectionCard>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -836,8 +814,8 @@ function IssuesView({ data, onPrint, isPrinting }) {
       <ReportPrintBar onPrint={onPrint} reportKey="issues" isPrinting={isPrinting} label="Print Issues Report" />
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard label="Total Issues" value={data.issues.total} icon={<AlertTriangle size={18} />} tone="red" />
-        <StatCard label="Open" value={data.issues.by_status.open || 0} icon={<AlertTriangle size={18} />} tone="amber" />
-        <StatCard label="Resolved" value={data.issues.by_status.resolved || 0} icon={<BadgeCheck size={18} />} tone="green" />
+        <StatCard label="Open" value={data.issues.by_status.pending || 0} icon={<AlertTriangle size={18} />} tone="amber" />
+        <StatCard label="Resolved" value={data.issues.by_status.resolve || 0} icon={<BadgeCheck size={18} />} tone="green" />
         <StatCard label="Evaluations" value={data.evaluations.total} icon={<Star size={18} />} tone="amber" />
       </section>
 

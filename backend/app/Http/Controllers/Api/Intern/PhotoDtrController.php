@@ -25,7 +25,7 @@ class PhotoDtrController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        $intern = $user->intern;
+        $intern = $user->activeEnrollment();
 
         if (! $intern || $intern->status !== 'approved') {
             return response()->json([
@@ -69,7 +69,7 @@ class PhotoDtrController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        $intern = $user->intern;
+        $intern = $user->activeEnrollment();
 
         if (! $intern || $intern->status !== 'approved') {
             abort(403, 'Your registration must be approved before recording your DTR.');

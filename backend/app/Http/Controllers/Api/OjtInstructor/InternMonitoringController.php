@@ -175,7 +175,7 @@ class InternMonitoringController extends Controller
      */
     private function authorizeIntern(User $user): Intern
     {
-        $intern = $user->intern;
+        $intern = $user->activeEnrollment();
 
         if (! $intern || ! in_array($intern->ojt_status, ['ongoing', 'hours_completed', 'completed'], true)) {
             abort(404, 'This intern is not deployed.');

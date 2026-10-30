@@ -4,7 +4,19 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowLeft, ArrowRight, Building2, ClipboardList, FileWarning, Loader2, Save, School, Search, ShieldCheck, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Building2,
+  ClipboardList,
+  FileWarning,
+  Loader2,
+  Lock,
+  Save,
+  School,
+  Search,
+  Users,
+} from "lucide-react";
 import CoordinatorLayout from "@/layouts/CoordinatorLayout.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
@@ -13,7 +25,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import PageLoader from "@/components/PageLoader";
-import { cn } from "@/lib/utils";
 import {
   Form,
   FormControl,
@@ -30,21 +41,63 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+/**
+ * The concern direction is fixed by the page, not chosen by the user — each
+ * concern direction has its own route, controller and list page.
+ */
+const FORM_CONFIGS = {
+  intern: {
+    path: "/coordinator/intern-issues",
+    heading: "Intern Issue",
+    concernTitle: "Intern has concern",
+    concernSubtitle: "Intern has issue with the HTE",
+    reporter: "the intern",
+    fromIcon: Users,
+    toIcon: Building2,
+    tone: {
+      card: "border-purple-100 bg-purple-50/60 ring-purple-100",
+      text: "text-purple-900",
+      sub: "text-purple-700",
+      badge: "bg-purple-600",
+      accent: "text-purple-600",
+    },
+  },
+  hte: {
+    path: "/coordinator/hte-issues",
+    heading: "HTE Issue",
+    concernTitle: "HTE has concern",
+    concernSubtitle: "HTE has issue with the intern",
+    reporter: "the HTE",
+    fromIcon: Building2,
+    toIcon: Users,
+    tone: {
+      card: "border-blue-100 bg-blue-50/60 ring-blue-100",
+      text: "text-blue-900",
+      sub: "text-blue-700",
+      badge: "bg-blue-600",
+      accent: "text-blue-600",
+    },
+  },
+};
+
 const schema = z.object({
   intern_id: z.string().min(1, "Intern is required"),
-  type: z.string().min(1, "Type is required"),
   issues: z.string().min(1, "Issue is required").max(5000, "Too long"),
   solutions: z.string().max(5000, "Too long").optional().or(z.literal("")),
   recommendations: z.string().max(5000, "Too long").optional().or(z.literal("")),
   status: z.string().min(1, "Status is required"),
 });
 
-const emptyValues = { intern_id: "", type: "intern", issues: "", solutions: "", recommendations: "", status: "pending" };
+const emptyValues = { intern_id: "", issues: "", solutions: "", recommendations: "", status: "pending" };
 
 const selectClass = "data-[size=default]:h-11 w-full rounded-xl";
 const labelClass = "text-xs font-bold uppercase tracking-wider text-gray-700";
 
-export default function CoordinatorIssueFormPage() {
+export default function CoordinatorIssueFormPage({ issueType = "intern" }) {
+  const config = FORM_CONFIGS[issueType] ?? FORM_CONFIGS.intern;
+  const FromIcon = config.fromIcon;
+  const ToIcon = config.toIcon;
+
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = Boolean(id);
@@ -83,14 +136,13 @@ export default function CoordinatorIssueFormPage() {
     }
     let active = true;
     api
-      .get(`/coordinator/issues/${id}`)
+      .get(`${config.path}/${id}`)
       .then((res) => {
         if (!active) return;
         const data = res.data.data;
         setIssueData(data);
         form.reset({
           intern_id: data.intern_id ? String(data.intern_id) : "",
-          type: data.type || "intern",
           issues: data.issues || "",
           solutions: data.solutions || "",
           recommendations: data.recommendations || "",
@@ -100,7 +152,7 @@ export default function CoordinatorIssueFormPage() {
       .catch((err) => {
         if (active) {
           toast.error("Failed to load issue", { description: firstErrorMessage(err) });
-          navigate("/coordinator/issues");
+          navigate(config.path);
         }
       })
       .finally(() => {
@@ -109,27 +161,25 @@ export default function CoordinatorIssueFormPage() {
     return () => {
       active = false;
     };
-  }, [id, isEdit, form, navigate]);
+  }, [id, isEdit, form, navigate, config]);
 
   async function onSubmit(values) {
     setSubmitting(true);
     try {
       const payload = {
         intern_id: Number(values.intern_id),
-        type: values.type,
-        issues: values.issues,
         solutions: values.solutions || null,
         recommendations: values.recommendations || null,
         status: values.status,
       };
       if (isEdit) {
-        await api.put(`/coordinator/issues/${id}`, payload);
+        await api.put(`${config.path}/${id}`, payload);
         toast.success("Issue updated", { description: "The issue was updated." });
       } else {
-        await api.post("/coordinator/issues", payload);
+        await api.post(config.path, payload);
         toast.success("Issue created", { description: "The issue was created." });
       }
-      navigate("/coordinator/issues");
+      navigate(config.path);
     } catch (err) {
       toast.error(isEdit ? "Update failed" : "Creation failed", { description: firstErrorMessage(err) });
       const errors = err.response?.data?.errors;
@@ -158,19 +208,23 @@ export default function CoordinatorIssueFormPage() {
       <div className="mx-auto w-full max-w-2xl">
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" size="icon" className="h-11 w-11 shrink-0 rounded-xl text-gray-500">
-            <Link to="/coordinator/issues">
+            <Link to={config.path}>
               <ArrowLeft size={18} />
             </Link>
           </Button>
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-green-700 to-green-500 text-white shadow-md shadow-green-600/25">
-            <AlertTriangle size={22} />
+          <div
+            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-md ${config.tone.badge}`}
+          >
+            <FromIcon size={22} />
           </div>
           <div className="min-w-0">
             <h1 className="font-heading text-xl font-bold text-green-950 sm:text-2xl">
-              {isEdit ? "Edit Issue" : "Add Issue"}
+              {isEdit ? `View ${config.heading}` : `Add ${config.heading}`}
             </h1>
             <p className="truncate text-sm text-gray-500">
-              {isEdit ? "Update the issue details." : "Create a new issue for an intern in your institute."}
+              {isEdit
+                ? `Reported by ${config.reporter}. Update the solutions and status below.`
+                : `Record a concern raised by ${config.reporter}.`}
             </p>
           </div>
         </div>
@@ -180,153 +234,26 @@ export default function CoordinatorIssueFormPage() {
             <form onSubmit={form.handleSubmit(onSubmit)} noValidate>
               <CardContent className="space-y-6 p-5 sm:p-6">
                 <div className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="type"
-                    render={({ field }) => {
-                      const isIntern = field.value === "hte" ? false : true;
-                      if (isEdit) {
-                        return (
-                          <FormItem>
-                            <FormLabel className={labelClass}>Concern direction</FormLabel>
-                            <div className="rounded-2xl border border-green-100 bg-green-50/60 p-4 ring-1 ring-green-100">
-                              <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-2">
-                                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-green-600 text-white shadow-sm">
-                                    {isIntern ? <Users size={16} /> : <Building2 size={16} />}
-                                  </span>
-                                  <ArrowRight size={16} className="text-green-600" />
-                                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-green-700 shadow-sm ring-1 ring-green-100">
-                                    {isIntern ? <Building2 size={16} /> : <Users size={16} />}
-                                  </span>
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                  <p className="text-sm font-bold leading-none text-green-900">
-                                    {isIntern ? "Intern has concern" : "HTE has concern"}
-                                  </p>
-                                  <p className="mt-1 text-xs leading-none text-green-700">
-                                    {isIntern ? "Intern has issue with the HTE" : "HTE has issue with the intern"}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="min-h-[1.25rem]">
-                              <FormMessage />
-                            </div>
-                          </FormItem>
-                        );
-                      }
-                      return (
-                        <FormItem>
-                          <FormLabel className={labelClass}>Concern direction *</FormLabel>
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            <button
-                              type="button"
-                              onClick={() => field.onChange("intern")}
-                              className={cn(
-                                "group relative flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-all",
-                                field.value === "intern"
-                                  ? "border-green-600 bg-green-50 ring-2 ring-green-200"
-                                  : "border-gray-200 bg-white hover:border-green-200 hover:bg-green-50/40"
-                              )}
-                            >
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={cn(
-                                    "flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold",
-                                    field.value === "intern" ? "bg-green-600 text-white" : "bg-gray-100 text-gray-500"
-                                  )}
-                                >
-                                  <Users size={14} />
-                                </span>
-                                <ArrowRight
-                                  size={14}
-                                  className={cn(field.value === "intern" ? "text-green-600" : "text-gray-300")}
-                                />
-                                <span
-                                  className={cn(
-                                    "flex h-8 w-8 items-center justify-center rounded-lg",
-                                    field.value === "intern" ? "bg-green-600 text-white" : "bg-gray-100 text-gray-400"
-                                  )}
-                                >
-                                  <Building2 size={14} />
-                                </span>
-                              </div>
-                              <div>
-                                <p
-                                  className={cn(
-                                    "text-sm font-bold",
-                                    field.value === "intern" ? "text-green-900" : "text-gray-800"
-                                  )}
-                                >
-                                  Intern has concern
-                                </p>
-                                <p className="mt-1 text-xs leading-relaxed text-gray-500">Intern has issue with the HTE</p>
-                              </div>
-                              {field.value === "intern" && (
-                                <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-green-600 text-white">
-                                  <ShieldCheck size={12} />
-                                </span>
-                              )}
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => field.onChange("hte")}
-                              className={cn(
-                                "group relative flex flex-col items-start gap-2 rounded-2xl border p-4 text-left transition-all",
-                                field.value === "hte"
-                                  ? "border-green-600 bg-green-50 ring-2 ring-green-200"
-                                  : "border-gray-200 bg-white hover:border-green-200 hover:bg-green-50/40"
-                              )}
-                            >
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={cn(
-                                    "flex h-8 w-8 items-center justify-center rounded-lg",
-                                    field.value === "hte" ? "bg-green-600 text-white" : "bg-gray-100 text-gray-400"
-                                  )}
-                                >
-                                  <Building2 size={14} />
-                                </span>
-                                <ArrowRight
-                                  size={14}
-                                  className={cn(field.value === "hte" ? "text-green-600" : "text-gray-300")}
-                                />
-                                <span
-                                  className={cn(
-                                    "flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold",
-                                    field.value === "hte" ? "bg-green-600 text-white" : "bg-gray-100 text-gray-500"
-                                  )}
-                                >
-                                  <Users size={14} />
-                                </span>
-                              </div>
-                              <div>
-                                <p
-                                  className={cn(
-                                    "text-sm font-bold",
-                                    field.value === "hte" ? "text-green-900" : "text-gray-800"
-                                  )}
-                                >
-                                  HTE has concern
-                                </p>
-                                <p className="mt-1 text-xs leading-relaxed text-gray-500">HTE has issue with the intern</p>
-                              </div>
-                              {field.value === "hte" && (
-                                <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-green-600 text-white">
-                                  <ShieldCheck size={12} />
-                                </span>
-                              )}
-                            </button>
-                          </div>
-                          <div className="min-h-[1.25rem]">
-                            <FormMessage />
-                          </div>
-                        </FormItem>
-                      );
-                    }}
-                  />
+                  <FormItem>
+                    <FormLabel className={labelClass}>Concern direction</FormLabel>
+                    <div className={`rounded-2xl border p-4 ring-1 ${config.tone.card}`}>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className={`flex h-9 w-9 items-center justify-center rounded-xl text-white shadow-sm ${config.tone.badge}`}>
+                            <FromIcon size={16} />
+                          </span>
+                          <ArrowRight size={16} className={config.tone.accent} />
+                          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-gray-700 shadow-sm ring-1 ring-gray-200">
+                            <ToIcon size={16} />
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className={`text-sm font-bold leading-none ${config.tone.text}`}>{config.concernTitle}</p>
+                          <p className={`mt-1 text-xs leading-none ${config.tone.sub}`}>{config.concernSubtitle}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </FormItem>
 
                   {isEdit && issueData ? (
                     <div className="overflow-hidden rounded-2xl border border-green-100 bg-white shadow-sm ring-1 ring-green-100">
@@ -368,7 +295,6 @@ export default function CoordinatorIssueFormPage() {
                           </div>
                         </div>
                       </div>
-
                     </div>
                   ) : (
                     <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ring-1 ring-gray-100">
@@ -486,29 +412,39 @@ export default function CoordinatorIssueFormPage() {
                   </div>
 
                   <div className="grid gap-4">
-                    <FormField
-                      control={form.control}
-                      name="issues"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className={labelClass}>Issue *</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Textarea
-                                placeholder="Describe the issue in detail..."
-                                rows={4}
-                                className="min-h-24 resize-y rounded-xl pl-10 pt-3"
-                                {...field}
-                              />
-                              <FileWarning className="pointer-events-none absolute left-3.5 top-3.5 h-4 w-4 text-gray-400" />
-                            </div>
-                          </FormControl>
-                          <div className="min-h-[1.25rem]">
-                            <FormMessage />
+<FormField
+                    control={form.control}
+                    name="issues"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className={labelClass}>Issue (read-only)</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Textarea
+                              placeholder="No issue description was provided."
+                              rows={4}
+                              readOnly
+                              aria-readonly="true"
+                              className="min-h-24 resize-y rounded-xl bg-gray-50 pl-10 pt-3 text-gray-600"
+                              {...field}
+                            />
+                            <FileWarning className="pointer-events-none absolute left-3.5 top-3.5 h-4 w-4 text-gray-400" />
+                            <Lock
+                              size={13}
+                              className="pointer-events-none absolute right-3 top-3.5 text-gray-400"
+                              aria-hidden="true"
+                            />
                           </div>
-                        </FormItem>
-                      )}
-                    />
+                        </FormControl>
+                        <p className="text-xs text-gray-500">
+                          Submitted by {config.reporter}. This text is locked and cannot be changed.
+                        </p>
+                        <div className="min-h-[1.25rem]">
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
 
                     <FormField
                       control={form.control}
@@ -543,11 +479,15 @@ export default function CoordinatorIssueFormPage() {
                     />
                   </div>
                 </div>
-
               </CardContent>
 
               <div className="flex flex-row gap-2 border-t border-gray-100 px-5 py-4 sm:justify-end sm:px-6">
-                <Button type="button" variant="outline" className="h-11 flex-1 rounded-xl sm:flex-initial" onClick={() => navigate("/coordinator/issues")}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 flex-1 rounded-xl sm:flex-initial"
+                  onClick={() => navigate(config.path)}
+                >
                   Cancel
                 </Button>
                 <Button

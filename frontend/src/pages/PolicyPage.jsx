@@ -113,7 +113,7 @@ export default function PolicyPage() {
                   {
                     n: "01",
                     t: "Eligibility & accounts",
-                    d: "Accounts are for TCGC OJT participants only. You must provide accurate name, email, and COR; keep your password confidential; and verify email via OTP. One account per person. Impersonation or sharing credentials is prohibited.",
+                    d: "Accounts are for TCGC OJT participants only. You must provide accurate name, email, and enrollment details; keep your password confidential; and verify email via OTP. One account per person. Impersonation or sharing credentials is prohibited.",
                   },
                   {
                     n: "02",

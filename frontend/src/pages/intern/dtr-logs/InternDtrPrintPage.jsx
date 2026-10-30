@@ -122,19 +122,23 @@ function DtrForm({ records, from, to, name }) {
               const ymd = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
               const record = byDate[ymd];
               const slots = record?.slots || {};
-              const worked = computeHours(slots);
-              const isNotChecked = Boolean(record && record.status !== "checked");
+              // Times are only printed once an instructor has checked the record.
+              // The day itself still prints, with blank time slots.
+              const isChecked = record?.status === "checked";
+              const worked = isChecked ? computeHours(slots) : null;
+              const slotText = (slot) => (isChecked ? formatTime(slot?.time) : "");
+              const workedText = (part) => (worked ? String(worked[part]) : "");
               return (
                 <tr key={ymd} className="h-[11px]">
-                  <td className={`whitespace-nowrap border border-black px-0.5 py-0.5 text-center font-semibold ${isNotChecked ? "text-red-600" : ""}`}>
+                  <td className="whitespace-nowrap border border-black px-0.5 py-0.5 text-center font-semibold">
                     {sameMonth ? day.getDate() : day.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                   </td>
-                  <td className={`whitespace-nowrap border border-black px-0.5 py-0.5 text-center ${isNotChecked && slots.am_in?.time ? "font-bold text-red-600" : ""}`}>{formatTime(slots.am_in?.time)}</td>
-                  <td className={`whitespace-nowrap border border-black px-0.5 py-0.5 text-center ${isNotChecked && slots.am_out?.time ? "font-bold text-red-600" : ""}`}>{formatTime(slots.am_out?.time)}</td>
-                  <td className={`whitespace-nowrap border border-black px-0.5 py-0.5 text-center ${isNotChecked && slots.pm_in?.time ? "font-bold text-red-600" : ""}`}>{formatTime(slots.pm_in?.time)}</td>
-                  <td className={`whitespace-nowrap border border-black px-0.5 py-0.5 text-center ${isNotChecked && slots.pm_out?.time ? "font-bold text-red-600" : ""}`}>{formatTime(slots.pm_out?.time)}</td>
-                  <td className={`whitespace-nowrap border border-black px-0.5 py-0.5 text-center ${isNotChecked && worked ? "font-bold text-red-600" : ""}`}>{worked ? worked.hours : ""}</td>
-                  <td className={`whitespace-nowrap border border-black px-0.5 py-0.5 text-center ${isNotChecked && worked ? "font-bold text-red-600" : ""}`}>{worked ? worked.minutes : ""}</td>
+                  <td className="whitespace-nowrap border border-black px-0.5 py-0.5 text-center">{slotText(slots.am_in)}</td>
+                  <td className="whitespace-nowrap border border-black px-0.5 py-0.5 text-center">{slotText(slots.am_out)}</td>
+                  <td className="whitespace-nowrap border border-black px-0.5 py-0.5 text-center">{slotText(slots.pm_in)}</td>
+                  <td className="whitespace-nowrap border border-black px-0.5 py-0.5 text-center">{slotText(slots.pm_out)}</td>
+                  <td className="whitespace-nowrap border border-black px-0.5 py-0.5 text-center">{workedText("hours")}</td>
+                  <td className="whitespace-nowrap border border-black px-0.5 py-0.5 text-center">{workedText("minutes")}</td>
                 </tr>
               );
             })}

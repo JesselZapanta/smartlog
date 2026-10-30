@@ -9,11 +9,14 @@ use App\Models\Institute;
 use App\Models\Intern;
 use App\Models\Location;
 use App\Models\User;
+use Database\Seeders\Concerns\ResolvesDemoAccounts;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
 class UserSeeder extends Seeder
 {
+    use ResolvesDemoAccounts;
+
     private const PASSWORD = 'password';
 
     private const BARANGAYS = [
@@ -40,37 +43,89 @@ class UserSeeder extends Seeder
 
     private const LAST_NAMES = ['Dela Cruz', 'Santos', 'Reyes', 'Garcia', 'Mendoza', 'Aquino', 'Villanueva', 'Ramos', 'Torres', 'Flores'];
 
+    /**
+     * Partner establishments per institute; #1 and #2 anchor the transfer
+     * showcase, the rest widen the pool a coordinator can deploy interns to.
+     */
     private const HTE_NAMES = [
-        'Institute of Teacher Education (ITE)' => 'Tangub City Central Elementary School',
-        'Institute of Business and Financial Services (IBFS)' => 'Tangub City Hall - Human Resource Office',
-        'Institute of Computer Studies (ICS)' => 'City Information and Communications Technology Office',
-        'Institute of Criminal Justice Education (ICJE)' => 'Tangub City Police Station',
-        'Institute of Health Sciences (IHS)' => 'Tangub City Health Office',
-        'Institute of Arts and Sciences (IAS)' => 'TGCC Community Extension Office',
+        'Institute of Teacher Education (ITE)' => [
+            'Tangub City Central Elementary School',
+            'Tangub City National High School',
+            'Mantic Elementary School',
+            'Silanga National High School',
+            'Santa Isabel Elementary School',
+        ],
+        'Institute of Business and Financial Services (IBFS)' => [
+            'Tangub City Hall - Human Resource Office',
+            'Tangub City Cooperative Office',
+            "Tangub City Treasurer's Office",
+            "Tangub City Assessor's Office",
+            'Land Bank of the Philippines - Tangub Branch',
+        ],
+        'Institute of Computer Studies (ICS)' => [
+            'City Information and Communications Technology Office',
+            'Vinz Itech Solutions',
+            'iFix Computer Solutions',
+            'TechHub Computer Trading',
+            'NorthMind IT Solutions',
+        ],
+        'Institute of Criminal Justice Education (ICJE)' => [
+            'Tangub City Police Station',
+            'BJMP Tangub City Jail',
+            'Tangub City Fire Station',
+            'Municipal Trial Court in Cities - Tangub City',
+            'Tangub City Traffic Management Office',
+        ],
+        'Institute of Health Sciences (IHS)' => [
+            'Tangub City Health Office',
+            'Tangub City Birthing Home',
+            'Doña Maria D. Tan Memorial Hospital',
+            'Tangub City Nutrition Office',
+            'Mantic Barangay Health Station',
+        ],
+        'Institute of Arts and Sciences (IAS)' => [
+            'TGCC Community Extension Office',
+            'Tangub City Tourism Office',
+            'Tangub City Public Information Office',
+            'Tangub City Social Welfare and Development Office',
+            'Tangub City Public Library',
+        ],
+    ];
+
+    /**
+     * @var array<int, array{0: string, 1: string, 2: string}>
+     */
+    private const HTE_PEOPLE = [
+        ['Ramon', 'Aquino', 'Mendoza'],
+        ['Andres', 'Ramos', 'Villanueva'],
+        ['Ernesto', 'Diaz', 'Salazar'],
+        ['Lorna', 'Santos', 'Padilla'],
+        ['Editha', 'Gomez', 'Bautista'],
     ];
 
     /**
      * Seed users for every role:
-     * 1 admin, then per institute: 1 coordinator, 1 instructor, 1 HTE, and 10 pending interns.
+     * 1 admin, then per institute: 1 coordinator, 1 instructor, 5 HTEs, and
+     * 10 interns — the first four approved as the base the placement showcase
+     * builds on, the rest still awaiting registration review.
      */
     public function run(): void
     {
         $this->seedAdmin();
 
         foreach (Institute::orderBy('id')->get() as $institute) {
-            $slug = $this->slugFor($institute->name);
             $programId = $institute->programs()->orderBy('id')->value('id');
 
             if ($programId === null) {
                 continue;
             }
 
-            $this->seedCoordinator($institute, $slug, $programId);
-            $this->seedInstructor($institute, $slug, $programId);
-            $this->seedHte($institute, $slug, $programId);
+            $this->seedCoordinator($institute, $programId);
+            $this->seedInstructor($institute, $programId);
+            $this->seedHtes($institute, $programId);
 
             for ($i = 1; $i <= 10; $i++) {
-                $this->seedIntern($institute, $slug, $programId, $i);
+                $this->seedIntern($institute, $programId, $i);
             }
         }
     }
@@ -88,10 +143,10 @@ class UserSeeder extends Seeder
         );
     }
 
-    private function seedCoordinator(Institute $institute, string $slug, int $programId): void
+    private function seedCoordinator(Institute $institute, int $programId): void
     {
         $user = $this->createUser(
-            email: $slug === 'ite' ? 'coordinator@smartlog.test' : "coordinator.{$slug}@smartlog.test",
+            email: $this->coordinatorEmail($institute),
             role: 'ojt_coordinator',
             firstname: 'Maria',
             middlename: 'Lopez',
@@ -106,10 +161,10 @@ class UserSeeder extends Seeder
         );
     }
 
-    private function seedInstructor(Institute $institute, string $slug, int $programId): void
+    private function seedInstructor(Institute $institute, int $programId): void
     {
         $user = $this->createUser(
-            email: $slug === 'ite' ? 'instructor@smartlog.test' : "instructor.{$slug}@smartlog.test",
+            email: $this->instructorEmail($institute),
             role: 'ojt_instructor',
             firstname: 'Carmen',
             middlename: 'Reyes',
@@ -124,22 +179,50 @@ class UserSeeder extends Seeder
         );
     }
 
-    private function seedHte(Institute $institute, string $slug, int $programId): void
+    private function seedHtes(Institute $institute, int $programId): void
     {
+        $names = self::HTE_NAMES[$institute->name] ?? [];
+
+        foreach (self::HTE_PEOPLE as $position => [$firstname, $middlename, $lastname]) {
+            $index = $position + 1;
+
+            $this->seedHteAccount(
+                $institute,
+                $programId,
+                $index,
+                $names[$position] ?? "{$institute->name} Partner Establishment {$index}",
+                $firstname,
+                $middlename,
+                $lastname,
+                '091712345'.(69 + $index),
+            );
+        }
+    }
+
+    private function seedHteAccount(
+        Institute $institute,
+        int $programId,
+        int $index,
+        string $name,
+        string $firstname,
+        string $middlename,
+        string $lastname,
+        string $contactNumber,
+    ): void {
         $user = $this->createUser(
-            email: $slug === 'ite' ? 'hte@smartlog.test' : "hte.{$slug}@smartlog.test",
+            email: $this->hteEmail($institute, $index),
             role: 'hte',
-            firstname: 'Ramon',
-            middlename: 'Aquino',
-            lastname: 'Mendoza',
-            contactNumber: '09171234570',
+            firstname: $firstname,
+            middlename: $middlename,
+            lastname: $lastname,
+            contactNumber: $contactNumber,
             location: ['Mantic', 'Misamis Occidental', 'Tangub City'],
         );
 
         Hte::updateOrCreate(
             ['user_id' => $user->id],
             [
-                'name' => self::HTE_NAMES[$institute->name] ?? "{$institute->name} Partner Establishment",
+                'name' => $name,
                 'institute_id' => $institute->id,
                 'program_id' => $programId,
                 'moa' => null,
@@ -150,17 +233,15 @@ class UserSeeder extends Seeder
         );
     }
 
-    private function seedIntern(Institute $institute, string $slug, int $programId, int $index): void
+    private function seedIntern(Institute $institute, int $programId, int $index): void
     {
         $family = self::FAMILY[($index - 1) % count(self::FAMILY)];
         $female = $index % 2 === 0;
         $firstNames = $female ? self::FIRST_NAMES_FEMALE : self::FIRST_NAMES_MALE;
-        $approved = $index === 1;
+        $approved = $index <= 4;
 
         $user = $this->createUser(
-            email: $slug === 'ite' && $index === 1
-                ? 'intern@smartlog.test'
-                : "intern.{$slug}.{$index}@smartlog.test",
+            email: $this->internEmail($institute, $index),
             role: 'intern',
             firstname: $firstNames[($index - 1) % count($firstNames)],
             middlename: null,
@@ -189,7 +270,6 @@ class UserSeeder extends Seeder
                 'mothers_contact' => '0917'.str_pad((string) (3000000 + $index * 11), 7, '0', STR_PAD_LEFT),
                 'parents_guardian_address' => 'Brgy. '.self::BARANGAYS[($index - 1) % count(self::BARANGAYS)].', Tangub City',
                 'practicum_instructor' => 'Prof. '.self::LAST_NAMES[$index % count(self::LAST_NAMES)],
-                'cor_path' => null,
                 'status' => $approved ? 'approved' : 'pending',
                 'rejection_reason' => null,
                 'reviewed_by' => $approved ? $reviewerId : null,
@@ -210,21 +290,21 @@ class UserSeeder extends Seeder
         string $contactNumber,
         array $location,
     ): User {
-        $user = User::updateOrCreate(
-            ['email' => $email],
-            [
-                'uuid' => (string) Str::uuid(),
-                'firstname' => $firstname,
-                'middlename' => $middlename,
-                'lastname' => $lastname,
-                'extension' => null,
-                'contact_number' => $contactNumber,
-                'profile_picture' => null,
-                'role' => $role,
-                'email_verified_at' => now(),
-                'password' => self::PASSWORD,
-            ]
-        );
+        $user = User::firstOrNew(['email' => $email]);
+
+        $user->uuid ??= (string) Str::uuid();
+
+        $user->fill([
+            'firstname' => $firstname,
+            'middlename' => $middlename,
+            'lastname' => $lastname,
+            'extension' => null,
+            'contact_number' => $contactNumber,
+            'profile_picture' => null,
+            'role' => $role,
+            'email_verified_at' => now(),
+            'password' => self::PASSWORD,
+        ])->save();
 
         Location::updateOrCreate(
             ['user_id' => $user->id],
@@ -238,17 +318,5 @@ class UserSeeder extends Seeder
         );
 
         return $user;
-    }
-
-    private function slugFor(string $instituteName): string
-    {
-        return match (true) {
-            str_contains($instituteName, 'Teacher Education') => 'ite',
-            str_contains($instituteName, 'Business') => 'ibfs',
-            str_contains($instituteName, 'Computer Studies') => 'ics',
-            str_contains($instituteName, 'Criminal Justice') => 'icje',
-            str_contains($instituteName, 'Health Sciences') => 'ihs',
-            default => 'ias',
-        };
     }
 }

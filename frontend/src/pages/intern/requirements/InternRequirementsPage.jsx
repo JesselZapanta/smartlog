@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Building2, ClipboardCheck, ClipboardList, FileText, GraduationCap, Landmark, Mail, Upload, UserRound, X, Loader2, CheckCircle2, ExternalLink, AlertTriangle, Clock3 } from "lucide-react";
+import { Building2, ClipboardCheck, ClipboardList, FileText, GraduationCap, History, Landmark, Mail, Upload, UserRound, X, Loader2, CheckCircle2, ExternalLink, AlertTriangle, Clock3 } from "lucide-react";
 import InternLayout from "@/layouts/InternLayout.jsx";
 import api from "@/lib/api";
 import { firstErrorMessage } from "@/lib/errors";
@@ -86,7 +86,7 @@ function StatusTags({ title, approved, pending, rejected }) {
   );
 }
 
-function RequirementCard({ requirement, submittingId, removingId, onFile, onRemove }) {
+function RequirementCard({ requirement, readOnly = false, submittingId, removingId, onFile, onRemove }) {
   const submission = requirement.submission;
   const approved = submission?.status === "approved";
 
@@ -151,7 +151,7 @@ function RequirementCard({ requirement, submittingId, removingId, onFile, onRemo
               >
                 <ExternalLink size={16} />
               </a>
-              {!approved && (
+              {!readOnly && !approved && (
                 <button
                   type="button"
                   onClick={() => onRemove(requirement)}
@@ -168,7 +168,7 @@ function RequirementCard({ requirement, submittingId, removingId, onFile, onRemo
           <p className="px-1 py-2 text-xs font-medium text-gray-400">Not yet submitted</p>
         )}
 
-        {!approved && (
+        {!readOnly && !approved && (
           <>
             <label
               htmlFor={`req-file-${requirement.id}`}
@@ -207,6 +207,7 @@ function RequirementCard({ requirement, submittingId, removingId, onFile, onRemo
 export default function InternRequirementsPage() {
   const [requirements, setRequirements] = useState([]);
   const [hte, setHte] = useState(null);
+  const [previousPlacements, setPreviousPlacements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submittingId, setSubmittingId] = useState(null);
   const [removingId, setRemovingId] = useState(null);
@@ -217,6 +218,7 @@ export default function InternRequirementsPage() {
       const res = await api.get("/intern/requirements");
       setRequirements(res.data.data || []);
       setHte(res.data.hte || null);
+      setPreviousPlacements(res.data.previous_placements || []);
     } catch (err) {
       toast.error("Failed to load requirements", { description: firstErrorMessage(err) });
     } finally {
@@ -448,6 +450,65 @@ export default function InternRequirementsPage() {
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
+          )}
+
+          {previousPlacements.length > 0 && (
+            <div className="mt-6">
+              <div className="flex items-center gap-2.5 px-1">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700 ring-1 ring-amber-100">
+                  <History size={16} />
+                </span>
+                <div className="min-w-0">
+                  <h2 className="font-heading text-sm font-bold text-green-950 sm:text-base">Previous placements</h2>
+                  <p className="text-xs text-gray-500">
+                    Read-only records from the hosts you were transferred away from.
+                  </p>
+                </div>
+              </div>
+              <Accordion
+                type="single"
+                collapsible
+                className="mt-3 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm ring-1 ring-gray-100"
+              >
+                {previousPlacements.map((placement) => {
+                  const submittedCount = placement.requirements.filter((r) => r.submission).length;
+                  return (
+                    <AccordionItem key={placement.id} value={`previous-${placement.id}`} className="last:border-b-0">
+                      <AccordionTrigger className="px-4 hover:no-underline sm:px-5">
+                        <span className="flex flex-1 items-center justify-between gap-3">
+                          <span className="flex min-w-0 items-center gap-2.5">
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700 ring-1 ring-amber-100">
+                              <History size={16} />
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                                Previous Host
+                              </span>
+                              <span className="block truncate font-heading text-sm font-bold text-green-950 sm:text-base">
+                                {placement.hte?.name || "Unknown host"}
+                              </span>
+                            </span>
+                          </span>
+                          <Badge className="shrink-0 rounded-full bg-amber-50 font-semibold text-amber-700 ring-1 ring-amber-200">
+                            {submittedCount} / {placement.requirements.length} submitted
+                          </Badge>
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent className="border-t border-gray-100 px-4 sm:px-5">
+                        <p className="pt-4 text-xs text-gray-500">
+                          Served {formatDate(placement.assigned_at)} – {formatDate(placement.unassigned_at)} · read-only record
+                        </p>
+                        <div className="grid grid-cols-1 gap-4 pt-4 lg:grid-cols-2">
+                          {placement.requirements.map((requirement) => (
+                            <RequirementCard key={requirement.id} requirement={requirement} readOnly />
+                          ))}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+              </Accordion>
+            </div>
           )}
         </>
       )}

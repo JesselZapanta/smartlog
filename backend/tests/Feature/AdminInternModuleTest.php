@@ -123,7 +123,7 @@ test('admin can view intern details', function () {
         ->assertJsonStructure([
             'data' => [
                 'id', 'uuid', 'full_name', 'email', 'contact_number', 'institute', 'program',
-                'academic_year', 'practicum_instructor', 'cor', 'date_of_birth', 'place_of_birth',
+                'academic_year', 'practicum_instructor', 'date_of_birth', 'place_of_birth',
                 'fathers_name', 'fathers_occupation', 'fathers_contact', 'mothers_name',
                 'mothers_occupation', 'mothers_contact', 'parents_guardian_address', 'location',
                 'status', 'rejection_reason', 'reviewed_by', 'reviewed_at', 'created_at',

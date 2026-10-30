@@ -86,6 +86,13 @@ class AcademicTermSeeder extends Seeder
                 'start_at' => '2026-08-01 00:00:00',
                 'end_at' => '2026-12-31 00:00:00',
             ],
+            [
+                'code' => '262',
+                'description' => '2ND SEM AY 2026-2027',
+                'status' => 'inactive',
+                'start_at' => '2027-01-04 00:00:00',
+                'end_at' => '2027-05-31 00:00:00',
+            ],
         ];
 
         foreach ($terms as $term) {

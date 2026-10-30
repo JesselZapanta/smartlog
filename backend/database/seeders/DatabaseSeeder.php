@@ -19,10 +19,14 @@ class DatabaseSeeder extends Seeder
             InstituteSeeder::class,
             ProgramSeeder::class,
             RequirementSeeder::class,
-            OjtHourSeeder::class,
             EvaluationCriterionSeeder::class,
             EvaluationHteCriterionSeeder::class,
             UserSeeder::class,
+            InternPlacementSeeder::class,
+            OjtEnrollmentSeeder::class,
+            RequirementSubmissionSeeder::class,
+            EvaluationSeeder::class,
+            SimulationSeeder::class,
         ]);
     }
 }

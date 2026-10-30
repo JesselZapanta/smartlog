@@ -108,7 +108,7 @@ class InternController extends Controller
             abort(403, 'Your account is not assigned to an institute yet.');
         }
 
-        $intern = $user->intern;
+        $intern = $user->enrollmentFor($request->integer('academic_year_id') ?: null);
 
         if (! $intern) {
             abort(404, 'This user has no intern record.');

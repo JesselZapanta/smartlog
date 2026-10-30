@@ -184,7 +184,7 @@ class InternMonitoringController extends Controller
             abort(403, 'Your account is not linked to an HTE profile.');
         }
 
-        $intern = $user->intern;
+        $intern = $user->enrollmentFor($request->integer('academic_year_id') ?: null);
 
         if (! $intern) {
             abort(404, 'This user has no intern record.');

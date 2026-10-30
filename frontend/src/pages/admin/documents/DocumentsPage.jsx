@@ -14,6 +14,8 @@ import {
   FileText,
   Filter,
   FileCheck,
+  GraduationCap,
+  Building2,
 } from "lucide-react";
 import AdminLayout from "@/layouts/AdminLayout.jsx";
 import PageHeader from "@/components/PageHeader.jsx";
@@ -23,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -51,6 +54,12 @@ import {
 import { typeLabel, typeTone } from "@/pages/admin/requirements/constants.js";
 
 const PER_PAGE = 10;
+
+const ENROLLMENT_DOC_META = {
+  cor: { label: "New COR", tone: "bg-sky-50 text-sky-700 ring-sky-200" },
+  curriculum: { label: "Curriculum", tone: "bg-violet-50 text-violet-700 ring-violet-200" },
+  other: { label: "Other", tone: "bg-gray-50 text-gray-600 ring-gray-200" },
+};
 
 function getInitials(name) {
   return (name || "?")
@@ -123,6 +132,7 @@ export default function DocumentsPage() {
   const [requirementsLoading, setRequirementsLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [source, setSource] = useState("requirements");
   const [academicYear, setAcademicYear] = useState("all");
   const [instituteId, setInstituteId] = useState("all");
   const [selectedRequirementIds, setSelectedRequirementIds] = useState([]);
@@ -184,10 +194,11 @@ export default function DocumentsPage() {
         sort: "id",
         order,
       });
+      if (source === "enrollment") params.set("source", "enrollment");
       if (debouncedSearch) params.set("search", debouncedSearch);
       if (academicYear !== "all") params.set("academic_year_id", academicYear);
       if (instituteId !== "all") params.set("institute_id", instituteId);
-      if (selectedRequirementIds.length > 0) params.set("requirement_ids", selectedRequirementIds.join(","));
+      if (source === "requirements" && selectedRequirementIds.length > 0) params.set("requirement_ids", selectedRequirementIds.join(","));
       const res = await api.get(`/documents?${params.toString()}`);
       setRows(res.data.data || []);
       setMeta(res.data.meta);
@@ -196,11 +207,19 @@ export default function DocumentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedSearch, order, academicYear, instituteId, selectedRequirementIds]);
+  }, [page, debouncedSearch, order, academicYear, instituteId, selectedRequirementIds, source]);
 
   useEffect(() => {
     loadRows();
   }, [loadRows]);
+
+  function onSourceChange(value) {
+    setSource(value);
+    setPage(1);
+    setRows([]);
+    setMeta(null);
+    setLoading(true);
+  }
 
   function onAcademicYearChange(value) {
     setAcademicYear(value);
@@ -244,16 +263,19 @@ export default function DocumentsPage() {
   async function handleBulkDownload() {
     if (downloading) return;
     if (meta && meta.total === 0) {
-      toast.error("Nothing to download", { description: "No approved files match your filters." });
+      toast.error("Nothing to download", {
+        description: source === "requirements" ? "No approved files match your filters." : "No approved enrollment documents match your filters.",
+      });
       return;
     }
     setDownloading(true);
     try {
       const params = new URLSearchParams();
+      if (source === "enrollment") params.set("source", "enrollment");
       if (debouncedSearch) params.set("search", debouncedSearch);
       if (academicYear !== "all") params.set("academic_year_id", academicYear);
       if (instituteId !== "all") params.set("institute_id", instituteId);
-      if (selectedRequirementIds.length > 0) params.set("requirement_ids", selectedRequirementIds.join(","));
+      if (source === "requirements" && selectedRequirementIds.length > 0) params.set("requirement_ids", selectedRequirementIds.join(","));
       const res = await api.get(`/documents/download?${params.toString()}`, { responseType: "blob" });
       const blob = new Blob([res.data], { type: "application/zip" });
       const url = window.URL.createObjectURL(blob);
@@ -297,9 +319,26 @@ export default function DocumentsPage() {
     <AdminLayout>
       <PageHeader
         title="Documents"
-        subtitle="Download approved requirement files in bulk — filter by academic year, institute, and requirement."
+        subtitle="Bulk-download approved requirement files filed under their host, or the COR and curriculum of approved OJT enrollments."
         icon={Files}
       />
+
+      <Tabs value={source} onValueChange={onSourceChange}>
+        <TabsList className="flex h-auto! w-full justify-start gap-1.5 overflow-x-auto bg-gray-100/80 p-1 [scrollbar-width:none] sm:h-11! sm:w-fit sm:gap-1 [&::-webkit-scrollbar]:hidden">
+          <TabsTrigger
+            value="requirements"
+            className="min-h-11 shrink-0 gap-1.5 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs font-semibold sm:gap-1.5 sm:px-3 sm:text-sm data-active:bg-green-600! data-active:text-white! data-active:shadow-sm"
+          >
+            <FileText size={16} className="shrink-0" /> Requirement files
+          </TabsTrigger>
+          <TabsTrigger
+            value="enrollment"
+            className="min-h-11 shrink-0 gap-1.5 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs font-semibold sm:gap-1.5 sm:px-3 sm:text-sm data-active:bg-green-600! data-active:text-white! data-active:shadow-sm"
+          >
+            <GraduationCap size={16} className="shrink-0" /> Enrollment documents
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:p-4">
         <div className="relative w-full sm:max-w-xs">
@@ -307,7 +346,7 @@ export default function DocumentsPage() {
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search intern or requirement..."
+            placeholder={source === "requirements" ? "Search intern or requirement..." : "Search intern..."}
             className="h-11 rounded-xl pl-10 pr-10"
           />
           {search && (
@@ -359,92 +398,94 @@ export default function DocumentsPage() {
         )}
       </div>
 
-      <div className="rounded-2xl border border-green-100 bg-white p-3 shadow-sm sm:p-4">
-        <div className="flex flex-col gap-1.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-600 ring-1 ring-green-100">
-              <FileText size={16} />
-            </div>
-            <h3 className="text-sm font-semibold text-gray-900">
-              {instituteId === "all" ? "Requirements" : `Requirements · ${instituteName || "Institute"}`}
-            </h3>
-            {instituteId !== "all" && requirements.length > 0 && (
-              <span className="rounded-full bg-gray-50 px-2.5 py-0.5 text-xs font-medium text-gray-500 ring-1 ring-gray-200">
-                {selectedRequirementIds.length === 0
-                  ? "All"
-                  : `${selectedRequirementIds.length} selected`}
-              </span>
-            )}
-            {instituteId !== "all" && requirementsLoading && (
-              <Loader2 size={14} className="animate-spin text-green-600" />
-            )}
-            {instituteId !== "all" && requirements.length > 0 && (
-              <div className="ml-auto flex items-center gap-1.5">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 rounded-lg px-2.5 text-xs font-medium text-green-700 hover:bg-green-50"
-                  onClick={selectAllRequirements}
-                  disabled={selectedRequirementIds.length === requirements.length}
-                >
-                  Select all
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 rounded-lg px-2.5 text-xs font-medium text-gray-500 hover:text-gray-700"
-                  onClick={clearRequirementSelection}
-                  disabled={selectedRequirementIds.length === 0}
-                >
-                  Clear
-                </Button>
+      {source === "requirements" && (
+        <div className="rounded-2xl border border-green-100 bg-white p-3 shadow-sm sm:p-4">
+          <div className="flex flex-col gap-1.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-600 ring-1 ring-green-100">
+                <FileText size={16} />
               </div>
-            )}
+              <h3 className="text-sm font-semibold text-gray-900">
+                {instituteId === "all" ? "Requirements" : `Requirements · ${instituteName || "Institute"}`}
+              </h3>
+              {instituteId !== "all" && requirements.length > 0 && (
+                <span className="rounded-full bg-gray-50 px-2.5 py-0.5 text-xs font-medium text-gray-500 ring-1 ring-gray-200">
+                  {selectedRequirementIds.length === 0
+                    ? "All"
+                    : `${selectedRequirementIds.length} selected`}
+                </span>
+              )}
+              {instituteId !== "all" && requirementsLoading && (
+                <Loader2 size={14} className="animate-spin text-green-600" />
+              )}
+              {instituteId !== "all" && requirements.length > 0 && (
+                <div className="ml-auto flex items-center gap-1.5">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 rounded-lg px-2.5 text-xs font-medium text-green-700 hover:bg-green-50"
+                    onClick={selectAllRequirements}
+                    disabled={selectedRequirementIds.length === requirements.length}
+                  >
+                    Select all
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 rounded-lg px-2.5 text-xs font-medium text-gray-500 hover:text-gray-700"
+                    onClick={clearRequirementSelection}
+                    disabled={selectedRequirementIds.length === 0}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              )}
+            </div>
+            <p className="text-xs leading-relaxed text-gray-500">
+              {instituteId === "all"
+                ? "Select an institute to pick specific requirements — or leave blank to include every approved file."
+                : requirementsLoading
+                  ? "Loading requirements for this institute..."
+                  : requirements.length === 0
+                    ? "No active requirements for this institute."
+                    : "Check requirements to narrow the bulk download. Leave unchecked to include all approved files from this institute."}
+            </p>
           </div>
-          <p className="text-xs leading-relaxed text-gray-500">
-            {instituteId === "all"
-              ? "Select an institute to pick specific requirements — or leave blank to include every approved file."
-              : requirementsLoading
-                ? "Loading requirements for this institute..."
-                : requirements.length === 0
-                  ? "No active requirements for this institute."
-                  : "Check requirements to narrow the bulk download. Leave unchecked to include all approved files from this institute."}
-          </p>
-        </div>
 
-        {instituteId !== "all" && !requirementsLoading && requirements.length > 0 && (
-          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {requirements.map((req) => {
-              const checked = selectedRequirementIds.includes(String(req.id));
-              return (
-                <label
-                  key={req.id}
-                  className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2.5 transition-colors ${
-                    checked ? "border-green-200 bg-green-50/70" : "border-gray-100 bg-gray-50/60 hover:bg-white hover:border-gray-200"
-                  }`}
-                >
-                  <Checkbox
-                    checked={checked}
-                    onCheckedChange={() => toggleRequirement(req.id)}
-                    className="mt-0.5 shrink-0 data-checked:border-green-600 data-checked:bg-green-600"
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium leading-tight text-gray-800">{req.name}</span>
-                    <span className="mt-1 flex items-center gap-1.5">
-                      <Badge className={`rounded-full px-2 py-0 text-[11px] font-semibold ring-1 ${typeTone[req.type] || "bg-gray-50 text-gray-600 ring-gray-200"}`}>
-                        {typeLabel[req.type] || req.type}
-                      </Badge>
-                      {req.description && (
-                        <span className="truncate text-[11px] text-gray-400">{req.description}</span>
-                      )}
+          {instituteId !== "all" && !requirementsLoading && requirements.length > 0 && (
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {requirements.map((req) => {
+                const checked = selectedRequirementIds.includes(String(req.id));
+                return (
+                  <label
+                    key={req.id}
+                    className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2.5 transition-colors ${
+                      checked ? "border-green-200 bg-green-50/70" : "border-gray-100 bg-gray-50/60 hover:bg-white hover:border-gray-200"
+                    }`}
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={() => toggleRequirement(req.id)}
+                      className="mt-0.5 shrink-0 data-checked:border-green-600 data-checked:bg-green-600"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium leading-tight text-gray-800">{req.name}</span>
+                      <span className="mt-1 flex items-center gap-1.5">
+                        <Badge className={`rounded-full px-2 py-0 text-[11px] font-semibold ring-1 ${typeTone[req.type] || "bg-gray-50 text-gray-600 ring-gray-200"}`}>
+                          {typeLabel[req.type] || req.type}
+                        </Badge>
+                        {req.description && (
+                          <span className="truncate text-[11px] text-gray-400">{req.description}</span>
+                        )}
+                      </span>
                     </span>
-                  </span>
-                </label>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:p-4">
         <div className="flex min-w-0 items-center gap-3">
@@ -460,11 +501,15 @@ export default function DocumentsPage() {
               ) : totalFiles === 0 ? (
                 "No approved files match"
               ) : (
-                `${totalFiles} approved file${totalFiles === 1 ? "" : "s"} · page ${meta?.current_page ?? 1} of ${meta?.last_page ?? 1}`
+                `${totalFiles} ${source === "requirements" ? `approved file${totalFiles === 1 ? "" : "s"}` : `enrollment document${totalFiles === 1 ? "" : "s"}`} · page ${meta?.current_page ?? 1} of ${meta?.last_page ?? 1}`
               )}
             </p>
             <p className="truncate text-xs text-gray-400">
-              {hasFilters ? "Filtered by your selection — download ZIP respects all filters." : "Showing every approved requirement submission."}
+              {hasFilters
+                ? "Filtered by your selection — download ZIP respects all filters."
+                : source === "requirements"
+                  ? "Showing every approved requirement submission, filed under the host it was submitted to."
+                  : "Showing COR and curriculum files from approved OJT enrollment applications."}
             </p>
           </div>
         </div>
@@ -494,8 +539,12 @@ export default function DocumentsPage() {
                   <SortableHeader label="ID" column="id" sort="id" order={order} onSort={toggleOrder} />
                   <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Intern</TableHead>
                   <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Academic Year</TableHead>
-                  <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Requirement</TableHead>
-                  <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Approved</TableHead>
+                  <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">
+                    {source === "requirements" ? "Requirement" : "Document"}
+                  </TableHead>
+                  <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">
+                    {source === "requirements" ? "Approved" : "Uploaded"}
+                  </TableHead>
                   <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-green-700">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -515,9 +564,13 @@ export default function DocumentsPage() {
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-gray-400">
               <Files size={20} />
             </div>
-            <p className="text-sm font-semibold text-gray-700">No approved documents found</p>
+            <p className="text-sm font-semibold text-gray-700">
+              {source === "requirements" ? "No approved documents found" : "No enrollment documents found"}
+            </p>
             <p className="max-w-sm text-xs leading-relaxed text-gray-400">
-              No submissions are approved for the selected filters. Try clearing the institute or academic year filter, or check that coordinators have approved requirement files.
+              {source === "requirements"
+                ? "No submissions are approved for the selected filters. Try clearing the institute or academic year filter, or check that coordinators have approved requirement files."
+                : "Only COR and curriculum files from approved OJT enrollment applications appear here. Try clearing the institute or academic year filter."}
             </p>
             {hasFilters && (
               <Button variant="outline" className="mt-1 h-10 rounded-xl text-green-700" onClick={clearFilters}>
@@ -527,7 +580,7 @@ export default function DocumentsPage() {
           </div>
         )}
 
-        {!loading && rows.length > 0 && (
+        {!loading && rows.length > 0 && source === "requirements" && (
           <div className="overflow-x-auto">
             <Table className="min-w-[1050px]">
               <TableHeader>
@@ -600,6 +653,23 @@ export default function DocumentsPage() {
                         <p className="mt-0.5 truncate text-xs text-gray-400" title={row.file_name}>
                           {row.file_name}
                         </p>
+                        {row.placement && (
+                          <div className="mt-1">
+                            <span
+                              className={`inline-flex max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${
+                                row.placement.is_current
+                                  ? "bg-green-50 text-green-700 ring-green-100"
+                                  : "bg-amber-50 text-amber-700 ring-amber-200"
+                              }`}
+                            >
+                              <Building2 size={11} className="shrink-0" />
+                              <span className="truncate">{row.placement.hte || "—"}</span>
+                              {!row.placement.is_current && (
+                                <span className="shrink-0 font-bold tracking-wide">· Previous host</span>
+                              )}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -625,6 +695,109 @@ export default function DocumentsPage() {
                     </TableCell>
                   </TableRow>
                 ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        {!loading && rows.length > 0 && source === "enrollment" && (
+          <div className="overflow-x-auto">
+            <Table className="min-w-[1050px]">
+              <TableHeader>
+                <TableRow className="bg-green-50 hover:bg-green-50">
+                  <SortableHeader label="ID" column="id" sort="id" order={order} onSort={toggleOrder} />
+                  <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Intern</TableHead>
+                  <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">
+                    <span className="inline-flex items-center gap-1">
+                      <CalendarDays size={11} /> Academic Year
+                    </span>
+                  </TableHead>
+                  <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Document</TableHead>
+                  <TableHead className="text-[11px] font-bold uppercase tracking-wider text-green-700">Uploaded</TableHead>
+                  <TableHead className="text-right text-[11px] font-bold uppercase tracking-wider text-green-700">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((row) => {
+                  const docMeta = ENROLLMENT_DOC_META[row.document_type] || ENROLLMENT_DOC_META.other;
+                  return (
+                    <TableRow
+                      key={row.id}
+                      className="group border-b border-gray-50 transition-colors last:border-0 hover:bg-green-50/40"
+                    >
+                      <TableCell>
+                        <span className="font-mono text-sm font-semibold text-green-700">#{row.id}</span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-9 w-9 shrink-0">
+                            {row.intern?.profile_picture && <AvatarImage src={row.intern.profile_picture} alt={row.intern.full_name} />}
+                            <AvatarFallback className="bg-gradient-to-br from-green-700 to-green-500 text-xs font-bold text-white">
+                              {getInitials(row.intern?.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-gray-900">{row.intern?.full_name || "-"}</p>
+                            <p className="flex items-center gap-1 truncate text-xs text-gray-400">
+                              {row.intern?.email}
+                              {row.intern?.program && (
+                                <>
+                                  <span className="h-1 w-1 rounded-full bg-gray-300" />
+                                  <span className="inline-flex items-center gap-1">
+                                    <School size={11} className="text-gray-300" />
+                                    {row.intern.program}
+                                  </span>
+                                </>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 ring-1 ring-green-100">
+                          <CalendarDays size={12} />
+                          {row.intern?.academic_year || "-"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="min-w-0">
+                          <div className="flex min-w-0 items-center gap-1.5">
+                            <Badge className={`shrink-0 rounded-full px-2 py-0 text-[11px] font-semibold ring-1 ${docMeta.tone}`}>
+                              {docMeta.label}
+                            </Badge>
+                            {row.document_type === "other" && row.label && (
+                              <span className="truncate text-xs text-gray-400">{row.label}</span>
+                            )}
+                          </div>
+                          <p className="mt-0.5 truncate text-xs text-gray-400" title={row.file_name}>
+                            {row.file_name}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center gap-1.5 text-sm text-gray-600">
+                          <FileCheck size={14} className="text-green-500" />
+                          {formatDate(row.uploaded_at)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            asChild
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Download ${docMeta.label} of ${row.intern?.full_name || "intern"}`}
+                            className="h-10 w-10 rounded-xl text-gray-400 transition-colors hover:bg-green-50 hover:text-green-700 group-hover:text-gray-500"
+                          >
+                            <a href={row.file_url} target="_blank" rel="noreferrer" download>
+                              <Download size={16} />
+                            </a>
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

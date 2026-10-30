@@ -8,7 +8,9 @@ use App\Http\Resources\Intern\InternListResource;
 use App\Models\EvaluationCriterion;
 use App\Models\Intern;
 use App\Models\InternEvaluation;
+use App\Models\InternHteAssignment;
 use App\Models\User;
+use App\Support\InternEvaluationSummary;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -68,50 +70,58 @@ class InternEvaluationController extends Controller
             ->groupBy('institute_id')
             ->pluck('total', 'institute_id');
 
+        // Every placement, open or closed: scores blend across hosts for
+        // transferred interns, matching the read-only detail report.
+        $placementsByIntern = InternHteAssignment::query()
+            ->whereIn('intern_id', $interns->pluck('id'))
+            ->orderBy('id')
+            ->get()
+            ->groupBy('intern_id');
+
+        $placementIds = $placementsByIntern->flatten()->pluck('id');
+
         $answered = [];
-        $weightedMap = [];
-        if ($interns->isNotEmpty()) {
+        $rows = collect();
+
+        if ($placementIds->isNotEmpty()) {
             $answered = InternEvaluation::query()
-                ->whereIn('intern_id', $interns->pluck('id'))
-                ->selectRaw('intern_id, count(*) as answered')
-                ->groupBy('intern_id')
-                ->pluck('answered', 'intern_id')
+                ->join('evaluation_criteria', 'intern_evaluations.criterion_id', '=', 'evaluation_criteria.id')
+                ->whereIn('intern_evaluations.placement_id', $placementIds)
+                ->where('evaluation_criteria.type', 'intern')
+                ->where('evaluation_criteria.status', 'active')
+                ->selectRaw('intern_evaluations.placement_id, count(*) as answered')
+                ->groupBy('intern_evaluations.placement_id')
+                ->pluck('answered', 'placement_id')
                 ->all();
 
             $rows = InternEvaluation::query()
-                ->whereIn('intern_evaluations.intern_id', $interns->pluck('id'))
                 ->join('evaluation_criteria', 'intern_evaluations.criterion_id', '=', 'evaluation_criteria.id')
+                ->whereIn('intern_evaluations.placement_id', $placementIds)
                 ->where('evaluation_criteria.type', 'intern')
-                ->selectRaw('intern_evaluations.intern_id, evaluation_criteria.category, SUM(CASE WHEN intern_evaluations.is_na THEN 0 ELSE intern_evaluations.rating END) as sum_rating, COUNT(*) as answered')
-                ->groupBy('intern_evaluations.intern_id', 'evaluation_criteria.category')
+                ->where('evaluation_criteria.status', 'active')
+                ->selectRaw('intern_evaluations.placement_id, evaluation_criteria.category, SUM(CASE WHEN intern_evaluations.is_na THEN 0 ELSE intern_evaluations.rating END) as sum_rating, SUM(CASE WHEN intern_evaluations.is_na THEN 0 ELSE 1 END) as rated_count')
+                ->groupBy('intern_evaluations.placement_id', 'evaluation_criteria.category')
                 ->get()
-                ->groupBy('intern_id');
-
-            foreach ($interns as $intern) {
-                $perCategory = $rows->get($intern->id, collect());
-                $avgs = [];
-                foreach (['personal_characteristics', 'work_characteristics', 'job_knowledge'] as $cat) {
-                    $row = $perCategory->firstWhere('category', $cat);
-                    $avgs[$cat] = $row ? (float) $row->sum_rating / (int) $row->answered : null;
-                }
-                $hasData = $avgs['personal_characteristics'] !== null || $avgs['work_characteristics'] !== null || $avgs['job_knowledge'] !== null;
-                $weighted = $hasData ? round(($avgs['personal_characteristics'] ?? 0) * 0.3 + ($avgs['work_characteristics'] ?? 0) * 0.3 + ($avgs['job_knowledge'] ?? 0) * 0.4, 2) : null;
-                $weightedMap[$intern->id] = $weighted;
-            }
+                ->groupBy('placement_id');
         }
 
         $data = InternListResource::collection($interns)->resolve($request);
 
         foreach ($data as $index => $item) {
             $intern = $interns[$index];
-            $total = (int) ($totals[$intern->institute_id] ?? 0);
-            $answeredCount = (int) ($answered[$intern->id] ?? 0);
+
+            $evaluation = InternEvaluationSummary::blended(
+                ($placementsByIntern[$intern->id] ?? collect())->pluck('id'),
+                (int) ($totals[$intern->institute_id] ?? 0),
+                $answered,
+                $rows,
+            );
 
             $data[$index]['evaluation'] = [
-                'total' => $total,
-                'answered' => $answeredCount,
-                'status' => $this->evaluationStatus($total, $answeredCount),
-                'weighted_average' => $weightedMap[$intern->id] ?? null,
+                'total' => $evaluation['total'],
+                'answered' => $evaluation['answered'],
+                'status' => $this->evaluationStatus($evaluation['total'], $evaluation['answered']),
+                'weighted_average' => $evaluation['weighted_average'],
             ];
         }
 
@@ -128,15 +138,18 @@ class InternEvaluationController extends Controller
         ]);
     }
 
+    /**
+     * Read-only evaluation report for one intern: intern summary, every
+     * placement of the enrollment row with its HTE responses, per-placement
+     * scores, and the equal-weight blended score across placements.
+     */
     public function show(Request $request, User $user): JsonResponse
     {
-        $intern = $user->intern;
+        $intern = $user->enrollmentFor($request->integer('academic_year_id') ?: null);
 
         if (! $intern || ! in_array($intern->ojt_status, ['hours_completed', 'completed'], true)) {
             abort(404, 'This intern evaluation is not available.');
         }
-
-        $assignedHte = $intern->assignedHte;
 
         $intern->loadMissing([
             'user.location',
@@ -149,10 +162,8 @@ class InternEvaluationController extends Controller
             'assignedHte.user',
         ]);
 
-        $instituteId = $intern->institute_id;
-
         $criteria = EvaluationCriterion::query()
-            ->where('institute_id', $instituteId)
+            ->where('institute_id', $intern->institute_id)
             ->where('type', 'intern')
             ->where('status', 'active')
             ->orderByRaw("CASE category
@@ -163,37 +174,19 @@ class InternEvaluationController extends Controller
             ->orderBy('id')
             ->get();
 
-        $responses = collect();
-        if ($assignedHte) {
-            $responses = InternEvaluation::query()
-                ->where('intern_id', $intern->id)
-                ->where('hte_id', $assignedHte->id)
-                ->get()
-                ->keyBy('criterion_id');
-        }
+        $summary = InternEvaluationSummary::build($intern, $criteria);
 
         return response()->json([
             'data' => [
                 'intern' => new InternDetailResource($intern),
-                'hte' => $assignedHte ? [
-                    'id' => $assignedHte->id,
-                    'name' => $assignedHte->name,
-                    'institute' => $assignedHte->institute?->name,
-                    'program' => $assignedHte->program?->name,
-                    'email' => $assignedHte->user?->email,
-                    'status' => $assignedHte->status,
-                ] : null,
                 'criteria' => $criteria->map(fn (EvaluationCriterion $criterion) => [
                     'id' => $criterion->id,
                     'category' => $criterion->category,
                     'indicator' => $criterion->indicator,
-                    'response' => $responses->has($criterion->id)
-                        ? [
-                            'rating' => $responses[$criterion->id]->rating,
-                            'is_na' => $responses[$criterion->id]->is_na,
-                        ]
-                        : null,
                 ])->values(),
+                'placements' => $summary['placements'],
+                'blended_average' => $summary['blended_average'],
+                'blended_placements' => $summary['blended_placements'],
             ],
         ]);
     }

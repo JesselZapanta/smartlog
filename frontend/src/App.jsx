@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 import Landing from "@/pages/Landing.jsx";
 import FeaturesPage from "@/pages/FeaturesPage.jsx";
 import WhoItsForPage from "@/pages/WhoItsForPage.jsx";
@@ -39,8 +39,10 @@ import CoordinatorHteInternListPage from "@/pages/ojt_coordinator/evaluations/Co
 import CoordinatorHteInternsPrintPage from "@/pages/ojt_coordinator/evaluations/CoordinatorHteInternsPrintPage.jsx";
 import CoordinatorHteEvaluationDetailPage from "@/pages/ojt_coordinator/evaluations/CoordinatorHteEvaluationDetailPage.jsx";
 import CoordinatorHteEvaluationPrintPage from "@/pages/ojt_coordinator/evaluations/CoordinatorHteEvaluationPrintPage.jsx";
-import CoordinatorIssuesListPage from "@/pages/ojt_coordinator/issues/CoordinatorIssuesListPage.jsx";
+import CoordinatorInternIssuesListPage from "@/pages/ojt_coordinator/issues/CoordinatorInternIssuesListPage.jsx";
+import CoordinatorHteIssuesListPage from "@/pages/ojt_coordinator/issues/CoordinatorHteIssuesListPage.jsx";
 import CoordinatorIssueFormPage from "@/pages/ojt_coordinator/issues/CoordinatorIssueFormPage.jsx";
+import CoordinatorTransferRequestsPage from "@/pages/ojt_coordinator/transfers/CoordinatorTransferRequestsPage.jsx";
 import InstructorDashboard from "@/pages/ojt_instructor/InstructorDashboard.jsx";
 import InstructorDeployedInternsPage from "@/pages/ojt_instructor/interns/InstructorDeployedInternsPage.jsx";
 import InstructorInternDetailPage from "@/pages/ojt_instructor/interns/InstructorInternDetailPage.jsx";
@@ -50,8 +52,10 @@ import InstructorInternMonitoringDayPage from "@/pages/ojt_instructor/monitoring
 import InstructorInternDtrLogsPage from "@/pages/ojt_instructor/monitoring/InstructorInternDtrLogsPage.jsx";
 import InstructorInternDtrPrintPage from "@/pages/ojt_instructor/monitoring/InstructorInternDtrPrintPage.jsx";
 import InstructorInternEvaluationListPage from "@/pages/ojt_instructor/evaluations/InstructorInternEvaluationListPage.jsx";
+import InstructorInternGradesPage from "@/pages/ojt_instructor/grades/InstructorInternGradesPage.jsx";
 import InstructorInternEvaluationDetailPage from "@/pages/ojt_instructor/evaluations/InstructorInternEvaluationDetailPage.jsx";
 import InstructorInternEvaluationPrintPage from "@/pages/ojt_instructor/evaluations/InstructorInternEvaluationPrintPage.jsx";
+import InstructorTransferRequestsPage from "@/pages/ojt_instructor/transfers/InstructorTransferRequestsPage.jsx";
 import HteDashboard from "@/pages/hte/HteDashboard.jsx";
 import HteAssignedInternsPage from "@/pages/hte/interns/HteAssignedInternsPage.jsx";
 import HteAssignedInternDetailPage from "@/pages/hte/interns/HteAssignedInternDetailPage.jsx";
@@ -61,6 +65,7 @@ import HteInternMonitoringDayPage from "@/pages/hte/monitoring/HteInternMonitori
 import HteEvaluateInternListPage from "@/pages/hte/evaluations/HteEvaluateInternListPage.jsx";
 import HteEvaluateInternFormPage from "@/pages/hte/evaluations/HteEvaluateInternFormPage.jsx";
 import HteIssuesListPage from "@/pages/hte/issues/HteIssuesListPage.jsx";
+import HteTransferRequestsPage from "@/pages/hte/transfers/HteTransferRequestsPage.jsx";
 import ProfilePage from "@/pages/profile/ProfilePage.jsx";
 import NotificationsPage from "@/pages/notifications/NotificationsPage.jsx";
 import UserListPage from "@/pages/admin/users/UserListPage.jsx";
@@ -73,19 +78,24 @@ import AcademicTermListPage from "@/pages/admin/academic-terms/AcademicTermListP
 import InstituteListPage from "@/pages/admin/institutes/InstituteListPage.jsx";
 import ProgramListPage from "@/pages/admin/programs/ProgramListPage.jsx";
 import RequirementListPage from "@/pages/admin/requirements/RequirementListPage.jsx";
-import OjtHourListPage from "@/pages/admin/ojt-hours/OjtHourListPage.jsx";
+
 import DocumentsPage from "@/pages/admin/documents/DocumentsPage.jsx";
 import AdminReportPage from "@/pages/admin/ReportPage.jsx";
 import AdminReportPrintPage from "@/pages/admin/AdminReportPrintPage.jsx";
 import CoordinatorReportPage from "@/pages/ojt_coordinator/ReportPage.jsx";
+import CoordinatorEnrollmentsPage from "@/pages/ojt_coordinator/enrollments/CoordinatorEnrollmentsPage.jsx";
+import CoordinatorEnrollmentDetailPage from "@/pages/ojt_coordinator/enrollments/CoordinatorEnrollmentDetailPage.jsx";
 import CoordinatorReportPrintPage from "@/pages/ojt_coordinator/CoordinatorReportPrintPage.jsx";
+import CoordinatorIssuesConcernsPrintPage from "@/pages/ojt_coordinator/CoordinatorIssuesConcernsPrintPage.jsx";
 import CoordinatorStudentPlacementPrintPage from "@/pages/ojt_coordinator/CoordinatorStudentPlacementPrintPage.jsx";
 import InstructorReportPage from "@/pages/ojt_instructor/ReportPage.jsx";
 import InstructorReportPrintPage from "@/pages/ojt_instructor/InstructorReportPrintPage.jsx";
 import InternReportPage from "@/pages/intern/ReportPage.jsx";
+import InternEnrollmentPage from "@/pages/intern/enrollment/InternEnrollmentPage.jsx";
 import InternReportPrintPage from "@/pages/intern/InternReportPrintPage.jsx";
 import HteReportPage from "@/pages/hte/ReportPage.jsx";
 import HteReportPrintPage from "@/pages/hte/HteReportPrintPage.jsx";
+import HteIssuesConcernsPrintPage from "@/pages/hte/HteIssuesConcernsPrintPage.jsx";
 import ProtectedRoute from "@/components/ProtectedRoute.jsx";
 import GuestRoute from "@/components/GuestRoute.jsx";
 
@@ -289,6 +299,14 @@ function App() {
         }
       />
       <Route
+        path="/coordinator/transfer-requests"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <CoordinatorTransferRequestsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/coordinator/hte-assignments/:uuid/assign"
         element={
           <ProtectedRoute roles={["ojt_coordinator"]}>
@@ -404,15 +422,39 @@ function App() {
         path="/coordinator/issues"
         element={
           <ProtectedRoute roles={["ojt_coordinator"]}>
-            <CoordinatorIssuesListPage />
+            <Navigate to="/coordinator/intern-issues" replace />
           </ProtectedRoute>
         }
       />
       <Route
-        path="/coordinator/issues/:id"
+        path="/coordinator/intern-issues"
         element={
           <ProtectedRoute roles={["ojt_coordinator"]}>
-            <CoordinatorIssueFormPage />
+            <CoordinatorInternIssuesListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coordinator/intern-issues/:id"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <CoordinatorIssueFormPage issueType="intern" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coordinator/hte-issues"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <CoordinatorHteIssuesListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coordinator/hte-issues/:id"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <CoordinatorIssueFormPage issueType="hte" />
           </ProtectedRoute>
         }
       />
@@ -485,6 +527,22 @@ function App() {
         element={
           <ProtectedRoute roles={["ojt_instructor"]}>
             <InstructorInternDtrPrintPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/intern-grades"
+        element={
+          <ProtectedRoute roles={["ojt_instructor"]}>
+            <InstructorInternGradesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/instructor/transfer-requests"
+        element={
+          <ProtectedRoute roles={["ojt_instructor"]}>
+            <InstructorTransferRequestsPage />
           </ProtectedRoute>
         }
       />
@@ -573,6 +631,14 @@ function App() {
         element={
           <ProtectedRoute roles={["hte"]}>
             <HteEvaluateInternFormPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/hte/transfer-requests"
+        element={
+          <ProtectedRoute roles={["hte"]}>
+            <HteTransferRequestsPage />
           </ProtectedRoute>
         }
       />
@@ -673,14 +739,6 @@ function App() {
         }
       />
       <Route
-        path="/admin/ojt-hours"
-        element={
-          <ProtectedRoute roles={["admin"]}>
-            <OjtHourListPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/admin/documents"
         element={
           <ProtectedRoute roles={["admin"]}>
@@ -705,6 +763,22 @@ function App() {
         }
       />
       <Route
+        path="/coordinator/enrollments"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <CoordinatorEnrollmentsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coordinator/enrollments/:id"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <CoordinatorEnrollmentDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/coordinator/reports"
         element={
           <ProtectedRoute roles={["ojt_coordinator"]}>
@@ -717,6 +791,14 @@ function App() {
         element={
           <ProtectedRoute roles={["ojt_coordinator"]}>
             <CoordinatorReportPrintPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/coordinator/reports/issues-concerns/print"
+        element={
+          <ProtectedRoute roles={["ojt_coordinator"]}>
+            <CoordinatorIssuesConcernsPrintPage />
           </ProtectedRoute>
         }
       />
@@ -741,6 +823,14 @@ function App() {
         element={
           <ProtectedRoute roles={["ojt_instructor"]}>
             <InstructorReportPrintPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/intern/enrollment"
+        element={
+          <ProtectedRoute roles={["intern"]}>
+            <InternEnrollmentPage />
           </ProtectedRoute>
         }
       />
@@ -773,6 +863,14 @@ function App() {
         element={
           <ProtectedRoute roles={["hte"]}>
             <HteReportPrintPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/hte/reports/issues-concerns/print"
+        element={
+          <ProtectedRoute roles={["hte"]}>
+            <HteIssuesConcernsPrintPage />
           </ProtectedRoute>
         }
       />

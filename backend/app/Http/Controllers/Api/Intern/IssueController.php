@@ -14,7 +14,7 @@ class IssueController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $intern = $request->user()->intern;
+        $intern = $request->user()->activeEnrollment();
 
         if (! $intern) {
             return response()->json([
@@ -96,7 +96,7 @@ class IssueController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $intern = $request->user()->intern;
+        $intern = $request->user()->activeEnrollment();
 
         if (! $intern) {
             abort(403, 'Your account is not linked to an intern profile.');
@@ -149,7 +149,7 @@ class IssueController extends Controller
 
     public function show(Request $request, Issue $issue): JsonResponse
     {
-        $intern = $request->user()->intern;
+        $intern = $request->user()->activeEnrollment();
 
         if (! $intern || $issue->intern_id !== $intern->id) {
             abort(403, 'This issue does not belong to your account.');
@@ -177,7 +177,7 @@ class IssueController extends Controller
 
     public function update(Request $request, Issue $issue): JsonResponse
     {
-        $intern = $request->user()->intern;
+        $intern = $request->user()->activeEnrollment();
 
         if (! $intern || $issue->intern_id !== $intern->id) {
             abort(403, 'This issue does not belong to your account.');
@@ -210,7 +210,7 @@ class IssueController extends Controller
 
     public function destroy(Request $request, Issue $issue): JsonResponse
     {
-        $intern = $request->user()->intern;
+        $intern = $request->user()->activeEnrollment();
 
         if (! $intern || $issue->intern_id !== $intern->id) {
             abort(403, 'This issue does not belong to your account.');
@@ -225,7 +225,7 @@ class IssueController extends Controller
 
     public function hteInfo(Request $request): JsonResponse
     {
-        $intern = $request->user()->intern;
+        $intern = $request->user()->activeEnrollment();
 
         if (! $intern || ! $intern->assigned_hte) {
             return response()->json(['data' => null]);

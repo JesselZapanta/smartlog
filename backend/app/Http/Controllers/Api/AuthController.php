@@ -60,10 +60,6 @@ class AuthController extends Controller
             $data['profile_picture'] = ImageOptimizer::storeAvatar($request->file('profile_picture'));
         }
 
-        if ($request->hasFile('cor')) {
-            $data['cor_path'] = $request->file('cor')->store('cor', 'public');
-        }
-
         $user = User::create([
             'uuid' => (string) Str::uuid(),
             'firstname' => $data['firstname'],
@@ -92,7 +88,6 @@ class AuthController extends Controller
             'mothers_contact' => $data['mothers_contact'],
             'parents_guardian_address' => $data['parents_guardian_address'],
             'practicum_instructor' => $data['practicum_instructor'],
-            'cor_path' => $data['cor_path'] ?? null,
         ]);
 
         $user->location()->create([
@@ -290,7 +285,7 @@ class AuthController extends Controller
             return;
         }
 
-        $intern = $user->intern;
+        $intern = $user->activeEnrollment();
 
         if (! $intern || $intern->status !== 'pending') {
             return;

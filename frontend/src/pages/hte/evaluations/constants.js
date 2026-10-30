@@ -7,6 +7,8 @@ export const ratingOptions = [
   { value: "na", label: "N/A" },
 ];
 
+export const ratingLabels = Object.fromEntries(ratingOptions.map((option) => [option.value, option.label]));
+
 export const categorySections = [
   {
     key: "personal_characteristics",

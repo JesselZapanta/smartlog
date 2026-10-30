@@ -1,4 +1,4 @@
-import { AlertTriangle, BarChart3, BookOpenText, Camera, ClipboardCheck, ClipboardList, FileText, LayoutDashboard } from "lucide-react";
+import { AlertTriangle, BarChart3, BookOpenText, Camera, ClipboardCheck, ClipboardList, FileText, LayoutDashboard, RefreshCw } from "lucide-react";
 import AppShell from "@/layouts/AppShell.jsx";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -14,6 +14,7 @@ const fullNav = [
   { to: "/intern/requirements", label: "Requirements", icon: FileText },
   { to: "/intern/issues", label: "Issues", icon: AlertTriangle },
   { to: "/intern/evaluations", label: "Evaluate HTE", icon: ClipboardCheck },
+  { to: "/intern/enrollment", label: "OJT Enrollment", icon: RefreshCw },
   { to: "/intern/reports", label: "Report", icon: BarChart3 },
 ];
 

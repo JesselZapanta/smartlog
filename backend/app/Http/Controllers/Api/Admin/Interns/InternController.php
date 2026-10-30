@@ -77,7 +77,7 @@ class InternController extends Controller
      */
     public function show(User $user): JsonResponse
     {
-        $intern = $user->intern;
+        $intern = $user->activeEnrollment();
 
         if (! $intern) {
             return response()->json([

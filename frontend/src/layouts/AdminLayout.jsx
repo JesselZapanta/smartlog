@@ -1,11 +1,10 @@
-import { CalendarDays, School, BookOpen, LayoutDashboard, Users, FileText, Store, BarChart3, ShieldCheck, Clock, Files } from "lucide-react";
+import { CalendarDays, School, BookOpen, LayoutDashboard, Users, FileText, Store, BarChart3, ShieldCheck, Files } from "lucide-react";
 import AppShell from "@/layouts/AppShell.jsx";
 
 const settingsGroupNav = [
   { to: "/admin/academic-years", label: "Academic Year", icon: CalendarDays },
   { to: "/admin/institutes", label: "Institutes", icon: School },
   { to: "/admin/programs", label: "Programs", icon: BookOpen },
-  { to: "/admin/ojt-hours", label: "OJT Hours", icon: Clock },
 ];
 
 const sidebarNav = [

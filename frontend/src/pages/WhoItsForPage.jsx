@@ -32,7 +32,7 @@ const roles = [
     title: "OJT Coordinator",
     subtitle: "Coordinator · TCGC",
     desc: "Day-to-day owner of deployments, requirements, and evaluations. Bridges interns and HTEs.",
-    bullets: ["Approve registrations & COR", "Track requirements & evaluations", "Assign interns to HTEs"],
+    bullets: ["Approve registrations & enrollments", "Track requirements & evaluations", "Assign interns to HTEs"],
     accent: "from-emerald-500 to-teal-500",
     ring: "ring-emerald-200",
   },
@@ -198,7 +198,7 @@ export default function WhoItsForPage() {
             </div>
             <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-5">
               {[
-                { step: "01", t: "Register & verify", d: "Intern creates account, uploads COR, verifies email." },
+                { step: "01", t: "Register & verify", d: "Intern creates account, verifies email, then files their enrollment." },
                 { step: "02", t: "Get deployed", d: "Coordinator assigns to HTE; clock starts." },
                 { step: "03", t: "Track daily", d: "Photo DTR + journal; HTE/Instructor verifies." },
                 { step: "04", t: "Submit docs", d: "Requirements flow: submitted → checked → completed." },

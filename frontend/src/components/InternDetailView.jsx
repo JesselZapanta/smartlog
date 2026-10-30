@@ -8,7 +8,6 @@ import {
   CalendarClock,
   CalendarDays,
   CalendarRange,
-  FileText,
   GraduationCap,
   Hash,
   Home,
@@ -235,24 +234,6 @@ export default function InternDetailView({ intern }) {
               <InfoRow icon={GraduationCap} label="Program" value={intern.program} />
               <InfoRow icon={CalendarRange} label="Academic Year" value={intern.academic_year} />
               <InfoRow icon={Presentation} label="Practicum Instructor" value={intern.practicum_instructor} />
-              <InfoRow
-                icon={FileText}
-                label="Certificate of Registration"
-                value={
-                  intern.cor ? (
-                    <a
-                      href={intern.cor}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 font-semibold text-green-700 hover:underline"
-                    >
-                      <FileText size={14} /> Open PDF
-                    </a>
-                  ) : (
-                    "—"
-                  )
-                }
-              />
             </InfoCard>
           </div>
         </TabsContent>

@@ -357,3 +357,161 @@ test('unapproved intern cannot list or submit requirements', function () {
         ])
         ->assertForbidden();
 });
+
+/**
+ * Re-enroll an intern into a new term with its own HTE, mimicking approval.
+ */
+function internReqReenroll(User $intern, Institute $institute, Program $program, AcademicTerm $term, ?int $hteId = null): Intern
+{
+    $record = Intern::create([
+        'user_id' => $intern->id,
+        'academic_year_id' => $term->id,
+        'institute_id' => $institute->id,
+        'program_id' => $program->id,
+    ]);
+
+    $record->forceFill([
+        'status' => 'approved',
+        'ojt_status' => 'pending',
+        'assigned_hte' => $hteId ?? internReqHte($institute, $program)->hte->id,
+    ])->save();
+
+    return $record;
+}
+
+test('a re-enrolled intern starts the new term with a blank checklist', function () {
+    Storage::fake('public');
+
+    $institute = internReqInstitute();
+    $program = internReqProgram($institute);
+    $intern = internReqUser($institute, $program);
+    $requirement = internReqRequirement($institute);
+    $firstTermIntern = $intern->intern;
+
+    // The intern satisfies the requirement in their first term.
+    $this->actingAs($intern, 'api')
+        ->postJson("/api/intern/requirements/{$requirement->id}/submit", [
+            'file' => UploadedFile::fake()->create('first.pdf', 1024, 'application/pdf'),
+        ])
+        ->assertOk();
+
+    $secondTerm = AcademicTerm::create(['code' => '2026-2027', 'description' => 'Second Semester']);
+    internReqReenroll($intern, $institute, $program, $secondTerm);
+
+    // The new term must show the requirement again, not the previous term's approval.
+    $this->actingAs($intern, 'api')
+        ->getJson('/api/intern/requirements')
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.submission', null);
+
+    // And the previous term's submission is still on record against its own row.
+    $firstTermSubmission = RequirementSubmission::where('intern_id', $firstTermIntern->id)
+        ->where('requirement_id', $requirement->id)
+        ->first();
+
+    expect($firstTermSubmission)->not->toBeNull()
+        ->and($firstTermSubmission->status)->toBe('pending')
+        ->and(RequirementSubmission::where('requirement_id', $requirement->id)->count())->toBe(1);
+});
+
+test('resubmitting in a new term does not overwrite the previous term submission', function () {
+    Storage::fake('public');
+
+    $institute = internReqInstitute();
+    $program = internReqProgram($institute);
+    $intern = internReqUser($institute, $program);
+    $requirement = internReqRequirement($institute);
+    $firstTermIntern = $intern->intern;
+
+    $this->actingAs($intern, 'api')
+        ->postJson("/api/intern/requirements/{$requirement->id}/submit", [
+            'file' => UploadedFile::fake()->create('first.pdf', 1024, 'application/pdf'),
+        ])
+        ->assertOk();
+
+    $firstPath = RequirementSubmission::where('intern_id', $firstTermIntern->id)->value('file_path');
+
+    $secondTerm = AcademicTerm::create(['code' => '2026-2027', 'description' => 'Second Semester']);
+    $secondTermIntern = internReqReenroll($intern, $institute, $program, $secondTerm);
+
+    $this->actingAs($intern, 'api')
+        ->postJson("/api/intern/requirements/{$requirement->id}/submit", [
+            'file' => UploadedFile::fake()->create('second.pdf', 1024, 'application/pdf'),
+        ])
+        ->assertOk();
+
+    // Two rows now exist — one per term — and the first term's file is untouched.
+    expect(RequirementSubmission::where('requirement_id', $requirement->id)->count())->toBe(2)
+        ->and(RequirementSubmission::where('intern_id', $firstTermIntern->id)->value('file_path'))->toBe($firstPath)
+        ->and(RequirementSubmission::where('intern_id', $secondTermIntern->id)->value('file_path'))->not->toBe($firstPath);
+
+    Storage::disk('public')->assertExists($firstPath);
+});
+
+test('removing a submission in the new term leaves the previous term untouched', function () {
+    Storage::fake('public');
+
+    $institute = internReqInstitute();
+    $program = internReqProgram($institute);
+    $intern = internReqUser($institute, $program);
+    $requirement = internReqRequirement($institute);
+    $firstTermIntern = $intern->intern;
+
+    $this->actingAs($intern, 'api')
+        ->postJson("/api/intern/requirements/{$requirement->id}/submit", [
+            'file' => UploadedFile::fake()->create('first.pdf', 1024, 'application/pdf'),
+        ])
+        ->assertOk();
+
+    $secondTerm = AcademicTerm::create(['code' => '2026-2027', 'description' => 'Second Semester']);
+    internReqReenroll($intern, $institute, $program, $secondTerm);
+
+    $this->actingAs($intern, 'api')
+        ->postJson("/api/intern/requirements/{$requirement->id}/submit", [
+            'file' => UploadedFile::fake()->create('second.pdf', 1024, 'application/pdf'),
+        ])
+        ->assertOk();
+
+    $this->actingAs($intern, 'api')
+        ->deleteJson("/api/intern/requirements/{$requirement->id}")
+        ->assertOk();
+
+    // Only the current term's row is removed.
+    expect(RequirementSubmission::where('intern_id', $firstTermIntern->id)->where('requirement_id', $requirement->id)->exists())->toBeTrue()
+        ->and(RequirementSubmission::count())->toBe(1);
+});
+
+test('requirements are scoped per host when the intern moves to a different hte', function () {
+    Storage::fake('public');
+
+    $institute = internReqInstitute();
+    $program = internReqProgram($institute);
+    $intern = internReqUser($institute, $program);
+    $requirement = internReqRequirement($institute);
+
+    $this->actingAs($intern, 'api')
+        ->postJson("/api/intern/requirements/{$requirement->id}/submit", [
+            'file' => UploadedFile::fake()->create('first.pdf', 1024, 'application/pdf'),
+        ])
+        ->assertOk();
+
+    // Same program, a different host for the new term.
+    $otherHteUser = User::factory()->create(['role' => 'hte']);
+    $otherHte = Hte::create([
+        'user_id' => $otherHteUser->id,
+        'institute_id' => $institute->id,
+        'program_id' => $program->id,
+        'name' => 'City Library',
+        'status' => 'active',
+    ]);
+
+    $secondTerm = AcademicTerm::create(['code' => '2026-2027', 'description' => 'Second Semester']);
+    internReqReenroll($intern, $institute, $program, $secondTerm, $otherHte->id);
+
+    $this->actingAs($intern, 'api')
+        ->getJson('/api/intern/requirements')
+        ->assertOk()
+        ->assertJsonPath('hte.name', 'City Library')
+        ->assertJsonPath('data.0.submission', null);
+});

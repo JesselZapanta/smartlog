@@ -1,4 +1,4 @@
-import { AlertTriangle, BarChart3, BookOpenText, ClipboardCheck, LayoutDashboard, Users } from "lucide-react";
+import { AlertTriangle, ArrowLeftRight, BarChart3, BookOpenText, ClipboardCheck, LayoutDashboard, Users } from "lucide-react";
 import AppShell from "@/layouts/AppShell.jsx";
 
 const navItems = [
@@ -6,6 +6,7 @@ const navItems = [
   { to: "/hte/interns", label: "Assigned Interns", icon: Users },
   { to: "/hte/monitoring", label: "Intern Monitoring", icon: BookOpenText },
   { to: "/hte/evaluations", label: "Evaluate Interns", icon: ClipboardCheck },
+  { to: "/hte/transfer-requests", label: "Transfer Requests", icon: ArrowLeftRight },
   { to: "/hte/issues", label: "Issues", icon: AlertTriangle },
   { to: "/hte/reports", label: "Report", icon: BarChart3 },
 ];

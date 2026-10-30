@@ -5,7 +5,6 @@ use App\Models\DailyJournal;
 use App\Models\Hte;
 use App\Models\Institute;
 use App\Models\Intern;
-use App\Models\OjtHour;
 use App\Models\PhotoDtr;
 use App\Models\Program;
 use App\Models\User;
@@ -154,10 +153,10 @@ test('hte verify and flag notify the instructors', function () {
 
 test('hte intern detail includes required and earned ojt hours', function () {
     $institute = hteRecordInstitute();
-    OjtHour::create(['institute_id' => $institute->id, 'hours' => 300]);
     $program = hteRecordProgram($institute);
     $hte = hteRecordHte($institute, $program);
     $intern = hteRecordIntern($institute, $program, $hte->hte->id);
+    declareOjtHours($intern->intern, 300);
 
     $checked = hteRecordDtr($intern, '2026-08-15');
     $checked->forceFill(['status' => 'checked'])->save();

@@ -13,7 +13,7 @@ class OjtHoursController extends Controller
      */
     public function show(Request $request): JsonResponse
     {
-        $intern = $request->user()->intern;
+        $intern = $request->user()->activeEnrollment();
 
         abort_unless($intern, 404, 'This user has no intern record.');
 

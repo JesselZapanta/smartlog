@@ -9,7 +9,6 @@ use App\Http\Controllers\Api\Admin\InstituteController;
 use App\Http\Controllers\Api\Admin\InternController;
 use App\Http\Controllers\Api\Admin\Interns\InternController as InternsInternController;
 use App\Http\Controllers\Api\Admin\LocationController;
-use App\Http\Controllers\Api\Admin\OjtHourController;
 use App\Http\Controllers\Api\Admin\ProgramController;
 use App\Http\Controllers\Api\Admin\ReportController;
 use App\Http\Controllers\Api\Admin\RequirementController;
@@ -20,20 +19,28 @@ use App\Http\Controllers\Api\Hte\EvaluationController as HteEvaluationController
 use App\Http\Controllers\Api\Hte\InternController as HteInternController;
 use App\Http\Controllers\Api\Hte\InternMonitoringController as HteInternMonitoringController;
 use App\Http\Controllers\Api\Hte\IssueController;
+use App\Http\Controllers\Api\Hte\TransferRequestController as HteTransferRequestController;
 use App\Http\Controllers\Api\Intern\DailyJournalController;
 use App\Http\Controllers\Api\Intern\EvaluationController as InternEvaluationController;
+use App\Http\Controllers\Api\Intern\OjtEnrollmentController;
 use App\Http\Controllers\Api\Intern\OjtHoursController;
 use App\Http\Controllers\Api\Intern\PhotoDtrController;
 use App\Http\Controllers\Api\Intern\RequirementController as InternRequirementController;
+use App\Http\Controllers\Api\Intern\TransferRequestController as InternTransferRequestController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OjtCoordinator\Evaluations\EvaluationCriterionController as CoordinatorEvaluationCriterionController;
 use App\Http\Controllers\Api\OjtCoordinator\Htes\HteController as CoordinatorHteController;
 use App\Http\Controllers\Api\OjtCoordinator\Interns\InternController as CoordinatorInternController;
+use App\Http\Controllers\Api\OjtCoordinator\Issues\HteIssueController;
+use App\Http\Controllers\Api\OjtCoordinator\Issues\InternIssueController;
 use App\Http\Controllers\Api\OjtCoordinator\RegistrationApprovalController;
 use App\Http\Controllers\Api\OjtCoordinator\Requirements\InternRequirementController as CoordinatorInternRequirementController;
 use App\Http\Controllers\Api\OjtCoordinator\Requirements\RequirementController as CoordinatorRequirementController;
+use App\Http\Controllers\Api\OjtCoordinator\Transfers\TransferRequestController as CoordinatorTransferRequestController;
 use App\Http\Controllers\Api\OjtInstructor\InternController as InstructorInternController;
+use App\Http\Controllers\Api\OjtInstructor\InternGradeController;
 use App\Http\Controllers\Api\OjtInstructor\InternMonitoringController as InstructorInternMonitoringController;
+use App\Http\Controllers\Api\OjtInstructor\TransferRequestController as InstructorTransferRequestController;
 use App\Http\Controllers\Api\ProfileController;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
@@ -106,6 +113,12 @@ Route::middleware('auth:api')->group(function (): void {
         Route::delete('/intern/journals/{journal}', [DailyJournalController::class, 'destroy'])->name('api.intern.journals.destroy');
 
         Route::get('/intern/reports', [App\Http\Controllers\Api\Intern\ReportController::class, 'index'])->name('api.intern.reports');
+        Route::get('/intern/enrollment/options', [OjtEnrollmentController::class, 'options'])->name('api.intern.enrollment.options');
+        Route::get('/intern/enrollments/current', [OjtEnrollmentController::class, 'current'])->name('api.intern.enrollments.current');
+        Route::post('/intern/enrollments', [OjtEnrollmentController::class, 'store'])->name('api.intern.enrollments.store');
+        Route::patch('/intern/enrollments/{ojtEnrollment}/ojt-hours', [OjtEnrollmentController::class, 'storeOjtHours'])->name('api.intern.enrollments.ojt-hours');
+        Route::post('/intern/enrollments/{ojtEnrollment}/documents', [OjtEnrollmentController::class, 'upload'])->name('api.intern.enrollments.documents.store');
+        Route::delete('/intern/enrollments/{ojtEnrollment}/documents/{document}', [OjtEnrollmentController::class, 'destroyDocument'])->name('api.intern.enrollments.documents.destroy');
 
         Route::get('/intern/issues/hte', [App\Http\Controllers\Api\Intern\IssueController::class, 'hteInfo'])->name('api.intern.issues.hte');
         Route::get('/intern/issues', [App\Http\Controllers\Api\Intern\IssueController::class, 'index'])->name('api.intern.issues.index');
@@ -113,6 +126,8 @@ Route::middleware('auth:api')->group(function (): void {
         Route::get('/intern/issues/{issue}', [App\Http\Controllers\Api\Intern\IssueController::class, 'show'])->name('api.intern.issues.show');
         Route::put('/intern/issues/{issue}', [App\Http\Controllers\Api\Intern\IssueController::class, 'update'])->name('api.intern.issues.update');
         Route::delete('/intern/issues/{issue}', [App\Http\Controllers\Api\Intern\IssueController::class, 'destroy'])->name('api.intern.issues.destroy');
+
+        Route::get('/intern/transfer-request', [InternTransferRequestController::class, 'show'])->name('api.intern.transfer-request.show');
     });
 
     Route::middleware('role:ojt_coordinator')->group(function (): void {
@@ -160,14 +175,33 @@ Route::middleware('auth:api')->group(function (): void {
         Route::get('/coordinator/hte-evaluations/{user:uuid}', [App\Http\Controllers\Api\OjtCoordinator\Evaluations\HteEvaluationController::class, 'show'])->name('api.coordinator.hte-evaluations.show');
         Route::get('/coordinator/hte-evaluations/{hte:uuid}/{intern:uuid}', [App\Http\Controllers\Api\OjtCoordinator\Evaluations\HteEvaluationController::class, 'showForHte'])->withoutScopedBindings()->name('api.coordinator.hte-evaluations.showForHte');
 
-        Route::get('/coordinator/issues/interns/options', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'internOptions'])->name('api.coordinator.issues.interns-options');
+        Route::get('/coordinator/transfer-requests', [CoordinatorTransferRequestController::class, 'index'])->name('api.coordinator.transfer-requests.index');
+        Route::get('/coordinator/transfer-requests/{transferRequest:uuid}', [CoordinatorTransferRequestController::class, 'show'])->name('api.coordinator.transfer-requests.show');
+        Route::post('/coordinator/transfer-requests/{transferRequest:uuid}/reassign', [CoordinatorTransferRequestController::class, 'reassign'])->name('api.coordinator.transfer-requests.reassign');
+
+        Route::get('/coordinator/issues/interns/options', [InternIssueController::class, 'internOptions'])->name('api.coordinator.issues.interns-options');
+        Route::get('/coordinator/enrollments', [App\Http\Controllers\Api\OjtCoordinator\OjtEnrollmentController::class, 'index'])->name('api.coordinator.enrollments.index');
+        Route::get('/coordinator/enrollments/{ojtEnrollment}', [App\Http\Controllers\Api\OjtCoordinator\OjtEnrollmentController::class, 'show'])->name('api.coordinator.enrollments.show');
+        Route::patch('/coordinator/enrollments/{ojtEnrollment}/ojt-hours', [App\Http\Controllers\Api\OjtCoordinator\OjtEnrollmentController::class, 'updateHours'])->name('api.coordinator.enrollments.ojt-hours');
+        Route::post('/coordinator/enrollments/{ojtEnrollment}/approve', [App\Http\Controllers\Api\OjtCoordinator\OjtEnrollmentController::class, 'approve'])->name('api.coordinator.enrollments.approve');
+        Route::post('/coordinator/enrollments/{ojtEnrollment}/reject', [App\Http\Controllers\Api\OjtCoordinator\OjtEnrollmentController::class, 'reject'])->name('api.coordinator.enrollments.reject');
+        Route::delete('/coordinator/enrollments/{ojtEnrollment}', [App\Http\Controllers\Api\OjtCoordinator\OjtEnrollmentController::class, 'destroy'])->name('api.coordinator.enrollments.destroy');
         Route::get('/coordinator/reports', [App\Http\Controllers\Api\OjtCoordinator\ReportController::class, 'index'])->name('api.coordinator.reports');
         Route::get('/coordinator/reports/placement', [App\Http\Controllers\Api\OjtCoordinator\ReportController::class, 'placement'])->name('api.coordinator.reports.placement');
-        Route::get('/coordinator/issues', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'index'])->name('api.coordinator.issues.index');
-        Route::post('/coordinator/issues', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'store'])->name('api.coordinator.issues.store');
-        Route::get('/coordinator/issues/{issue}', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'show'])->name('api.coordinator.issues.show');
-        Route::put('/coordinator/issues/{issue}', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'update'])->name('api.coordinator.issues.update');
-        Route::delete('/coordinator/issues/{issue}', [App\Http\Controllers\Api\OjtCoordinator\Issues\IssueController::class, 'destroy'])->name('api.coordinator.issues.destroy');
+
+        // Intern Issues — concerns raised by the intern about the HTE.
+        Route::get('/coordinator/intern-issues', [InternIssueController::class, 'index'])->name('api.coordinator.intern-issues.index');
+        Route::post('/coordinator/intern-issues', [InternIssueController::class, 'store'])->name('api.coordinator.intern-issues.store');
+        Route::get('/coordinator/intern-issues/{issue}', [InternIssueController::class, 'show'])->name('api.coordinator.intern-issues.show');
+        Route::put('/coordinator/intern-issues/{issue}', [InternIssueController::class, 'update'])->name('api.coordinator.intern-issues.update');
+        Route::delete('/coordinator/intern-issues/{issue}', [InternIssueController::class, 'destroy'])->name('api.coordinator.intern-issues.destroy');
+
+        // HTE Issues — concerns raised by the HTE about the intern.
+        Route::get('/coordinator/hte-issues', [HteIssueController::class, 'index'])->name('api.coordinator.hte-issues.index');
+        Route::post('/coordinator/hte-issues', [HteIssueController::class, 'store'])->name('api.coordinator.hte-issues.store');
+        Route::get('/coordinator/hte-issues/{issue}', [HteIssueController::class, 'show'])->name('api.coordinator.hte-issues.show');
+        Route::put('/coordinator/hte-issues/{issue}', [HteIssueController::class, 'update'])->name('api.coordinator.hte-issues.update');
+        Route::delete('/coordinator/hte-issues/{issue}', [HteIssueController::class, 'destroy'])->name('api.coordinator.hte-issues.destroy');
     });
 
     Route::middleware('role:hte')->group(function (): void {
@@ -184,6 +218,9 @@ Route::middleware('auth:api')->group(function (): void {
 
         Route::get('/hte/reports', [App\Http\Controllers\Api\Hte\ReportController::class, 'index'])->name('api.hte.reports');
 
+        Route::get('/hte/transfer-requests', [HteTransferRequestController::class, 'index'])->name('api.hte.transfer-requests.index');
+        Route::post('/hte/transfer-requests/{transferRequest:uuid}/accept', [HteTransferRequestController::class, 'accept'])->name('api.hte.transfer-requests.accept');
+
         Route::get('/hte/issues/assignable-interns/options', [IssueController::class, 'assignableInterns'])->name('api.hte.issues.assignable-interns');
         Route::get('/hte/issues', [IssueController::class, 'index'])->name('api.hte.issues.index');
         Route::post('/hte/issues', [IssueController::class, 'store'])->name('api.hte.issues.store');
@@ -197,6 +234,8 @@ Route::middleware('auth:api')->group(function (): void {
         Route::get('/instructor/interns/{user:uuid}', [InstructorInternController::class, 'show'])->name('api.instructor.interns.show');
         Route::get('/instructor/interns/{user:uuid}/photo-dtr', [InstructorInternController::class, 'photoDtr'])->name('api.instructor.interns.photo-dtr');
         Route::get('/instructor/interns/{user:uuid}/ojt-hours', [InstructorInternController::class, 'ojtHours'])->name('api.instructor.interns.ojt-hours');
+        Route::get('/instructor/intern-grades', [InternGradeController::class, 'index'])->name('api.instructor.intern-grades.index');
+        Route::patch('/instructor/interns/{user:uuid}/grade', [InternGradeController::class, 'update'])->name('api.instructor.interns.grade');
         Route::get('/instructor/interns/{user:uuid}/monitoring', [InstructorInternMonitoringController::class, 'index'])->name('api.instructor.interns.monitoring');
         Route::post('/instructor/interns/{user:uuid}/monitoring/approve', [InstructorInternMonitoringController::class, 'approve'])->name('api.instructor.interns.monitoring.approve');
         Route::post('/instructor/interns/{user:uuid}/monitoring/reject', [InstructorInternMonitoringController::class, 'reject'])->name('api.instructor.interns.monitoring.reject');
@@ -205,6 +244,9 @@ Route::middleware('auth:api')->group(function (): void {
         Route::get('/instructor/intern-evaluations/{user:uuid}', [App\Http\Controllers\Api\OjtInstructor\Evaluations\InternEvaluationController::class, 'show'])->name('api.instructor.intern-evaluations.show');
 
         Route::get('/instructor/reports', [App\Http\Controllers\Api\OjtInstructor\ReportController::class, 'index'])->name('api.instructor.reports');
+
+        Route::get('/instructor/transfer-requests', [InstructorTransferRequestController::class, 'index'])->name('api.instructor.transfer-requests.index');
+        Route::post('/instructor/transfer-requests', [InstructorTransferRequestController::class, 'store'])->name('api.instructor.transfer-requests.store');
     });
 
     Route::middleware('role:admin')->group(function (): void {
@@ -243,9 +285,6 @@ Route::middleware('auth:api')->group(function (): void {
             ->except(['create', 'edit']);
 
         Route::apiResource('requirements', RequirementController::class)
-            ->except(['create', 'edit']);
-
-        Route::apiResource('ojt-hours', OjtHourController::class)
             ->except(['create', 'edit']);
 
         Route::get('documents', [AdminDocumentController::class, 'index'])->name('api.documents.index');

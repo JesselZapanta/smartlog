@@ -12,11 +12,12 @@ use App\Models\Institute;
 use App\Models\Intern;
 use App\Models\InternEvaluation;
 use App\Models\Issue;
+use App\Models\OjtEnrollment;
 use App\Models\PhotoDtr;
 use App\Models\Program;
 use App\Models\RequirementSubmission;
 use App\Models\User;
-use App\Support\StorageUrl;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -508,14 +509,18 @@ class DashboardController extends Controller
             ->limit(5)
             ->get()
             ->map(function (User $user): array {
+                // Resolved once: activeEnrollment() is a fresh query every call,
+                // so reading it per field would triple the query count per row.
+                $intern = $user->activeEnrollment();
+
                 return [
                     'uuid' => $user->uuid,
                     'full_name' => trim(implode(' ', array_filter([$user->firstname, $user->middlename, $user->lastname, $user->extension]))),
                     'email' => $user->email,
                     'email_verified_at' => $user->email_verified_at,
-                    'program' => $user->intern?->program?->name,
-                    'status' => $user->intern?->status,
-                    'ojt_status' => $user->intern?->ojt_status,
+                    'program' => $intern?->program?->name,
+                    'status' => $intern?->status,
+                    'ojt_status' => $intern?->ojt_status,
                     'created_at' => $user->created_at,
                 ];
             })->values()->all();
@@ -878,13 +883,35 @@ class DashboardController extends Controller
     private function internDashboard(Request $request): array
     {
         $user = $request->user();
-        $intern = $user->intern;
+
+        // The academic year filter was previously accepted and then ignored, so every
+        // figure below came from the newest term no matter what was selected.
+        $filterYearId = $request->integer('academic_year_id') ?: null;
+        $filterYearId = $this->resolveInternDashboardTerm($user, $filterYearId);
+        $intern = $user->enrollmentFor($filterYearId);
 
         if (! $intern) {
             return [
                 'role' => 'intern',
                 'user' => new UserResource($user),
                 'intern' => null,
+                // Must still carry the full term list. Returning an empty array here
+                // emptied the dropdown the moment an unheld term was selected, which
+                // broke the very empty state meant to explain the selection.
+                'enrolled_terms' => $this->internTerms($user),
+                'viewing_academic_year_id' => $filterYearId,
+                'final_result' => $this->internFinalResult($user, $filterYearId),
+                'incomplete_term' => null,
+                'pending_application' => $this->pendingApplicationFor($user, $filterYearId),
+                'rejected_application' => $this->latestRejectedApplication($user),
+                'recent_dtr' => [],
+                'recent_journals' => [],
+                // `required` stays null when the intern has not declared hours on an OJT enrollment
+                // for this term, which the dashboard surfaces as "apply to enrol" rather
+                // than as a zero-hour target.
+                'ojt_hours' => ['required' => null, 'earned' => 0, 'earned_minutes' => 0, 'remaining' => 0, 'progress' => 0],
+                'requirements' => ['total' => 0, 'approved' => 0, 'pending' => 0, 'rejected' => 0],
+                'issues' => ['pending' => 0, 'resolved' => 0],
             ];
         }
 
@@ -926,10 +953,12 @@ class DashboardController extends Controller
             ->values()
             ->all();
 
-        $requirementsTotal = RequirementSubmission::where('user_id', $user->id)->count();
-        $requirementsApproved = RequirementSubmission::where('user_id', $user->id)->where('status', 'approved')->count();
-        $requirementsPending = RequirementSubmission::where('user_id', $user->id)->where('status', 'pending')->count();
-        $requirementsRejected = RequirementSubmission::where('user_id', $user->id)->where('status', 'rejected')->count();
+        // Scoped by intern_id, not user_id: a re-enrolled intern holds one submission row
+        // per term, so counting by user mixed every term's requirements together.
+        $requirementsTotal = RequirementSubmission::where('intern_id', $intern->id)->count();
+        $requirementsApproved = RequirementSubmission::where('intern_id', $intern->id)->where('status', 'approved')->count();
+        $requirementsPending = RequirementSubmission::where('intern_id', $intern->id)->where('status', 'pending')->count();
+        $requirementsRejected = RequirementSubmission::where('intern_id', $intern->id)->where('status', 'rejected')->count();
 
         $issuesPending = Issue::where('intern_id', $intern->id)->where('status', 'pending')->count();
         $issuesResolved = Issue::where('intern_id', $intern->id)->where('status', 'resolve')->count();
@@ -941,13 +970,32 @@ class DashboardController extends Controller
                 'institute' => $intern->institute?->name,
                 'program' => $intern->program?->name,
                 'academic_year' => $intern->academicYear?->code,
+                'academic_year_id' => $intern->academic_year_id,
                 'practicum_instructor' => $intern->practicum_instructor,
                 'date_of_birth' => $intern->date_of_birth,
                 'status' => $intern->status,
                 'rejection_reason' => $intern->rejection_reason,
                 'reviewed_at' => $intern->reviewed_at,
-                'cor' => StorageUrl::url($intern->cor_path),
+                'grade' => $intern->grade,
+                'ojt_status' => $intern->ojt_status,
             ],
+            // Every academic term on record, newest first, so the intern can browse any
+            // term and see which ones they hold. `is_enrolled` drives the markers in
+            // the dropdown; picking a term they never held returns an empty dashboard
+            // rather than an error. The held ids are resolved in one query so this map
+            // stays a single query rather than one per term.
+            'enrolled_terms' => $this->internTerms($user),
+            // The term actually being served. The frontend needs this because the
+            // resolved default can be a term the intern holds no enrollment row for
+            // yet (a pending application), which its own fallback would skip past.
+            'viewing_academic_year_id' => $filterYearId,
+
+            // Terminal result for the term being viewed, so the banner always
+            // describes what the intern is looking at.
+            'final_result' => $this->internFinalResult($user, $filterYearId),
+            'incomplete_term' => $this->internIncompleteTerm($intern),
+            'pending_application' => $this->pendingApplicationFor($user, $filterYearId),
+            'rejected_application' => $this->latestRejectedApplication($user),
             'ojt_hours' => [
                 'required' => $requiredHours,
                 'earned' => $earnedHours,
@@ -967,6 +1015,241 @@ class DashboardController extends Controller
                 'pending' => $issuesPending,
                 'resolved' => $issuesResolved,
             ],
+        ];
+    }
+
+    /**
+     * Every academic term, newest first, each flagged with whether this intern holds it.
+     *
+     * Returned on every dashboard response including the empty one, so the academic
+     * year dropdown never disappears when a term without records is selected.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function internTerms(User $user): array
+    {
+        $held = $user->internEnrollments()->pluck('academic_year_id')->all();
+
+        return AcademicTerm::query()
+            ->orderByDesc('start_at')
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn (AcademicTerm $term): array => [
+                'id' => $term->id,
+                'description' => $term->description,
+                'code' => $term->code,
+                'status' => $term->status,
+                'is_enrolled' => in_array($term->id, $held, true),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * The intern's latest rejected enrollment application, if any.
+     *
+     * This is an action item rather than a per-term statistic, so it follows the newest
+     * application regardless of the selected academic year. An older rejection is hidden
+     * once a newer application exists.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function latestRejectedApplication(User $user): ?array
+    {
+        $application = OjtEnrollment::with('academicYear')
+            ->where('user_id', $user->id)
+            ->orderByDesc('updated_at')
+            ->orderByDesc('id')
+            ->first();
+
+        if (! $application || $application->status !== 'rejected') {
+            return null;
+        }
+
+        return [
+            'id' => $application->id,
+            'academic_year_id' => $application->academic_year_id,
+            'academic_year' => $application->academicYear?->description,
+            'status' => $application->status,
+            'rejection_reason' => $application->rejection_reason,
+            'reviewed_at' => $application->reviewed_at?->toDateString(),
+        ];
+    }
+
+    /**
+     * The intern's terminal OJT outcome, resolved across every term they hold.
+     *
+     * A pass is what matters most, so a Passed anywhere wins. A failure only surfaces
+     * while it is the most recent graded term — once they have enrolled in a later term
+     * the old failure is history and should stop being announced.
+     *
+     * The grade alone decides whether there is a result — `ojt_status` is deliberately
+     * not required. The hours workflow (pending → ongoing → hours_completed → completed)
+     * is tracked separately, and an instructor may record the terminal grade before it
+     * is closed. Gating on both hid a real Failed grade from an intern whose term was
+     * still `ongoing`. The hour requirement is already advisory at the point of grading.
+     *
+     * Scoped to the selected term when one is given, so the banner describes the term
+     * the intern is actually looking at rather than a different one. Pinning a term
+     * also disables the "moved on" suppression below — an explicit request to see a
+     * term should return that term's result, even if it is an old failure.
+     *
+     * A failure is also suppressed when the intern has already been approved to enrol
+     * for that same term again, since the banner's advice no longer applies.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function internFinalResult(User $user, ?int $academicYearId = null): ?array
+    {
+        $graded = $user->internEnrollments()
+            ->whereNotNull('grade')
+            ->when($academicYearId, fn (Builder $q) => $q->where('academic_year_id', $academicYearId))
+            ->reorder('academic_year_id', 'desc')
+            ->get();
+
+        if ($graded->isEmpty()) {
+            return null;
+        }
+
+        $passed = $graded->firstWhere('grade', 'Passed');
+
+        if ($passed) {
+            return [
+                'outcome' => 'passed',
+                'academic_year' => $passed->academicYear?->description,
+                'grade' => $passed->grade,
+                // Compared against the *active* enrollment, not the newest graded
+                // one: someone who passed term 1 and then enrolled in term 2 is
+                // congratulated, but not as if term 2 were the one they passed.
+                // A pinned term is always "the one being looked at".
+                'is_latest' => $academicYearId !== null || $passed->id === $user->activeEnrollment()?->id,
+            ];
+        }
+
+        $latest = $graded->first();
+
+        // The failure is stale once the intern has an enrollment application for the
+        // failed term or for any later term (the active academic year included) —
+        // whatever that application's status is. A pending, approved or rejected
+        // application already explains where the intern stands, so telling them to
+        // "apply again in a later term" would be misleading.
+        $hasApplicationFromFailureTermOn = OjtEnrollment::where('user_id', $user->id)
+            ->where('academic_year_id', '>=', $latest->academic_year_id)
+            ->exists();
+
+        if ($hasApplicationFromFailureTermOn) {
+            return null;
+        }
+
+        // A newer ungraded enrollment supersedes the failure — the intern has moved on,
+        // so the old failure is history and should stop being announced. Not applied
+        // when a term is pinned, since the intern explicitly asked to see it.
+        if (! $academicYearId && $latest->id !== $user->activeEnrollment()?->id) {
+            return null;
+        }
+
+        return [
+            'outcome' => 'failed',
+            'academic_year' => $latest->academicYear?->description,
+            'grade' => $latest->grade,
+            'is_latest' => true,
+        ];
+    }
+
+    /**
+     * Which academic year the dashboard should show when the intern has not chosen one.
+     *
+     * A pending application is the intern's live situation — they are waiting on a
+     * coordinator for that term, normally the active academic year — so the dashboard
+     * opens on it rather than on a term they have already finished. Without this the
+     * page landed on the newest *held* enrollment, which for an intern re-enrolling is
+     * their previous term.
+     *
+     * An explicit selection from the dropdown always wins.
+     */
+    private function resolveInternDashboardTerm(User $user, ?int $requestedYearId): ?int
+    {
+        if ($requestedYearId) {
+            return $requestedYearId;
+        }
+
+        $pendingYearId = OjtEnrollment::where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->orderByDesc('academic_year_id')
+            ->value('academic_year_id');
+
+        return $pendingYearId ? (int) $pendingYearId : null;
+    }
+
+    /**
+     * The intern's pending application, for the term being viewed.
+     *
+     * A pending application has no enrollment row yet — approval is what creates one —
+     * so the dashboard would otherwise open on this term and render nothing at all.
+     * Reporting it here is what makes the pending state legible.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function pendingApplicationFor(User $user, ?int $academicYearId): ?array
+    {
+        $application = OjtEnrollment::where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->when($academicYearId, fn (Builder $q) => $q->where('academic_year_id', $academicYearId))
+            ->orderByDesc('academic_year_id')
+            ->first();
+
+        if (! $application) {
+            return null;
+        }
+
+        return [
+            'ojt_enrollment_id' => $application->id,
+            'academic_year_id' => $application->academic_year_id,
+            'academic_year' => $application->academicYear?->description,
+            'submitted_at' => $application->created_at,
+        ];
+    }
+
+    /**
+     * A term that closed while the intern was still short of completing it.
+     *
+     * Distinct from a failure: no grade was ever recorded, so the intern did not do
+     * anything wrong — the term simply ended with the OJT unfinished. Reported only
+     * for the term being viewed, matching `internFinalResult()`, so it always
+     * describes what the intern is looking at.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function internIncompleteTerm(?Intern $intern): ?array
+    {
+        if (! $intern) {
+            return null;
+        }
+
+        // Completed OJT is finished by definition.
+        if ($intern->ojt_status === 'completed') {
+            return null;
+        }
+
+        // A recorded grade is a terminal result and is reported by internFinalResult()
+        // instead. 'Pending' is accepted defensively; the column is nullable and only
+        // holds Passed/Failed.
+        if ($intern->grade !== null && $intern->grade !== 'Pending') {
+            return null;
+        }
+
+        $term = $intern->academicYear;
+
+        // Still-running terms are simply in progress, not abandoned.
+        if (! $term || $term->status === 'active') {
+            return null;
+        }
+
+        return [
+            'academic_year' => $term->description,
+            'academic_year_id' => $term->id,
+            'ojt_status' => $intern->ojt_status,
+            'grade' => $intern->grade,
         ];
     }
 
@@ -1014,7 +1297,7 @@ class DashboardController extends Controller
                     ]))),
                     'email' => $user->email,
                     'email_verified_at' => $user->email_verified_at,
-                    'program' => $user->intern?->program?->name,
+                    'program' => $user->activeEnrollment()?->program?->name,
                     'created_at' => $user->created_at,
                 ];
             })

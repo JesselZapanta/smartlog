@@ -300,6 +300,34 @@ test('undepoloyed intern cannot punch', function () {
     expect(PhotoDtr::count())->toBe(0);
 });
 
+test('an undeployed intern is told they are not deployed when reading their dtr logs', function () {
+    $institute = dtrInstitute();
+    $program = dtrProgram($institute);
+    $intern = dtrIntern($institute, $program);
+
+    // The DTR Logs page renders its "Not deployed yet" state from this flag, so the
+    // read endpoint has to report it rather than only refusing writes.
+    $this->actingAs($intern, 'api')
+        ->getJson('/api/intern/photo-dtr')
+        ->assertOk()
+        ->assertJsonPath('deployed', false)
+        ->assertJsonPath('ojt_status', 'pending')
+        ->assertJsonCount(0, 'data');
+});
+
+test('a deployed intern is reported as deployed when reading their dtr logs', function () {
+    $institute = dtrInstitute();
+    $program = dtrProgram($institute);
+    $intern = dtrIntern($institute, $program);
+    Intern::where('user_id', $intern->id)->update(['ojt_status' => 'ongoing']);
+
+    $this->actingAs($intern, 'api')
+        ->getJson('/api/intern/photo-dtr')
+        ->assertOk()
+        ->assertJsonPath('deployed', true)
+        ->assertJsonPath('ojt_status', 'ongoing');
+});
+
 test('intern who completed their hours cannot punch', function () {
     Storage::fake('public');
     $institute = dtrInstitute();

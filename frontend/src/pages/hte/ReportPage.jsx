@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import OjtHoursReportTable from "@/components/OjtHoursReportTable.jsx";
 import {
   BarChart3,
   Printer,
@@ -78,6 +79,14 @@ const REPORTS = [
     icon: Star,
     tone: "violet",
     statKey: "evaluations.total",
+  },
+  {
+    key: "issues",
+    label: "Issues & Concerns",
+    desc: "All concerns, intern and HTE",
+    icon: AlertTriangle,
+    tone: "red",
+    statKey: "issues.total",
   },
 ];
 
@@ -413,7 +422,7 @@ function AcademicView({ data, onPrint, isPrinting }) {
         <StatCard label="Institutes" value={data.institutes.total} icon={<School size={18} />} tone="amber" />
         <StatCard label="Programs" value={data.programs.total} icon={<Layers size={18} />} tone="green" />
         <StatCard label="Academic Years" value={data.academic_terms.total} icon={<CalendarDays size={18} />} tone="blue" />
-        <StatCard label="OJT Hours Configs" value={(data.ojt_hours || []).length} icon={<Clock size={18} />} tone="emerald" />
+        <StatCard label="OJT Enrollments" value={(data.ojt_hours || []).length} icon={<Clock size={18} />} tone="emerald" />
       </section>
 
       <SectionCard title="Academic Years" subtitle="All configured academic years and terms">
@@ -479,21 +488,8 @@ function AcademicView({ data, onPrint, isPrinting }) {
         </div>
       </SectionCard>
 
-      <SectionCard title="OJT Hours Configuration" subtitle="Required hours per institute">
-        {(data.ojt_hours || []).length === 0 ? (
-          <p className="py-8 text-center text-sm text-gray-400">No OJT hours configured</p>
-        ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {data.ojt_hours.map((row) => (
-              <div key={row.id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">{row.institute?.name || "Institute"}</p>
-                <p className="mt-1 font-heading text-2xl font-bold text-gray-900">
-                  {row.hours} <span className="text-sm font-medium text-gray-500">hrs</span>
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
+      <SectionCard title="OJT Hours by Intern" subtitle="Hours declared on each intern's OJT enrollment">
+        <OjtHoursReportTable rows={data.ojt_hours} />
       </SectionCard>
     </div>
   );
@@ -596,18 +592,8 @@ function DtrView({ data, onPrint, isPrinting }) {
         </div>
       </SectionCard>
 
-      <SectionCard title="OJT Hours Tracking" subtitle="Configured hours vs. rendered hours context">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {(data.ojt_hours || []).slice(0, 6).map((row) => (
-            <div key={row.id} className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
-              <span className="text-sm font-medium text-gray-700">{row.institute?.name || "Institute"}</span>
-              <span className="font-heading text-sm font-bold text-green-700">{row.hours} hrs required</span>
-            </div>
-          ))}
-          {(data.ojt_hours || []).length === 0 && (
-            <p className="col-span-2 py-4 text-center text-sm text-gray-400">No OJT hours configuration found</p>
-          )}
-        </div>
+      <SectionCard title="OJT Hours Tracking" subtitle="Declared hours vs. rendered hours">
+        <OjtHoursReportTable rows={data.ojt_hours} compact />
       </SectionCard>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -721,22 +707,58 @@ function UsersView({ data, onPrint, isPrinting }) {
   );
 }
 
-function IssuesView({ data, onPrint, isPrinting }) {
+const CONCERN_DIRECTIONS = [
+  {
+    key: "intern",
+    label: "Raised by Intern",
+    sub: "Intern has an issue with this establishment",
+    tone: "bg-purple-50 text-purple-700 ring-purple-200",
+  },
+  {
+    key: "hte",
+    label: "Raised by HTE",
+    sub: "This establishment has an issue with the intern",
+    tone: "bg-blue-50 text-blue-700 ring-blue-200",
+  },
+];
+
+function ConcernsView({ data, onPrint, isPrinting }) {
+  const total = data.issues.total || 0;
+  const pending = data.issues.by_status.pending || 0;
+  const resolved = data.issues.by_status.resolve || 0;
+  const resolutionRate = total > 0 ? Math.round((resolved / total) * 100) : null;
+
   return (
     <div className="space-y-4 sm:space-y-5">
-      <ReportPrintBar onPrint={onPrint} reportKey="issues" isPrinting={isPrinting} label="Print Issues Report" />
+      <ReportPrintBar onPrint={onPrint} reportKey="issues_concerns_annex" isPrinting={isPrinting} label="Print Issues & Concerns (Annex C)" />
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard label="Total Issues" value={data.issues.total} icon={<AlertTriangle size={18} />} tone="red" />
-        <StatCard label="Open" value={data.issues.by_status.open || 0} icon={<AlertTriangle size={18} />} tone="amber" />
-        <StatCard label="Resolved" value={data.issues.by_status.resolved || 0} icon={<BadgeCheck size={18} />} tone="green" />
-        <StatCard label="Evaluations" value={data.evaluations.total} icon={<Star size={18} />} tone="amber" />
+        <StatCard label="Total Concerns" value={total} icon={<AlertTriangle size={18} />} tone="red" />
+        <StatCard label="Pending" value={pending} icon={<AlertTriangle size={18} />} tone="amber" />
+        <StatCard label="Resolved" value={resolved} icon={<BadgeCheck size={18} />} tone="green" />
+        <StatCard label="Resolution Rate" value={resolutionRate === null ? "—" : `${resolutionRate}%`} icon={<BadgeCheck size={18} />} tone="blue" />
       </section>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <SectionCard title="Issues by Status" subtitle="Current state of reported concerns">
+        <SectionCard title="Concern Direction" subtitle="Intern and HTE concerns combined">
+          <div className="space-y-2.5">
+            {CONCERN_DIRECTIONS.map((direction) => (
+              <div key={direction.key} className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5">
+                <div className="min-w-0">
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${direction.tone}`}>
+                    {direction.label}
+                  </span>
+                  <p className="mt-1 truncate text-xs text-gray-500">{direction.sub}</p>
+                </div>
+                <span className="font-heading text-sm font-bold text-gray-900">{data.issues.by_type[direction.key] || 0}</span>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Concerns by Status" subtitle="Current state of reported concerns">
           <div className="space-y-2.5">
             {Object.entries(data.issues.by_status).length === 0 ? (
-              <p className="py-6 text-center text-sm text-gray-400">No issues in this academic year</p>
+              <p className="py-6 text-center text-sm text-gray-400">No concerns in this academic year</p>
             ) : (
               Object.entries(data.issues.by_status).map(([status, count]) => (
                 <div key={status} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5">
@@ -747,51 +769,32 @@ function IssuesView({ data, onPrint, isPrinting }) {
             )}
           </div>
         </SectionCard>
-
-        <SectionCard title="Issues by Type" subtitle="Category breakdown">
-          <div className="space-y-2.5">
-            {Object.entries(data.issues.by_type).length === 0 ? (
-              <p className="py-6 text-center text-sm text-gray-400">No categorized issues</p>
-            ) : (
-              Object.entries(data.issues.by_type).map(([type, count]) => (
-                <div key={type} className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50/50 px-3 py-2.5">
-                  <span className="text-sm font-medium capitalize text-gray-700">{(type || "N/A").replace(/_/g, " ")}</span>
-                  <span className="font-heading text-sm font-bold text-gray-900">{count}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </SectionCard>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <SectionCard title="Recent Issues" subtitle="Latest 5 concerns system-wide">
-          {!(data.issues.recent || []).length ? (
-            <p className="py-6 text-center text-sm text-gray-400">No recent issues</p>
-          ) : (
-            <div className="space-y-2">
-              {data.issues.recent.map((r, i) => (
+      <SectionCard title="Recent Concerns" subtitle="Latest 5 concerns from interns and your establishment">
+        {!(data.issues.recent || []).length ? (
+          <p className="py-6 text-center text-sm text-gray-400">No recent concerns</p>
+        ) : (
+          <div className="space-y-2">
+            {data.issues.recent.map((r, i) => {
+              const direction = CONCERN_DIRECTIONS.find((d) => d.key === r.type) ?? CONCERN_DIRECTIONS[0];
+              return (
                 <div key={i} className="rounded-xl border border-gray-100 px-3 py-2.5">
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate text-sm font-medium text-gray-800">{r.student}</span>
                     <StatusBadge value={r.status} />
                   </div>
-                  <p className="mt-1 line-clamp-1 text-xs text-gray-500">
-                    <span className="font-semibold capitalize">{r.type?.replace(/_/g, " ")}:</span> {r.excerpt}
-                  </p>
+                  <div className="mt-1.5">
+                    <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${direction.tone}`}>
+                      {direction.label}
+                    </span>
+                  </div>
+                  <p className="mt-1 line-clamp-1 text-xs text-gray-500">{r.excerpt}</p>
                 </div>
-              ))}
-            </div>
-          )}
-        </SectionCard>
-      </div>
-
-      <SectionCard title="Journals & Evaluations" subtitle="Documentation and performance reviews">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {miniStat("Journals", data.journals.total)}
-          {miniStat("Evaluations", data.evaluations.total)}
-          {miniStat("Programs", data.programs.total)}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </SectionCard>
     </div>
   );
@@ -802,6 +805,7 @@ const viewMap = {
   interns: InternsView,
   monitoring: DtrView,
   evaluations: EvaluationsView,
+  issues: ConcernsView,
 };
 
 export default function HteReportPage() {
@@ -849,8 +853,14 @@ export default function HteReportPage() {
       setIsPrinting(true);
       const params = new URLSearchParams();
       if (academicYearId) params.set("academic_year_id", academicYearId);
-      params.set("report", reportKey);
-      const printUrl = `/hte/reports/print?${params.toString()}`;
+      let printUrl;
+      if (reportKey === "issues_concerns_annex") {
+        // Dedicated Annex C print page — not the generic report= switcher.
+        printUrl = `/hte/reports/issues-concerns/print?${params.toString()}`;
+      } else {
+        params.set("report", reportKey);
+        printUrl = `/hte/reports/print?${params.toString()}`;
+      }
       const ensureIframe = () => {
         if (iframeRef.current) return iframeRef.current;
         const iframe = document.createElement("iframe");
